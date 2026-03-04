@@ -13,11 +13,13 @@ struct ChaosAwaitsApp: App {
                 .task {
                     await appState.uploadManager.importSharedPosts()
                 }
+                #if canImport(UIKit)
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                     Task {
                         await appState.uploadManager.importSharedPosts()
                     }
                 }
+                #endif
         }
         .modelContainer(appState.modelContainer)
     }

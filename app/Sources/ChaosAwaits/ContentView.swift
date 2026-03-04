@@ -99,7 +99,9 @@ struct ContentView: View {
                 .padding(.vertical, 10)
             }
             .navigationTitle("New Post")
+            #if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
         }
     }
 }

@@ -44,8 +44,8 @@ final class ComposeViewModel {
         let item = mediaItems[index]
 
         if let data = try? await item.pickerItem.loadTransferable(type: Data.self),
-           let uiImage = UIImage(data: data) {
-            let thumbnail = Image(uiImage: uiImage)
+           let platformImage = PlatformImage(data: data) {
+            let thumbnail = Image(platformImage: platformImage)
             if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
                 mediaItems[idx].thumbnail = thumbnail
                 mediaItems[idx].loadingThumbnail = false

@@ -38,13 +38,13 @@ struct MediaThumbnailView: View {
                 } else if item.loadingThumbnail {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color(.secondarySystemBackground))
+                        .background(Color.secondary.opacity(0.15))
                 } else {
                     Image(systemName: "photo")
                         .font(.title)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color(.secondarySystemBackground))
+                        .background(Color.secondary.opacity(0.15))
                 }
             }
             .frame(width: size, height: size)

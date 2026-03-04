@@ -1,12 +1,28 @@
 import SwiftUI
+import SwiftData
 import PhotosUI
 
 struct ContentView: View {
     @State private var viewModel = ComposeViewModel()
+    @Environment(UploadManager.self) private var uploadManager
+    @Environment(NetworkMonitor.self) private var networkMonitor
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // Offline banner
+                if !networkMonitor.isConnected {
+                    HStack {
+                        Image(systemName: "wifi.slash")
+                        Text("Offline -- posts will upload when connected")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .background(.orange)
+                }
+
                 // Media carousel (shown when items are selected)
                 if !viewModel.mediaItems.isEmpty {
                     MediaCarouselView(
@@ -32,6 +48,18 @@ struct ContentView: View {
                         }
                     }
 
+                // Error message
+                if let error = viewModel.errorMessage {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text(error)
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.red)
+                    .padding(.horizontal)
+                    .padding(.vertical, 4)
+                }
+
                 Divider()
 
                 // Bottom toolbar: picker + upload button
@@ -48,7 +76,13 @@ struct ContentView: View {
 
                     Spacer()
 
-                    Button(action: { viewModel.upload() }) {
+                    if uploadManager.isProcessing {
+                        Label("Uploading...", systemImage: "arrow.up.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Button(action: { viewModel.upload(using: uploadManager) }) {
                         if viewModel.isUploading {
                             ProgressView()
                                 .controlSize(.small)
@@ -72,4 +106,12 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environment(NetworkMonitor())
+        .environment(
+            UploadManager(
+                serverURL: URL(string: "http://localhost:8080")!,
+                networkMonitor: NetworkMonitor(),
+                modelContainer: try! ModelContainer(for: PendingPost.self)
+            )
+        )
 }

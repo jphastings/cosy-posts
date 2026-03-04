@@ -1,11 +1,11 @@
 ---
 # chaos-882w
 title: 'iOS: TUS upload client & queue'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-03-04T20:20:42Z
-updated_at: 2026-03-04T20:21:30Z
+updated_at: 2026-03-04T20:58:31Z
 parent: chaos-mopc
 blocked_by:
     - chaos-pj0y

@@ -71,11 +71,27 @@ final class ComposeViewModel {
         }
     }
 
+    /// Error message to display to the user.
+    var errorMessage: String?
+
     /// Initiate the upload process for the current post.
-    func upload() {
+    func upload(using uploadManager: UploadManager) {
         guard canUpload else { return }
         isUploading = true
-        // Upload logic will be implemented in Bean 3 (TUS upload client)
+        errorMessage = nil
+
+        let items = mediaItems
+        let text = bodyText
+
+        Task {
+            do {
+                try await uploadManager.enqueuePost(bodyText: text, mediaItems: items)
+                reset()
+            } catch {
+                errorMessage = error.localizedDescription
+                isUploading = false
+            }
+        }
     }
 
     /// Reset the compose form after a successful upload.

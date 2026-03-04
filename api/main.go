@@ -60,6 +60,9 @@ func main() {
 	mux.Handle("/files/", http.StripPrefix("/files/", uploadHandler))
 	mux.Handle("/files", http.StripPrefix("/files", uploadHandler))
 
+	// Run an initial site build on startup.
+	rebuild.Trigger(cfg)
+
 	log.Printf("Listening on %s", cfg.Listen)
 	if err := http.ListenAndServe(cfg.Listen, mux); err != nil {
 		log.Fatalf("Server error: %v", err)

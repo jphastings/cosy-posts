@@ -1,5 +1,5 @@
 listen: ":8080"
 content_dir: "../site/content"
 tus_upload_dir: "/tmp/chaos-uploads"
-rebuild_command: "echo 'rebuild site'"
+rebuild_command: "cd ../site && npx @11ty/eleventy"
 log_file: "./rebuild.log"

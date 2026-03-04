@@ -1,11 +1,11 @@
 ---
 # chaos-pj0y
 title: 'iOS: Main view UI'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-03-04T20:20:39Z
-updated_at: 2026-03-04T20:21:30Z
+updated_at: 2026-03-04T20:55:10Z
 parent: chaos-mopc
 blocked_by:
     - chaos-9yxg

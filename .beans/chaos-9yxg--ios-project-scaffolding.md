@@ -1,10 +1,11 @@
 ---
 # chaos-9yxg
 title: 'iOS: Project scaffolding'
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-03-04T20:20:37Z
-updated_at: 2026-03-04T20:20:37Z
+updated_at: 2026-03-04T20:47:44Z
 parent: chaos-mopc
 ---
 

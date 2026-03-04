@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -38,5 +39,21 @@ func Load(path string) (*Config, error) {
 		cfg.TUSUploadDir = "./uploads"
 	}
 
+	// Resolve relative paths against the config file's directory.
+	configDir, _ := filepath.Abs(filepath.Dir(path))
+	cfg.ContentDir = resolve(configDir, cfg.ContentDir)
+	cfg.TUSUploadDir = resolve(configDir, cfg.TUSUploadDir)
+	if cfg.LogFile != "" {
+		cfg.LogFile = resolve(configDir, cfg.LogFile)
+	}
+
 	return &cfg, nil
+}
+
+// resolve makes a relative path absolute against base. Absolute paths pass through.
+func resolve(base, path string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(base, path)
 }

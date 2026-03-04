@@ -1,6 +1,8 @@
 package photo
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -23,6 +25,8 @@ const (
 
 // Process reads an image file, applies EXIF orientation, downscales it to fit
 // within maxDimension on the longest side, and encodes it as JPEG via jpegli.
+// All original EXIF metadata is preserved in the output (with orientation
+// reset to 1 since the pixels are now correctly oriented).
 // Returns the path to the output file (.jpg extension).
 func Process(inputPath string) (string, error) {
 	img, err := decodeImage(inputPath)
@@ -30,11 +34,18 @@ func Process(inputPath string) (string, error) {
 		return "", fmt.Errorf("decoding image %s: %w", inputPath, err)
 	}
 
-	// Apply EXIF orientation for JPEG files (HEIC handles this internally).
+	// Extract EXIF from source before any processing.
+	exifData := extractExif(inputPath)
+
+	// Apply EXIF orientation (HEIC handles this internally in the decoder).
 	ext := strings.ToLower(filepath.Ext(inputPath))
 	if ext == ".jpg" || ext == ".jpeg" {
 		orientation := readOrientation(inputPath)
-		img = applyOrientation(img, orientation)
+		if orientation > 1 {
+			img = applyOrientation(img, orientation)
+			// Reset orientation to 1 in the EXIF data since pixels are now correct.
+			exifData = patchExifOrientation(exifData)
+		}
 	}
 
 	img = downscale(img, maxDimension)
@@ -44,11 +55,173 @@ func Process(inputPath string) (string, error) {
 	base := strings.TrimSuffix(filepath.Base(inputPath), filepath.Ext(inputPath))
 	outPath := filepath.Join(dir, base+".jpg")
 
-	if err := encodeJPEG(outPath, img); err != nil {
+	if err := encodeJPEGWithExif(outPath, img, exifData); err != nil {
 		return "", fmt.Errorf("encoding image %s: %w", outPath, err)
 	}
 
 	return outPath, nil
+}
+
+// extractExif reads raw EXIF bytes from a file.
+// Returns nil if EXIF cannot be extracted.
+func extractExif(path string) []byte {
+	ext := strings.ToLower(filepath.Ext(path))
+
+	switch ext {
+	case ".heic", ".heif":
+		f, err := os.Open(path)
+		if err != nil {
+			return nil
+		}
+		defer f.Close()
+		data, err := goheif.ExtractExif(f)
+		if err != nil {
+			return nil
+		}
+		return data
+
+	case ".jpg", ".jpeg":
+		return extractJPEGExif(path)
+
+	default:
+		return nil
+	}
+}
+
+// extractJPEGExif reads the raw EXIF payload (the data inside the APP1
+// segment, after the EXIF header) from a JPEG file.
+// Returns nil if no EXIF is found.
+func extractJPEGExif(path string) []byte {
+	data, err := os.ReadFile(path)
+	if err != nil || len(data) < 4 {
+		return nil
+	}
+
+	// Must start with SOI (FF D8).
+	if data[0] != 0xFF || data[1] != 0xD8 {
+		return nil
+	}
+
+	offset := 2
+	for offset+4 < len(data) {
+		if data[offset] != 0xFF {
+			break
+		}
+		marker := data[offset+1]
+		// APP1 = 0xE1
+		if marker == 0xE1 {
+			segLen := int(binary.BigEndian.Uint16(data[offset+2 : offset+4]))
+			segEnd := offset + 2 + segLen
+			if segEnd > len(data) {
+				break
+			}
+			// The segment payload starts after the 2-byte length field.
+			payload := data[offset+4 : segEnd]
+			// Check for "Exif\0\0" header.
+			if len(payload) > 6 && string(payload[:4]) == "Exif" {
+				// Return just the TIFF data (after "Exif\0\0").
+				return payload[6:]
+			}
+			// Might be XMP in APP1, keep scanning.
+		}
+
+		// Skip this segment.
+		segLen := int(binary.BigEndian.Uint16(data[offset+2 : offset+4]))
+		offset += 2 + segLen
+
+		// Stop if we hit SOS or image data.
+		if marker == 0xDA {
+			break
+		}
+	}
+
+	return nil
+}
+
+// patchExifOrientation sets the orientation tag to 1 (Normal) in raw TIFF/EXIF
+// data. This is needed because we've already rotated the pixels.
+func patchExifOrientation(tiffData []byte) []byte {
+	if len(tiffData) < 8 {
+		return tiffData
+	}
+
+	// Make a copy so we don't modify the original.
+	data := make([]byte, len(tiffData))
+	copy(data, tiffData)
+
+	// Determine byte order from the TIFF header.
+	var bo binary.ByteOrder
+	switch string(data[:2]) {
+	case "II":
+		bo = binary.LittleEndian
+	case "MM":
+		bo = binary.BigEndian
+	default:
+		return data
+	}
+
+	// Walk IFD0 to find the orientation tag (0x0112).
+	ifdOffset := int(bo.Uint32(data[4:8]))
+	if ifdOffset+2 > len(data) {
+		return data
+	}
+
+	entryCount := int(bo.Uint16(data[ifdOffset : ifdOffset+2]))
+	for i := 0; i < entryCount; i++ {
+		entryStart := ifdOffset + 2 + i*12
+		if entryStart+12 > len(data) {
+			break
+		}
+		tag := bo.Uint16(data[entryStart : entryStart+2])
+		if tag == 0x0112 { // Orientation
+			// Type is SHORT (3), count is 1. Value is in bytes 8-9 of the entry.
+			bo.PutUint16(data[entryStart+8:entryStart+10], 1)
+			break
+		}
+	}
+
+	return data
+}
+
+// encodeJPEGWithExif encodes an image as JPEG via jpegli, then splices
+// the provided EXIF data (raw TIFF bytes) into the output file as an APP1
+// segment.
+func encodeJPEGWithExif(path string, img image.Image, tiffData []byte) error {
+	// First, encode to a buffer.
+	var buf bytes.Buffer
+	opts := &jpegli.EncodingOptions{
+		Quality: jpegQuality,
+	}
+	if err := jpegli.Encode(&buf, img, opts); err != nil {
+		return err
+	}
+
+	jpegBytes := buf.Bytes()
+
+	// If no EXIF data, just write the encoded JPEG directly.
+	if len(tiffData) == 0 {
+		return os.WriteFile(path, jpegBytes, 0644)
+	}
+
+	// Build the APP1 segment: marker + length + "Exif\0\0" + TIFF data.
+	exifHeader := []byte("Exif\x00\x00")
+	app1Payload := append(exifHeader, tiffData...)
+	app1Len := uint16(len(app1Payload) + 2) // +2 for the length field itself
+
+	var out bytes.Buffer
+	// Write SOI from the encoded JPEG.
+	out.Write(jpegBytes[:2]) // FF D8
+
+	// Write our APP1 segment.
+	out.WriteByte(0xFF)
+	out.WriteByte(0xE1)
+	binary.Write(&out, binary.BigEndian, app1Len)
+	out.Write(app1Payload)
+
+	// Write the rest of the encoded JPEG (everything after SOI).
+	out.Write(jpegBytes[2:])
+
+	return os.WriteFile(path, out.Bytes(), 0644)
 }
 
 // readOrientation extracts the EXIF orientation tag from a file.
@@ -79,15 +252,6 @@ func readOrientation(path string) int {
 }
 
 // applyOrientation transforms an image according to its EXIF orientation value.
-//
-//	1: Normal
-//	2: Flipped horizontally
-//	3: Rotated 180°
-//	4: Flipped vertically
-//	5: Transposed (flip horizontal + rotate 270° CW)
-//	6: Rotated 90° CW (common for portrait photos)
-//	7: Transverse (flip horizontal + rotate 90° CW)
-//	8: Rotated 270° CW
 func applyOrientation(img image.Image, orientation int) image.Image {
 	if orientation <= 1 || orientation > 8 {
 		return img
@@ -187,7 +351,6 @@ func transverse(img image.Image, w, h int) image.Image {
 }
 
 // decodeImage opens and decodes an image file based on its extension.
-// Supports HEIC, JPEG, and PNG.
 func decodeImage(path string) (image.Image, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -208,7 +371,6 @@ func decodeImage(path string) (image.Image, error) {
 	}
 }
 
-// decodeHEIC decodes a HEIC/HEIF image.
 func decodeHEIC(r io.Reader) (image.Image, error) {
 	img, err := goheif.Decode(r)
 	if err != nil {
@@ -217,9 +379,6 @@ func decodeHEIC(r io.Reader) (image.Image, error) {
 	return img, nil
 }
 
-// downscale resizes an image so its longest side is at most maxPx,
-// maintaining aspect ratio. Uses CatmullRom for high-quality resampling.
-// If the image is already within bounds, it is returned unchanged.
 func downscale(img image.Image, maxPx int) image.Image {
 	bounds := img.Bounds()
 	w := bounds.Dx()
@@ -241,20 +400,6 @@ func downscale(img image.Image, maxPx int) image.Image {
 	dst := image.NewRGBA(image.Rect(0, 0, newW, newH))
 	draw.CatmullRom.Scale(dst, dst.Bounds(), img, bounds, draw.Over, nil)
 	return dst
-}
-
-// encodeJPEG writes an image to disk as JPEG using jpegli.
-func encodeJPEG(path string, img image.Image) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	opts := &jpegli.EncodingOptions{
-		Quality: jpegQuality,
-	}
-	return jpegli.Encode(f, img, opts)
 }
 
 // IsImage returns true if the filename has an image extension we process.

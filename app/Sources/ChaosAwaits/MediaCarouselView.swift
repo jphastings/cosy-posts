@@ -1,92 +1,91 @@
 import SwiftUI
 
-/// Scrollable grid showing selected media thumbnails with remove buttons.
+/// Shows selected media at their original aspect ratio.
+/// Single item fills the area; multiple items scroll horizontally.
 struct MediaCarouselView: View {
     let items: [MediaItem]
     let onRemove: (UUID) -> Void
 
-    private let spacing: CGFloat = 4
-
     var body: some View {
         GeometryReader { geo in
-            let layout = gridLayout(for: items.count, in: geo.size)
-            ScrollView {
-                LazyVGrid(
-                    columns: Array(
-                        repeating: GridItem(.fixed(layout.cellSize), spacing: spacing),
-                        count: layout.columns
-                    ),
-                    spacing: spacing
-                ) {
-                    ForEach(items) { item in
-                        MediaThumbnailView(item: item, size: layout.cellSize) {
-                            onRemove(item.id)
+            if items.count == 1 {
+                singleItem(items[0], in: geo.size)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(items) { item in
+                            multiItem(item, height: geo.size.height)
                         }
                     }
+                    .padding(.horizontal, 8)
                 }
-                .padding(spacing)
             }
         }
     }
 
-    private struct GridLayout {
-        let columns: Int
-        let cellSize: CGFloat
-    }
-
-    private func gridLayout(for count: Int, in size: CGSize) -> GridLayout {
-        let cols: Int
-        if count <= 1 {
-            cols = 1
-        } else if count <= 4 {
-            cols = 2
-        } else {
-            cols = 3
-        }
-        let rows = Int(ceil(Double(count) / Double(cols)))
-
-        let maxW = (size.width - spacing * CGFloat(cols + 1)) / CGFloat(cols)
-        let maxH = (size.height - spacing * CGFloat(rows + 1)) / CGFloat(rows)
-
-        return GridLayout(columns: cols, cellSize: min(maxW, maxH))
-    }
-}
-
-/// Individual thumbnail for a media item with a remove button overlay.
-struct MediaThumbnailView: View {
-    let item: MediaItem
-    let size: CGFloat
-    let onRemove: () -> Void
-
-    var body: some View {
+    @ViewBuilder
+    private func singleItem(_ item: MediaItem, in size: CGSize) -> some View {
         ZStack(alignment: .topTrailing) {
             Group {
                 if let thumbnail = item.thumbnail {
                     thumbnail
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .aspectRatio(contentMode: .fit)
                 } else if item.loadingThumbnail {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.secondary.opacity(0.15))
+                        .background(Color.secondary.opacity(0.08))
                 } else {
-                    Image(systemName: "photo")
-                        .font(.title)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.secondary.opacity(0.15))
+                    placeholder
                 }
             }
-            .frame(width: size, height: size)
+            .frame(maxWidth: size.width, maxHeight: size.height)
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
-            Button(action: onRemove) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(.white, .black.opacity(0.6))
-            }
-            .offset(x: 4, y: -4)
+            removeButton { onRemove(item.id) }
         }
+    }
+
+    @ViewBuilder
+    private func multiItem(_ item: MediaItem, height: CGFloat) -> some View {
+        ZStack(alignment: .topTrailing) {
+            Group {
+                if let thumbnail = item.thumbnail {
+                    thumbnail
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                } else if item.loadingThumbnail {
+                    ProgressView()
+                        .frame(width: height * 0.75, height: height)
+                        .background(Color.secondary.opacity(0.08))
+                } else {
+                    placeholder
+                        .frame(width: height * 0.75, height: height)
+                }
+            }
+            .frame(height: height)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            removeButton { onRemove(item.id) }
+        }
+    }
+
+    private var placeholder: some View {
+        Image(systemName: "photo")
+            .font(.title)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.secondary.opacity(0.08))
+    }
+
+    private func removeButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.title3)
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(.white, .black.opacity(0.6))
+        }
+        .padding(4)
     }
 }

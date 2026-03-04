@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"chaos.awaits.us/api/config"
+	"chaos.awaits.us/api/post"
 	"chaos.awaits.us/api/upload"
 
 	tusd "github.com/tus/tusd/v2/pkg/handler"
@@ -28,10 +29,15 @@ func main() {
 		}
 	}
 
-	// Body upload completion handler — will be wired to post assembly later.
+	// Body upload completion triggers post assembly.
 	onBodyDone := func(event tusd.HookEvent) {
-		info := event.Upload
-		log.Printf("Body upload completed for post %s, ready for assembly", info.MetaData["post-id"])
+		postID := event.Upload.MetaData["post-id"]
+		log.Printf("Body upload completed for post %s, starting assembly", postID)
+
+		if err := post.Assemble(cfg, event); err != nil {
+			log.Printf("Error assembling post %s: %v", postID, err)
+			return
+		}
 	}
 
 	uploadHandler, err := upload.NewHandler(cfg, onBodyDone)

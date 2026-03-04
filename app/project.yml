@@ -1,0 +1,49 @@
+name: ChaosAwaits
+options:
+  bundleIdPrefix: us.awaits.chaos
+  deploymentTarget:
+    iOS: "26.0"
+  xcodeVersion: "26.3"
+  minimumXcodeGenVersion: "2.42.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    GENERATE_INFOPLIST_FILE: true
+
+targets:
+  ChaosAwaits:
+    type: application
+    platform: iOS
+    sources:
+      - Sources/ChaosAwaits
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: us.awaits.chaos.app
+        INFOPLIST_FILE: Sources/ChaosAwaits/Info.plist
+        GENERATE_INFOPLIST_FILE: false
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    entitlements:
+      path: Sources/ChaosAwaits/ChaosAwaits.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.us.awaits.chaos
+
+  ShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Sources/ShareExtension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: us.awaits.chaos.app.share
+        INFOPLIST_FILE: Sources/ShareExtension/Info.plist
+        GENERATE_INFOPLIST_FILE: false
+    entitlements:
+      path: Sources/ShareExtension/ShareExtension.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.us.awaits.chaos
+    dependencies:
+      - target: ChaosAwaits
+        embed: false

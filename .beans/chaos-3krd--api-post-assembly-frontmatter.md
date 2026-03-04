@@ -1,11 +1,11 @@
 ---
 # chaos-3krd
 title: 'API: Post assembly & frontmatter'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-03-04T20:20:32Z
-updated_at: 2026-03-04T20:21:30Z
+updated_at: 2026-03-04T20:49:18Z
 parent: chaos-y7fz
 blocked_by:
     - chaos-p3ki

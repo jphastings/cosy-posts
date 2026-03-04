@@ -1,10 +1,11 @@
 ---
 # chaos-zf4b
 title: 'API: Project scaffolding & config'
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-03-04T20:20:27Z
-updated_at: 2026-03-04T20:20:27Z
+updated_at: 2026-03-04T20:33:08Z
 parent: chaos-y7fz
 ---
 

@@ -1,11 +1,11 @@
 ---
 # chaos-p3ki
 title: 'API: TUS upload server'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-03-04T20:20:28Z
-updated_at: 2026-03-04T20:21:30Z
+updated_at: 2026-03-04T20:36:44Z
 parent: chaos-y7fz
 blocked_by:
     - chaos-zf4b

@@ -7,6 +7,9 @@ import (
 	"os"
 
 	"chaos.awaits.us/api/config"
+	"chaos.awaits.us/api/upload"
+
+	tusd "github.com/tus/tusd/v2/pkg/handler"
 )
 
 func main() {
@@ -25,12 +28,27 @@ func main() {
 		}
 	}
 
+	// Body upload completion handler — will be wired to post assembly later.
+	onBodyDone := func(event tusd.HookEvent) {
+		info := event.Upload
+		log.Printf("Body upload completed for post %s, ready for assembly", info.MetaData["post-id"])
+	}
+
+	uploadHandler, err := upload.NewHandler(cfg, onBodyDone)
+	if err != nil {
+		log.Fatalf("Failed to create upload handler: %v", err)
+	}
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
+
+	// Mount TUS upload handler at /files/.
+	mux.Handle("/files/", http.StripPrefix("/files/", uploadHandler))
+	mux.Handle("/files", http.StripPrefix("/files", uploadHandler))
 
 	log.Printf("Listening on %s", cfg.Listen)
 	if err := http.ListenAndServe(cfg.Listen, mux); err != nil {

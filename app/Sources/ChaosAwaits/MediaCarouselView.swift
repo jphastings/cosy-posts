@@ -1,24 +1,36 @@
 import SwiftUI
 
-/// Horizontally scrollable carousel showing selected media thumbnails with remove buttons.
+/// Scrollable grid showing selected media thumbnails with remove buttons.
 struct MediaCarouselView: View {
     let items: [MediaItem]
     let onRemove: (UUID) -> Void
 
-    private let thumbnailSize: CGFloat = 120
+    private let spacing: CGFloat = 4
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: 12) {
-                ForEach(items) { item in
-                    MediaThumbnailView(item: item, size: thumbnailSize) {
-                        onRemove(item.id)
+        GeometryReader { geo in
+            let size = itemSize(in: geo.size)
+            ScrollView {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: size, maximum: size), spacing: spacing)],
+                    spacing: spacing
+                ) {
+                    ForEach(items) { item in
+                        MediaThumbnailView(item: item, size: size) {
+                            onRemove(item.id)
+                        }
                     }
                 }
+                .padding(spacing)
             }
-            .padding(.horizontal)
         }
-        .frame(height: thumbnailSize + 16)
+    }
+
+    private func itemSize(in containerSize: CGSize) -> CGFloat {
+        let count = items.count
+        // Show 3 columns for many items, 2 for a few, 1 for a single item
+        let columns: CGFloat = count <= 1 ? 1 : count <= 4 ? 2 : 3
+        return (containerSize.width - spacing * (columns + 1)) / columns
     }
 }
 
@@ -48,7 +60,7 @@ struct MediaThumbnailView: View {
                 }
             }
             .frame(width: size, height: size)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
 
             Button(action: onRemove) {
                 Image(systemName: "xmark.circle.fill")
@@ -56,7 +68,7 @@ struct MediaThumbnailView: View {
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(.white, .black.opacity(0.6))
             }
-            .offset(x: 6, y: -6)
+            .offset(x: 4, y: -4)
         }
     }
 }

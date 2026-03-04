@@ -23,30 +23,56 @@ struct ContentView: View {
                     .background(.orange)
                 }
 
-                // Media carousel (shown when items are selected)
-                if !viewModel.mediaItems.isEmpty {
-                    MediaCarouselView(
-                        items: viewModel.mediaItems,
-                        onRemove: { id in viewModel.removeMedia(id: id) }
-                    )
-                    .padding(.vertical, 8)
-
-                    Divider()
-                }
-
-                // Text input area
-                TextEditor(text: $viewModel.bodyText)
-                    .frame(maxHeight: .infinity)
-                    .padding(.horizontal, 4)
-                    .overlay(alignment: .topLeading) {
-                        if viewModel.bodyText.isEmpty {
-                            Text("What's on your mind?")
-                                .foregroundStyle(.tertiary)
-                                .padding(.top, 8)
-                                .padding(.leading, 8)
-                                .allowsHitTesting(false)
+                // Media area — takes up most of the space
+                PhotosPicker(
+                    selection: $viewModel.selectedPhotos,
+                    maxSelectionCount: 20,
+                    matching: .any(of: [.images, .videos]),
+                    photoLibrary: .shared()
+                ) {
+                    Group {
+                        if viewModel.mediaItems.isEmpty {
+                            // Empty state — tap to add media
+                            VStack(spacing: 12) {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .font(.system(size: 40))
+                                Text("Tap to select photos or videos")
+                                    .font(.subheadline)
+                            }
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Color.secondary.opacity(0.08))
+                        } else {
+                            // Media carousel
+                            MediaCarouselView(
+                                items: viewModel.mediaItems,
+                                onRemove: { id in viewModel.removeMedia(id: id) }
+                            )
                         }
                     }
+                }
+                .buttonStyle(.plain)
+                .frame(maxHeight: .infinity)
+
+                Divider()
+
+                // Text input — compact area at the bottom
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $viewModel.bodyText)
+                        .font(.body)
+                        .scrollContentBackground(.hidden)
+                        .padding(.horizontal, 4)
+                        .frame(minHeight: 60, maxHeight: 100)
+
+                    if viewModel.bodyText.isEmpty {
+                        Text("What's on your mind?")
+                            .font(.body)
+                            .foregroundStyle(.tertiary)
+                            .padding(.top, 8)
+                            .padding(.leading, 9)
+                            .allowsHitTesting(false)
+                    }
+                }
 
                 // Error message
                 if let error = viewModel.errorMessage {
@@ -62,7 +88,7 @@ struct ContentView: View {
 
                 Divider()
 
-                // Bottom toolbar: picker + upload button
+                // Bottom toolbar
                 HStack {
                     PhotosPicker(
                         selection: $viewModel.selectedPhotos,

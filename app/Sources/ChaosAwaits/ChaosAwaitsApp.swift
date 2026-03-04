@@ -3,42 +3,45 @@ import SwiftData
 
 @main
 struct ChaosAwaitsApp: App {
+    @State private var appState = AppState()
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .environment(appState.networkMonitor)
+                .environment(appState.uploadManager)
+                .task {
+                    await appState.uploadManager.importSharedPosts()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                    Task {
+                        await appState.uploadManager.importSharedPosts()
+                    }
+                }
+        }
+        .modelContainer(appState.modelContainer)
+    }
+}
+
+/// Holds app-wide state, initialized lazily after the app process is running.
+@Observable
+@MainActor
+final class AppState {
     let modelContainer: ModelContainer
-    @State private var networkMonitor = NetworkMonitor()
-    @State private var uploadManager: UploadManager
+    let networkMonitor: NetworkMonitor
+    let uploadManager: UploadManager
 
     init() {
         let container = try! ModelContainer(for: PendingPost.self)
         self.modelContainer = container
 
-        // Default server URL -- will be configurable later
-        let serverURL = URL(string: "http://localhost:8080")!
         let monitor = NetworkMonitor()
-        self._networkMonitor = State(initialValue: monitor)
-        self._uploadManager = State(
-            initialValue: UploadManager(
-                serverURL: serverURL,
-                networkMonitor: monitor,
-                modelContainer: container
-            )
+        monitor.start()
+        self.networkMonitor = monitor
+        self.uploadManager = UploadManager(
+            serverURL: URL(string: "http://localhost:8080")!,
+            networkMonitor: monitor,
+            modelContainer: container
         )
-    }
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environment(networkMonitor)
-                .environment(uploadManager)
-                .task {
-                    // Import any posts created by the share extension
-                    await uploadManager.importSharedPosts()
-                }
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                    Task {
-                        await uploadManager.importSharedPosts()
-                    }
-                }
-        }
-        .modelContainer(modelContainer)
     }
 }

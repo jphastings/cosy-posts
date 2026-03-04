@@ -18,31 +18,24 @@ final class NetworkMonitor {
         case unknown
     }
 
-    init() {
-        startMonitoring()
-    }
-
-    private func startMonitoring() {
+    func start() {
         monitor.pathUpdateHandler = { [weak self] path in
+            let connected = path.status == .satisfied
+            let type: ConnectionType
+            if path.usesInterfaceType(.wifi) {
+                type = .wifi
+            } else if path.usesInterfaceType(.cellular) {
+                type = .cellular
+            } else if path.usesInterfaceType(.wiredEthernet) {
+                type = .wired
+            } else {
+                type = .unknown
+            }
             Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.isConnected = path.status == .satisfied
-
-                if path.usesInterfaceType(.wifi) {
-                    self.connectionType = .wifi
-                } else if path.usesInterfaceType(.cellular) {
-                    self.connectionType = .cellular
-                } else if path.usesInterfaceType(.wiredEthernet) {
-                    self.connectionType = .wired
-                } else {
-                    self.connectionType = .unknown
-                }
+                self?.isConnected = connected
+                self?.connectionType = type
             }
         }
         monitor.start(queue: queue)
-    }
-
-    deinit {
-        monitor.cancel()
     }
 }

@@ -8,6 +8,7 @@ import (
 
 	"chaos.awaits.us/api/config"
 	"chaos.awaits.us/api/post"
+	"chaos.awaits.us/api/rebuild"
 	"chaos.awaits.us/api/upload"
 
 	tusd "github.com/tus/tusd/v2/pkg/handler"
@@ -38,6 +39,9 @@ func main() {
 			log.Printf("Error assembling post %s: %v", postID, err)
 			return
 		}
+
+		// Trigger site rebuild in the background.
+		rebuild.Trigger(cfg)
 	}
 
 	uploadHandler, err := upload.NewHandler(cfg, onBodyDone)

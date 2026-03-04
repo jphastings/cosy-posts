@@ -16,8 +16,16 @@ Monorepo with two main components:
 **Key libraries**:
 - `github.com/tus/tusd/v2` — TUS resumable upload server
 - `github.com/gen2brain/jpegli` — JPEG encoding via jpegli
-- `golang.org/x/image` — Image processing
+- `github.com/adrium/goheif` — HEIC/HEIF decoding
+- `github.com/rwcarlsen/goexif` — EXIF GPS extraction
+- `golang.org/x/image` — Image processing (CatmullRom downscaling)
 - `gopkg.in/yaml.v3` — YAML config and frontmatter
+
+**Package structure**: `config/`, `upload/`, `photo/`, `post/`, `rebuild/`
+
+**Config file** (`api/config.yaml`): `listen`, `content_dir`, `tus_upload_dir`, `rebuild_command`, `log_file`
+
+**TUS metadata per upload**: `post-id` (required), `filename`, `content-type`. Body uploads add: `role: body`, `date` (ISO 8601), `content-ext` ("md"/"djot")
 
 **Upload protocol**: TUS (tus.io) resumable uploads. Each upload has `post-id` metadata (nanoid, generated client-side). Media files uploaded first, text body uploaded last. Body upload completion triggers post assembly.
 
@@ -42,6 +50,15 @@ Monorepo with two main components:
 **Upload system**: TUS protocol, nanoid generated per post, media uploaded first then text body last. Persistent queue (SwiftData). Offline-first: queue when offline, send when online. Network monitoring.
 
 **Share sheet extension**: Receives shared media from other apps, simplified UI with text input, saves to shared App Group container for main app queue.
+
+**Key implementation details**:
+
+- App Group: `group.us.awaits.chaos`
+- Nanoid: `0-9a-z` alphabet, 21 chars
+- xcodegen used for project generation (`app/project.yml`)
+- `@Observable` pattern (not `ObservableObject`/`@Published`)
+- TUSClient is a Swift `actor` for thread safety
+- Share extension writes to `inbox/{postID}/post.json` in shared container
 
 ## Conventions
 

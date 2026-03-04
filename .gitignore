@@ -1,0 +1,22 @@
+# Go
+api/bin/
+api/tmp/
+
+# iOS
+app/build/
+app/*.xcodeproj/xcuserdata/
+app/*.xcworkspace/xcuserdata/
+app/DerivedData/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local

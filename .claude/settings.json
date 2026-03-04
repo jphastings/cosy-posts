@@ -1,4 +1,11 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(beans *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {

@@ -15,7 +15,7 @@ struct MediaCarouselView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(items) { item in
-                            multiItem(item, height: geo.size.height)
+                            multiItem(item, size: geo.size)
                         }
                     }
                     .padding(.horizontal, 8)
@@ -48,7 +48,7 @@ struct MediaCarouselView: View {
     }
 
     @ViewBuilder
-    private func multiItem(_ item: MediaItem, height: CGFloat) -> some View {
+    private func multiItem(_ item: MediaItem, size: CGSize) -> some View {
         ZStack(alignment: .topTrailing) {
             Group {
                 if let thumbnail = item.thumbnail {
@@ -57,14 +57,14 @@ struct MediaCarouselView: View {
                         .aspectRatio(contentMode: .fit)
                 } else if item.loadingThumbnail {
                     ProgressView()
-                        .frame(width: height * 0.75, height: height)
+                        .frame(width: size.height * 0.75, height: size.height)
                         .background(Color.secondary.opacity(0.08))
                 } else {
                     placeholder
-                        .frame(width: height * 0.75, height: height)
+                        .frame(width: size.height * 0.75, height: size.height)
                 }
             }
-            .frame(height: height)
+            .frame(maxWidth: size.width, maxHeight: size.height)
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
             removeButton { onRemove(item.id) }

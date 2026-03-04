@@ -7,9 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1E1B6E5900764DAC8D79BFC0 /* MediaItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DEBABE8FCB8DAF9D63F30D7 /* MediaItem.swift */; };
 		537B790638E794BCEDDC6BC1 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7995423FB399105E1191EF74 /* ShareViewController.swift */; };
 		AE2610BBD55EBF7617BFD30A /* ChaosAwaitsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E42E058F7A5DCBA2B185AED /* ChaosAwaitsApp.swift */; };
+		AFA625CFD676A97AF95464E2 /* ComposeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1429D48ACF47A63CC2CC875D /* ComposeViewModel.swift */; };
 		CD39CB925AF648BFA78849AD /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20BE90CD0AAE4561B3D8DDB4 /* ContentView.swift */; };
+		E620C51DCDC0255EE238BE1D /* MediaCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663598B75D5BD43CBA9F96F5 /* MediaCarouselView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -24,9 +27,12 @@
 
 /* Begin PBXFileReference section */
 		087F46D921EC038853442FC7 /* ShareExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		1429D48ACF47A63CC2CC875D /* ComposeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeViewModel.swift; sourceTree = "<group>"; };
 		20BE90CD0AAE4561B3D8DDB4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		2DEBABE8FCB8DAF9D63F30D7 /* MediaItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItem.swift; sourceTree = "<group>"; };
 		2E42E058F7A5DCBA2B185AED /* ChaosAwaitsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChaosAwaitsApp.swift; sourceTree = "<group>"; };
 		410C38D4222AD96E4AD7EACF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		663598B75D5BD43CBA9F96F5 /* MediaCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCarouselView.swift; sourceTree = "<group>"; };
 		74A60F1F3458B817837C806B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		74CA05043C8942D1B98D032D /* ChaosAwaits.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ChaosAwaits.entitlements; sourceTree = "<group>"; };
 		7995423FB399105E1191EF74 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
@@ -40,8 +46,11 @@
 			children = (
 				74CA05043C8942D1B98D032D /* ChaosAwaits.entitlements */,
 				2E42E058F7A5DCBA2B185AED /* ChaosAwaitsApp.swift */,
+				1429D48ACF47A63CC2CC875D /* ComposeViewModel.swift */,
 				20BE90CD0AAE4561B3D8DDB4 /* ContentView.swift */,
 				74A60F1F3458B817837C806B /* Info.plist */,
+				663598B75D5BD43CBA9F96F5 /* MediaCarouselView.swift */,
+				2DEBABE8FCB8DAF9D63F30D7 /* MediaItem.swift */,
 			);
 			name = ChaosAwaits;
 			path = Sources/ChaosAwaits;
@@ -149,7 +158,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				AE2610BBD55EBF7617BFD30A /* ChaosAwaitsApp.swift in Sources */,
+				AFA625CFD676A97AF95464E2 /* ComposeViewModel.swift in Sources */,
 				CD39CB925AF648BFA78849AD /* ContentView.swift in Sources */,
+				E620C51DCDC0255EE238BE1D /* MediaCarouselView.swift in Sources */,
+				1E1B6E5900764DAC8D79BFC0 /* MediaItem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

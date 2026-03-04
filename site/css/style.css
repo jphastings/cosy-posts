@@ -62,8 +62,9 @@ body {
   margin-bottom: 12px;
 }
 
-/* Carousel — pure CSS with scroll-snap + scroll-marker */
+/* Carousel — pure CSS with scroll-snap, scroll-marker dots, scroll-button arrows */
 .carousel {
+  position: relative;
   display: flex;
   width: 100%;
   aspect-ratio: 4 / 5;
@@ -94,24 +95,68 @@ body {
   object-fit: contain;
 }
 
-/* Dot indicators via ::scroll-marker */
+/* Dot indicators beneath carousel */
 .carousel-slide::scroll-marker {
   content: '';
   width: 6px;
   height: 6px;
+  margin: 0 2px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--text-secondary);
+  opacity: 0.4;
   cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
+  transition: opacity 0.2s, transform 0.2s;
 }
 
 .carousel-slide::scroll-marker:target-current {
-  background: #fff;
+  opacity: 1;
+  background: var(--text);
   transform: scale(1.3);
 }
 
-/* Hide marker group when only one slide */
-.carousel[data-count="1"]::scroll-marker-group {
+/* Prev/next arrows on hover */
+.carousel::scroll-button(prev),
+.carousel::scroll-button(next) {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: #262626;
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.carousel:hover::scroll-button(prev),
+.carousel:hover::scroll-button(next) {
+  opacity: 1;
+}
+
+.carousel::scroll-button(prev) {
+  content: '\2039';
+  left: 8px;
+}
+
+.carousel::scroll-button(next) {
+  content: '\203A';
+  right: 8px;
+}
+
+.carousel::scroll-button(prev):disabled,
+.carousel::scroll-button(next):disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Hide dots and arrows for single-image posts */
+.carousel[data-count="1"]::scroll-marker-group,
+.carousel[data-count="1"]::scroll-button(prev),
+.carousel[data-count="1"]::scroll-button(next) {
   display: none;
 }
 

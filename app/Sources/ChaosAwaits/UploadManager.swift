@@ -176,4 +176,53 @@ final class UploadManager {
     static func sharedContainerURL() -> URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.us.awaits.chaos")
     }
+
+    /// Import posts created by the share extension from the shared container.
+    func importSharedPosts() async {
+        guard let containerURL = Self.sharedContainerURL() else { return }
+
+        let sharedPosts = SharedPost.pendingPosts(in: containerURL)
+        guard !sharedPosts.isEmpty else { return }
+
+        let context = ModelContext(modelContainer)
+
+        for sharedPost in sharedPosts {
+            // Copy media files to local posts directory
+            let postsDir = Self.localPostsDirectory()
+            let postDir = postsDir.appendingPathComponent(sharedPost.postID)
+            try? FileManager.default.createDirectory(at: postDir, withIntermediateDirectories: true)
+
+            var localMediaURLs: [URL] = []
+            for filename in sharedPost.mediaFilenames {
+                let sourceURL = sharedPost.mediaFileURL(filename: filename, in: containerURL)
+                let destURL = postDir.appendingPathComponent(filename)
+                if let _ = try? FileManager.default.copyItem(at: sourceURL, to: destURL) {
+                    localMediaURLs.append(destURL)
+                }
+            }
+
+            let formatter = ISO8601DateFormatter()
+            let date = formatter.date(from: sharedPost.date) ?? Date()
+
+            let post = PendingPost(
+                postID: sharedPost.postID,
+                date: date,
+                bodyText: sharedPost.bodyText,
+                contentExt: sharedPost.contentExt,
+                mediaURLs: localMediaURLs
+            )
+
+            context.insert(post)
+
+            // Remove the shared post from the container
+            sharedPost.remove(from: containerURL)
+        }
+
+        try? context.save()
+
+        // Process the queue if online
+        if networkMonitor.isConnected {
+            await processQueue()
+        }
+    }
 }

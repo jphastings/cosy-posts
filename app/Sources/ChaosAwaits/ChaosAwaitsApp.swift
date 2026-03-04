@@ -29,6 +29,15 @@ struct ChaosAwaitsApp: App {
             ContentView()
                 .environment(networkMonitor)
                 .environment(uploadManager)
+                .task {
+                    // Import any posts created by the share extension
+                    await uploadManager.importSharedPosts()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                    Task {
+                        await uploadManager.importSharedPosts()
+                    }
+                }
         }
         .modelContainer(modelContainer)
     }

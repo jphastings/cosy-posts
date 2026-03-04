@@ -28,6 +28,9 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.us.awaits.chaos
+    dependencies:
+      - target: ShareExtension
+        embed: true
 
   ShareExtension:
     type: app-extension
@@ -44,6 +47,3 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.us.awaits.chaos
-    dependencies:
-      - target: ChaosAwaits
-        embed: false

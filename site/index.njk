@@ -12,6 +12,7 @@ title: chaos.awaits.us
   <article class="post">
     {% if post.media.length > 0 %}
     <div class="carousel" data-count="{{ post.media.length }}">
+      <div class="carousel-track">
         {% for m in post.media %}
         <div class="carousel-slide">
           {% if m.isVideo %}
@@ -21,6 +22,16 @@ title: chaos.awaits.us
           {% endif %}
         </div>
         {% endfor %}
+      </div>
+      {% if post.media.length > 1 %}
+      <button class="carousel-prev" aria-label="Previous">&lsaquo;</button>
+      <button class="carousel-next" aria-label="Next">&rsaquo;</button>
+      <div class="carousel-dots">
+        {% for m in post.media %}
+        <span class="dot{% if loop.first %} active{% endif %}"></span>
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
     {% endif %}
 

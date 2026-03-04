@@ -9,14 +9,17 @@ struct MediaCarouselView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let size = itemSize(in: geo.size)
+            let layout = gridLayout(for: items.count, in: geo.size)
             ScrollView {
                 LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: size, maximum: size), spacing: spacing)],
+                    columns: Array(
+                        repeating: GridItem(.fixed(layout.cellSize), spacing: spacing),
+                        count: layout.columns
+                    ),
                     spacing: spacing
                 ) {
                     ForEach(items) { item in
-                        MediaThumbnailView(item: item, size: size) {
+                        MediaThumbnailView(item: item, size: layout.cellSize) {
                             onRemove(item.id)
                         }
                     }
@@ -26,11 +29,26 @@ struct MediaCarouselView: View {
         }
     }
 
-    private func itemSize(in containerSize: CGSize) -> CGFloat {
-        let count = items.count
-        // Show 3 columns for many items, 2 for a few, 1 for a single item
-        let columns: CGFloat = count <= 1 ? 1 : count <= 4 ? 2 : 3
-        return (containerSize.width - spacing * (columns + 1)) / columns
+    private struct GridLayout {
+        let columns: Int
+        let cellSize: CGFloat
+    }
+
+    private func gridLayout(for count: Int, in size: CGSize) -> GridLayout {
+        let cols: Int
+        if count <= 1 {
+            cols = 1
+        } else if count <= 4 {
+            cols = 2
+        } else {
+            cols = 3
+        }
+        let rows = Int(ceil(Double(count) / Double(cols)))
+
+        let maxW = (size.width - spacing * CGFloat(cols + 1)) / CGFloat(cols)
+        let maxH = (size.height - spacing * CGFloat(rows + 1)) / CGFloat(rows)
+
+        return GridLayout(columns: cols, cellSize: min(maxW, maxH))
     }
 }
 

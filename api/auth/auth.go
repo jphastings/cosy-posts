@@ -204,8 +204,7 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 				http.Error(w, "Internal error", http.StatusInternalServerError)
 				return
 			}
-			link := cfg.BaseURL() + "/auth/verify?token=" + token
-			if err := sendMagicLink(cfg, email, link); err != nil {
+			if err := sendMagicLink(cfg, email, token, role); err != nil {
 				log.Printf("auth: send email to %s: %v", email, err)
 				// Still redirect so we don't leak info.
 			}
@@ -224,20 +223,35 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 }
 
 // Verify handles the magic link click.
+// For browsers: sets a session cookie and redirects to /.
+// For API clients (Accept: application/json): returns JSON with session ID.
 func Verify(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token := r.URL.Query().Get("token")
+		wantsJSON := strings.Contains(r.Header.Get("Accept"), "application/json")
+
 		email, err := validateToken(cfg.AuthDir(), token)
 		if err != nil {
 			log.Printf("auth: verify: %v", err)
-			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+			if wantsJSON {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				fmt.Fprint(w, `{"error":"invalid or expired token"}`)
+			} else {
+				http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+			}
 			return
 		}
 
 		role := lookupRole(cfg.Dir, email)
 		if role == "" {
-			// Email was removed from allowlists between send and click.
-			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+			if wantsJSON {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusForbidden)
+				fmt.Fprint(w, `{"error":"not authorized"}`)
+			} else {
+				http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+			}
 			return
 		}
 
@@ -245,6 +259,15 @@ func Verify(cfg *config.Config) http.HandlerFunc {
 		if err != nil {
 			log.Printf("auth: create session: %v", err)
 			http.Error(w, "Internal error", http.StatusInternalServerError)
+			return
+		}
+
+		if wantsJSON {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{
+				"session": sessionID,
+				"role":    role,
+			})
 			return
 		}
 
@@ -274,13 +297,19 @@ func Middleware(cfg *config.Config, next http.Handler) http.Handler {
 			return
 		}
 
-		cookie, err := r.Cookie(cookieName)
-		if err != nil {
+		// Accept session from cookie or Authorization: Bearer header.
+		var sessionID string
+		if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
+			sessionID = strings.TrimPrefix(auth, "Bearer ")
+		} else if cookie, err := r.Cookie(cookieName); err == nil {
+			sessionID = cookie.Value
+		}
+		if sessionID == "" {
 			authDenied(w, r)
 			return
 		}
 
-		email, role, err := validateSession(cfg.AuthDir(), cookie.Value)
+		email, role, err := validateSession(cfg.AuthDir(), sessionID)
 		if err != nil {
 			authDenied(w, r)
 			return
@@ -308,13 +337,28 @@ func authDenied(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `{"error":"unauthorized"}`)
 }
 
-func sendMagicLink(cfg *config.Config, email, link string) error {
+func sendMagicLink(cfg *config.Config, email, token, role string) error {
+	siteLink := cfg.BaseURL() + "/auth/verify?token=" + token
+	appLink := "chaos://auth?token=" + token + "&server=" + cfg.BaseURL()
+
+	var html string
+	if role == "post" {
+		html = fmt.Sprintf(`<p>Click to log in:</p>
+<p><a href="%s">Log in to the site</a></p>
+<p><a href="%s">Log in to the app</a></p>
+<p>This link expires in 15 minutes.</p>`, siteLink, appLink)
+	} else {
+		html = fmt.Sprintf(`<p>Click to log in:</p>
+<p><a href="%s">Log in to chaos.awaits.us</a></p>
+<p>This link expires in 15 minutes.</p>`, siteLink)
+	}
+
 	client := resend.NewClient(cfg.ResendAPIKey())
 	_, err := client.Emails.Send(&resend.SendEmailRequest{
 		From:    cfg.FromEmail(),
 		To:      []string{email},
 		Subject: "Your login link",
-		Html:    fmt.Sprintf(`<p>Click to log in:</p><p><a href="%s">Log in to chaos.awaits.us</a></p><p>This link expires in 15 minutes.</p>`, link),
+		Html:    html,
 	})
 	return err
 }

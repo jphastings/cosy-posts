@@ -113,67 +113,109 @@
           renderSelect();
         }
         updateContactButtons();
-
         // --- Bookmarks ---
         var BM_KEY = 'bookmarks';
         function getBookmarks() {
-          try { return JSON.parse(localStorage.getItem(BM_KEY)) || []; }
-          catch (e) { return []; }
+          try {
+            return JSON.parse(localStorage.getItem(BM_KEY)) || [];
+          } catch (e) {
+            return [];
+          }
         }
         function setBookmarks(ids) {
           localStorage.setItem(BM_KEY, JSON.stringify(ids));
         }
-
         function updateBookmarkIcons() {
           var bm = getBookmarks();
           document.querySelectorAll('.bookmark-btn').forEach(function (btn) {
             var post = btn.closest('.post');
-            if (!post) return;
+            if (! post) 
+              return;
+            
             var id = post.getAttribute('data-post-id');
             var img = btn.querySelector('img');
-            if (img) img.src = bm.indexOf(id) !== -1 ? '/img/bookmarked.svg' : '/img/bookmark.svg';
+            if (img) 
+              img.src = bm.indexOf(id) !== -1
+                ? '/img/bookmarked.svg'
+                : '/img/bookmark.svg';
+            
           });
         }
-
         document.querySelectorAll('.bookmark-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var post = btn.closest('.post');
-            if (!post) return;
+            if (! post) 
+              return;
+            
             var id = post.getAttribute('data-post-id');
             var bm = getBookmarks();
             var idx = bm.indexOf(id);
-            if (idx !== -1) bm.splice(idx, 1);
-            else bm.push(id);
-            setBookmarks(bm);
+            if (idx !== -1) 
+              bm.splice(idx, 1);
+             else 
+              bm.push(id);
+             setBookmarks(bm);
             updateBookmarkIcons();
-            if (bookmarkFiltering) applyBookmarkFilter();
+            updateFilterBtnVisibility();
+            if (bookmarkFiltering) 
+              applyBookmarkFilter();
+            
           });
         });
-
         updateBookmarkIcons();
-
         // --- Bookmark filter (header) ---
         var bookmarkFiltering = false;
         var filterBtn = document.querySelector('.bookmark-filter-btn');
-
+        var filterLabel = filterBtn
+          ? filterBtn.querySelector('.bookmark-filter-label')
+          : null;
+        function updateFilterBtnVisibility() {
+          if (! filterBtn) 
+            return;
+          
+          var hasBookmarks = getBookmarks().length > 0;
+          filterBtn.classList.toggle('visible', hasBookmarks || bookmarkFiltering);
+          if (! hasBookmarks && bookmarkFiltering) {
+            bookmarkFiltering = false;
+            filterBtn.classList.remove('active');
+            var img = filterBtn.querySelector('img');
+            if (img) 
+              img.src = '/img/bookmark.svg';
+            
+            if (filterLabel) 
+              filterLabel.textContent = '';
+            
+            applyBookmarkFilter();
+          }
+        }
         function applyBookmarkFilter() {
           var bm = getBookmarks();
           document.querySelectorAll('.post').forEach(function (post) {
             var id = post.getAttribute('data-post-id');
-            post.style.display = (bookmarkFiltering && bm.indexOf(id) === -1) ? 'none' : '';
+            post.style.display = (bookmarkFiltering && bm.indexOf(id) === -1)
+              ? 'none'
+              : '';
           });
         }
-
         if (filterBtn) {
           filterBtn.addEventListener('click', function () {
-            bookmarkFiltering = !bookmarkFiltering;
+            bookmarkFiltering = ! bookmarkFiltering;
             filterBtn.classList.toggle('active', bookmarkFiltering);
             var img = filterBtn.querySelector('img');
-            if (img) img.src = bookmarkFiltering ? '/img/bookmarked.svg' : '/img/bookmark.svg';
+            if (img) 
+              img.src = bookmarkFiltering
+                ? '/img/bookmarked.svg'
+                : '/img/bookmark.svg';
+            
+            if (filterLabel) 
+              filterLabel.textContent = bookmarkFiltering
+                ? 'Only bookmarked'
+                : '';
+            
             applyBookmarkFilter();
           });
         }
-
+        updateFilterBtnVisibility();
         // --- Carousel ---
         document.querySelectorAll('.carousel').forEach(function (c) {
           var track = c.querySelector('.carousel-track');

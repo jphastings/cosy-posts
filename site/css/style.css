@@ -269,8 +269,27 @@ body {
   transition: color 0.15s, background 0.15s;
 }
 
+.bookmark-filter-btn {
+  display: none;
+  margin-right: 8px;
+  align-items: center;
+  gap: 4px;
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+
+.bookmark-filter-btn.visible {
+  display: flex;
+}
+
 .bookmark-filter-btn.active {
   color: var(--text);
+}
+
+.bookmark-filter-label {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .bookmark-btn:hover,

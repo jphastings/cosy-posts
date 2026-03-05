@@ -23,7 +23,10 @@ func Trigger(cfg *config.Config) {
 
 		cmd := exec.Command("sh", "-c", cfg.RebuildCmd())
 		cmd.Dir = cfg.Dir
-		cmd.Env = append(os.Environ(), "CAN_POST_CSV="+filepath.Join(cfg.Dir, "can-post.csv"))
+		cmd.Env = append(os.Environ(),
+			"CAN_POST_CSV="+filepath.Join(cfg.Dir, "can-post.csv"),
+			"SITE_NAME="+cfg.SiteName(),
+		)
 
 		// Open log file in append mode.
 		logFile, err := os.OpenFile(cfg.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)

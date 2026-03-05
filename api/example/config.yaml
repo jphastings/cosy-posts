@@ -1,16 +1,17 @@
 listen: ":8080"
-log_file: "./rebuild.log"
+log_file: ./rebuild.log
 
 directories:
   content: ../../site/content
   site: ../../site/_site
-  uploads: /tmp/chaos-uploads
+  uploads: /tmp/cosy-uploads
   auth: ./auth
 
 site:
+  name: Cosy Posts
   build_command: cd ../../site && npx @11ty/eleventy
-  base_url: http://localhost:8080
+  base_url: https://example.org
 
 email:
-  from: login@chaos.awaits.us
+  from: system@example.org
   resend_api_key: ""

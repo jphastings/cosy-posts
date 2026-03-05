@@ -21,6 +21,7 @@ type Config struct {
 	} `yaml:"directories"`
 
 	Site struct {
+		Name         string `yaml:"name"`
 		BuildCommand string `yaml:"build_command"`
 		BaseURL      string `yaml:"base_url"`
 	} `yaml:"site"`
@@ -38,6 +39,7 @@ func (c *Config) ContentDir() string  { return c.Directories.Content }
 func (c *Config) SiteDir() string     { return c.Directories.Site }
 func (c *Config) TUSUploadDir() string { return c.Directories.Uploads }
 func (c *Config) AuthDir() string     { return c.Directories.Auth }
+func (c *Config) SiteName() string    { return c.Site.Name }
 func (c *Config) RebuildCmd() string  { return c.Site.BuildCommand }
 func (c *Config) BaseURL() string     { return c.Site.BaseURL }
 func (c *Config) ResendAPIKey() string { return c.Email.ResendAPIKey }

@@ -58,6 +58,11 @@ body {
   flex: 1;
 }
 
+.site-header h1 a {
+  color: var(--text);
+  text-decoration: none;
+}
+
 /* Contact preference button (header) */
 .contact-pref-btn {
   background: none;

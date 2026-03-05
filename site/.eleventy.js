@@ -1,6 +1,7 @@
 module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("content/**/*.{jpg,jpeg,png,gif,mp4,mov,webm,m4a,mp3}");
   eleventyConfig.addPassthroughCopy("css");
+  eleventyConfig.addPassthroughCopy("img");
 
   eleventyConfig.addFilter("readableDate", (dateStr) => {
     const d = new Date(dateStr);

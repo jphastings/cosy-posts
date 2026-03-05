@@ -51,30 +51,53 @@ body {
   font-weight: 600;
   letter-spacing: -0.02em;
   flex: 1;
-  text-align: center;
 }
 
-.contact-pref-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 50%;
-  color: var(--text-secondary);
-  transition: color 0.15s, background 0.15s;
+/* Contact preference select (header) */
+.contact-pref-select,
+.contact-pref-select::picker(select) {
+  appearance: base-select;
+}
+
+.contact-pref-select {
   flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 8px;
+  cursor: pointer;
 }
 
-.contact-pref-btn:hover {
-  color: var(--text);
+.contact-pref-select::picker(select) {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  padding: 4px 0;
+}
+
+.contact-pref-select option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.contact-pref-select option:hover {
   background: var(--action-hover);
 }
 
-.contact-pref-icon svg {
-  display: block;
-  width: 22px;
-  height: 22px;
-  fill: currentColor;
+.contact-pref-select option img {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.contact-pref-select option.disabled {
+  opacity: 0.3;
 }
 
 .feed {
@@ -210,11 +233,10 @@ body {
   background: var(--action-hover);
 }
 
-.contact-icon svg {
+.contact-icon img {
   display: block;
-  width: 20px;
-  height: 20px;
-  fill: currentColor;
+  width: 1.2em;
+  height: 1.2em;
 }
 
 .contact-btn[data-method="whatsapp"] .contact-icon { color: var(--whatsapp); }

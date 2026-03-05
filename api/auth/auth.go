@@ -20,7 +20,7 @@ import (
 
 const (
 	tokenExpiry   = 15 * time.Minute
-	sessionExpiry = 30 * 24 * time.Hour
+	sessionExpiry = 180 * 24 * time.Hour
 	cookieName    = "session"
 )
 

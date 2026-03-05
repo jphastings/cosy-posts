@@ -1,137 +1,156 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ title or "chaos.awaits.us" }}</title>
-  <link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-  {{ content | safe }}
-  <script>
-  (function() {
-    var MEMBERS = {{ members | dump | safe }};
-    var ALL_METHODS = ['whatsapp', 'signal', 'email'];
-    var PREF_KEY = 'contact-pref';
-    var DEFAULT_PREF = 'whatsapp,signal,email';
-
-    function getPref() {
-      return (localStorage.getItem(PREF_KEY) || DEFAULT_PREF).split(',').filter(Boolean);
-    }
-
-    function setPref(list) {
-      localStorage.setItem(PREF_KEY, list.join(','));
-    }
-
-    // Resolve the best contact method for an author given user's preference order.
-    function resolveMethod(authorEmail) {
-      var member = MEMBERS[authorEmail];
-      if (!member) return null;
-      var pref = getPref();
-      for (var i = 0; i < pref.length; i++) {
-        for (var j = 0; j < member.methods.length; j++) {
-          if (member.methods[j].type === pref[i]) return member.methods[j];
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title or "chaos.awaits.us" }}</title>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body>
+    {{ content | safe }}
+    <script>
+      (function () {
+        var MEMBERS = {{ members | dump | safe }};
+        var ALL_METHODS = ['whatsapp', 'signal', 'email'];
+        var PREF_KEY = 'contact-pref';
+        var DEFAULT_PREF = 'whatsapp,signal,email';
+        function getPref() {
+          return(localStorage.getItem(PREF_KEY) || DEFAULT_PREF).split(',').filter(Boolean);
         }
-      }
-      return member.methods[0] || null;
-    }
-
-    function buildContactURL(method, postURL) {
-      var fullURL = location.origin + postURL;
-      if (method.type === 'whatsapp') {
-        var num = method.url.replace(/.*wa\.me\//, '').replace(/[^0-9]/g, '');
-        return 'https://wa.me/' + num + '?text=' + encodeURIComponent('Hey! Saw your post: ' + fullURL);
-      }
-      if (method.type === 'signal') return method.url;
-      if (method.type === 'email') {
-        return 'mailto:' + method.url + '?subject=' + encodeURIComponent('Your post') + '&body=' + encodeURIComponent('Hey! Saw your post: ' + fullURL);
-      }
-      return '#';
-    }
-
-    function updateContactButtons() {
-      document.querySelectorAll('.contact-btn').forEach(function(btn) {
-        var author = btn.getAttribute('data-author');
-        var postURL = btn.getAttribute('data-post-url');
-        var method = resolveMethod(author);
-        if (!method) return;
-        btn.href = buildContactURL(method, postURL);
-        btn.setAttribute('data-method', method.type);
-        var img = btn.querySelector('.contact-icon img');
-        if (img) img.src = '/img/' + method.type + '.svg';
-      });
-    }
-
-    // --- Customizable select for contact preferences ---
-    var sel = document.querySelector('.contact-pref-select');
-    if (sel) {
-      function renderSelect() {
-        var pref = getPref();
-        var disabled = ALL_METHODS.filter(function(m) { return pref.indexOf(m) === -1; });
-        var order = pref.concat(disabled);
-
-        // Reorder options
-        order.forEach(function(method) {
-          var opt = sel.querySelector('option[value="' + method + '"]');
-          if (!opt) return;
-          sel.appendChild(opt);
-          if (pref.indexOf(method) !== -1) {
-            opt.classList.remove('disabled');
-          } else {
-            opt.classList.add('disabled');
+        function setPref(list) {
+          localStorage.setItem(PREF_KEY, list.join(','));
+        }
+        // Resolve the best contact method for an author given user's preference order.
+        function resolveMethod(authorEmail) {
+          var member = MEMBERS[authorEmail];
+          if (! member) 
+            return null;
+          
+          var pref = getPref();
+          for (var i = 0; i < pref.length; i++) {
+            for (var j = 0; j < member.methods.length; j++) {
+              if (member.methods[j].type === pref[i]) 
+                return member.methods[j];
+              
+            }
           }
-        });
-
-        // Set the selected value to the top preference
-        if (pref.length > 0) sel.value = pref[0];
-      }
-
-      sel.addEventListener('change', function() {
-        var clicked = sel.value;
-        var pref = getPref();
-        var idx = pref.indexOf(clicked);
-        if (idx !== -1) {
-          // Disable: remove from pref (but don't allow disabling all)
-          if (pref.length > 1) pref.splice(idx, 1);
-        } else {
-          // Enable: add to end of pref
-          pref.push(clicked);
+          return member.methods[0] || null;
         }
-        setPref(pref);
-        renderSelect();
+        function buildContactURL(method, postURL) {
+          var fullURL = location.origin + postURL;
+          if (method.type === 'whatsapp') {
+            var num = method
+              .url
+              .replace(/.*wa\.me\//, '')
+              .replace(/[^0-9]/g, '');
+            return 'https://wa.me/' + num + '?text=' + encodeURIComponent(`.\n\n${fullURL}`);
+          }
+          if (method.type === 'signal') 
+            return method.url;
+          
+          if (method.type === 'email') {
+            return 'mailto:' + method.url + '?body=' + encodeURIComponent(`.\n\n${fullURL}`);
+          }
+          return method.url;
+        }
+        function updateContactButtons() {
+          document.querySelectorAll('.contact-btn').forEach(function (btn) {
+            var author = btn.getAttribute('data-author');
+            var postURL = btn.getAttribute('data-post-url');
+            var method = resolveMethod(author);
+            if (! method) 
+              return;
+            
+            btn.href = buildContactURL(method, postURL);
+            btn.setAttribute('data-method', method.type);
+            var img = btn.querySelector('.contact-icon img');
+            if (img) 
+              img.src = '/img/' + method.type + '.svg';
+            
+          });
+        }
+        // --- Customizable select for contact preferences ---
+        var sel = document.querySelector('.contact-pref-select');
+        if (sel) {
+          function renderSelect() {
+            var pref = getPref();
+            var disabled = ALL_METHODS.filter(function (m) {
+              return pref.indexOf(m) === -1;
+            });
+            var order = pref.concat(disabled);
+            // Reorder options
+            order.forEach(function (method) {
+              var opt = sel.querySelector('option[value="' + method + '"]');
+              if (! opt) 
+                return;
+              
+              sel.appendChild(opt);
+              if (pref.indexOf(method) !== -1) {
+                opt.classList.remove('disabled');
+              } else {
+                opt.classList.add('disabled');
+              }
+            });
+            // Set the selected value to the top preference
+            if (pref.length > 0) 
+              sel.value = pref[0];
+            
+          }
+          sel.addEventListener('change', function () {
+            var clicked = sel.value;
+            var pref = getPref();
+            var idx = pref.indexOf(clicked);
+            if (idx !== -1) { // Disable: remove from pref (but don't allow disabling all)
+              if (pref.length > 1) 
+                pref.splice(idx, 1);
+              
+            } else { // Enable: add to end of pref
+              pref.push(clicked);
+            } setPref(pref);
+            renderSelect();
+            updateContactButtons();
+          });
+          renderSelect();
+        }
         updateContactButtons();
-      });
-
-      renderSelect();
-    }
-
-    updateContactButtons();
-
-    // --- Carousel ---
-    document.querySelectorAll('.carousel').forEach(function(c) {
-      var track = c.querySelector('.carousel-track');
-      var dots = c.querySelectorAll('.dot');
-      var prev = c.querySelector('.carousel-prev');
-      var next = c.querySelector('.carousel-next');
-      if (!track) return;
-
-      var update = function() {
-        var i = Math.round(track.scrollLeft / track.offsetWidth);
-        dots.forEach(function(d, j) { d.classList.toggle('active', j === i); });
-        if (prev) prev.disabled = i === 0;
-        if (next) next.disabled = i >= dots.length - 1;
-      };
-
-      track.addEventListener('scroll', update);
-      if (prev) prev.addEventListener('click', function() {
-        track.scrollBy({ left: -track.offsetWidth, behavior: 'smooth' });
-      });
-      if (next) next.addEventListener('click', function() {
-        track.scrollBy({ left: track.offsetWidth, behavior: 'smooth' });
-      });
-      update();
-    });
-  })();
-  </script>
-</body>
+        // --- Carousel ---
+        document.querySelectorAll('.carousel').forEach(function (c) {
+          var track = c.querySelector('.carousel-track');
+          var dots = c.querySelectorAll('.dot');
+          var prev = c.querySelector('.carousel-prev');
+          var next = c.querySelector('.carousel-next');
+          if (! track) 
+            return;
+          
+          var update = function () {
+            var i = Math.round(track.scrollLeft / track.offsetWidth);
+            dots.forEach(function (d, j) {
+              d.classList.toggle('active', j === i);
+            });
+            if (prev) 
+              prev.disabled = i === 0;
+            
+            if (next) 
+              next.disabled = i >= dots.length - 1;
+            
+          };
+          track.addEventListener('scroll', update);
+          if (prev) 
+            prev.addEventListener('click', function () {
+              track.scrollBy({
+                left: - track.offsetWidth,
+                behavior: 'smooth'
+              });
+            });
+          
+          if (next) 
+            next.addEventListener('click', function () {
+              track.scrollBy({left: track.offsetWidth, behavior: 'smooth'});
+            });
+          
+          update();
+        });
+      })();
+    </script>
+  </body>
 </html>

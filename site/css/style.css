@@ -22,10 +22,15 @@
   }
 }
 
-* {
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+*:not(dialog) {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 body {
@@ -85,6 +90,7 @@ body {
   max-width: calc(100vw - 32px);
   font-family: inherit;
 }
+
 
 .contact-pref-dialog::backdrop {
   background: rgba(0, 0, 0, 0.4);

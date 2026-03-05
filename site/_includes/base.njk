@@ -113,6 +113,67 @@
           renderSelect();
         }
         updateContactButtons();
+
+        // --- Bookmarks ---
+        var BM_KEY = 'bookmarks';
+        function getBookmarks() {
+          try { return JSON.parse(localStorage.getItem(BM_KEY)) || []; }
+          catch (e) { return []; }
+        }
+        function setBookmarks(ids) {
+          localStorage.setItem(BM_KEY, JSON.stringify(ids));
+        }
+
+        function updateBookmarkIcons() {
+          var bm = getBookmarks();
+          document.querySelectorAll('.bookmark-btn').forEach(function (btn) {
+            var post = btn.closest('.post');
+            if (!post) return;
+            var id = post.getAttribute('data-post-id');
+            var img = btn.querySelector('img');
+            if (img) img.src = bm.indexOf(id) !== -1 ? '/img/bookmarked.svg' : '/img/bookmark.svg';
+          });
+        }
+
+        document.querySelectorAll('.bookmark-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var post = btn.closest('.post');
+            if (!post) return;
+            var id = post.getAttribute('data-post-id');
+            var bm = getBookmarks();
+            var idx = bm.indexOf(id);
+            if (idx !== -1) bm.splice(idx, 1);
+            else bm.push(id);
+            setBookmarks(bm);
+            updateBookmarkIcons();
+            if (bookmarkFiltering) applyBookmarkFilter();
+          });
+        });
+
+        updateBookmarkIcons();
+
+        // --- Bookmark filter (header) ---
+        var bookmarkFiltering = false;
+        var filterBtn = document.querySelector('.bookmark-filter-btn');
+
+        function applyBookmarkFilter() {
+          var bm = getBookmarks();
+          document.querySelectorAll('.post').forEach(function (post) {
+            var id = post.getAttribute('data-post-id');
+            post.style.display = (bookmarkFiltering && bm.indexOf(id) === -1) ? 'none' : '';
+          });
+        }
+
+        if (filterBtn) {
+          filterBtn.addEventListener('click', function () {
+            bookmarkFiltering = !bookmarkFiltering;
+            filterBtn.classList.toggle('active', bookmarkFiltering);
+            var img = filterBtn.querySelector('img');
+            if (img) img.src = bookmarkFiltering ? '/img/bookmarked.svg' : '/img/bookmark.svg';
+            applyBookmarkFilter();
+          });
+        }
+
         // --- Carousel ---
         document.querySelectorAll('.carousel').forEach(function (c) {
           var track = c.querySelector('.carousel-track');

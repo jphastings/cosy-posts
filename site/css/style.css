@@ -257,7 +257,8 @@ body {
 .contact-btn[data-method="signal"] .contact-icon { color: var(--signal); }
 .contact-btn[data-method="email"] .contact-icon { color: var(--text-secondary); }
 
-.bookmark-btn {
+.bookmark-btn,
+.bookmark-filter-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -268,12 +269,18 @@ body {
   transition: color 0.15s, background 0.15s;
 }
 
-.bookmark-btn:hover {
+.bookmark-filter-btn.active {
+  color: var(--text);
+}
+
+.bookmark-btn:hover,
+.bookmark-filter-btn:hover {
   color: var(--text);
   background: var(--action-hover);
 }
 
-.bookmark-btn img {
+.bookmark-btn img,
+.bookmark-filter-btn img {
   display: block;
   width: 1.2em;
   height: 1.2em;

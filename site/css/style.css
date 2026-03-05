@@ -118,7 +118,7 @@ body {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
-  background: #000;
+  background: var(--card-bg);
 }
 
 .carousel-track {

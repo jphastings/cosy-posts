@@ -27,8 +27,8 @@ type Handler struct {
 // NewHandler creates a new TUS upload handler.
 // onBodyDone is called when a body upload (role=body) completes.
 func NewHandler(cfg *config.Config, onBodyDone CompletionFunc) (*Handler, error) {
-	store := filestore.New(cfg.TUSUploadDir)
-	locker := filelocker.New(cfg.TUSUploadDir)
+	store := filestore.New(cfg.TUSUploadDir())
+	locker := filelocker.New(cfg.TUSUploadDir())
 
 	composer := tusd.NewStoreComposer()
 	store.UseIn(composer)

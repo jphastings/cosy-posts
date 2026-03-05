@@ -1,0 +1,16 @@
+listen: ":8080"
+log_file: "./rebuild.log"
+
+directories:
+  content: ../../site/content
+  site: ../../site/_site
+  uploads: /tmp/chaos-uploads
+  auth: ./auth
+
+site:
+  build_command: cd ../../site && npx @11ty/eleventy
+  base_url: http://localhost:8080
+
+email:
+  from: login@chaos.awaits.us
+  resend_api_key: ""

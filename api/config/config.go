@@ -10,12 +10,38 @@ import (
 
 // Config holds the server configuration loaded from YAML.
 type Config struct {
-	Listen       string `yaml:"listen"`
-	ContentDir   string `yaml:"content_dir"`
-	TUSUploadDir string `yaml:"tus_upload_dir"`
-	RebuildCmd   string `yaml:"rebuild_command"`
-	LogFile      string `yaml:"log_file"`
+	Listen  string `yaml:"listen"`
+	LogFile string `yaml:"log_file"`
+
+	Directories struct {
+		Content string `yaml:"content"`
+		Site    string `yaml:"site"`
+		Uploads string `yaml:"uploads"`
+		Auth    string `yaml:"auth"`
+	} `yaml:"directories"`
+
+	Site struct {
+		BuildCommand string `yaml:"build_command"`
+		BaseURL      string `yaml:"base_url"`
+	} `yaml:"site"`
+
+	Email struct {
+		From         string `yaml:"from"`
+		ResendAPIKey string `yaml:"resend_api_key"`
+	} `yaml:"email"`
+
+	Dir string `yaml:"-"` // resolved directory of the config file itself
 }
+
+// Convenience accessors matching existing usage.
+func (c *Config) ContentDir() string  { return c.Directories.Content }
+func (c *Config) SiteDir() string     { return c.Directories.Site }
+func (c *Config) TUSUploadDir() string { return c.Directories.Uploads }
+func (c *Config) AuthDir() string     { return c.Directories.Auth }
+func (c *Config) RebuildCmd() string  { return c.Site.BuildCommand }
+func (c *Config) BaseURL() string     { return c.Site.BaseURL }
+func (c *Config) ResendAPIKey() string { return c.Email.ResendAPIKey }
+func (c *Config) FromEmail() string   { return c.Email.From }
 
 // Load reads and parses a YAML config file at the given path.
 func Load(path string) (*Config, error) {
@@ -32,17 +58,26 @@ func Load(path string) (*Config, error) {
 	if cfg.Listen == "" {
 		cfg.Listen = ":8080"
 	}
-	if cfg.ContentDir == "" {
-		cfg.ContentDir = "./content"
+	if cfg.Directories.Content == "" {
+		cfg.Directories.Content = "./content"
 	}
-	if cfg.TUSUploadDir == "" {
-		cfg.TUSUploadDir = "./uploads"
+	if cfg.Directories.Uploads == "" {
+		cfg.Directories.Uploads = "./uploads"
+	}
+	if cfg.Directories.Auth == "" {
+		cfg.Directories.Auth = "./auth"
+	}
+	if cfg.Directories.Site == "" {
+		cfg.Directories.Site = "./site"
 	}
 
 	// Resolve relative paths against the config file's directory.
 	configDir, _ := filepath.Abs(filepath.Dir(path))
-	cfg.ContentDir = resolve(configDir, cfg.ContentDir)
-	cfg.TUSUploadDir = resolve(configDir, cfg.TUSUploadDir)
+	cfg.Dir = configDir
+	cfg.Directories.Content = resolve(configDir, cfg.Directories.Content)
+	cfg.Directories.Site = resolve(configDir, cfg.Directories.Site)
+	cfg.Directories.Uploads = resolve(configDir, cfg.Directories.Uploads)
+	cfg.Directories.Auth = resolve(configDir, cfg.Directories.Auth)
 	if cfg.LogFile != "" {
 		cfg.LogFile = resolve(configDir, cfg.LogFile)
 	}

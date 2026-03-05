@@ -12,15 +12,16 @@ import (
 // stdout and stderr are appended to the configured log file.
 // This function returns immediately without waiting for the command to finish.
 func Trigger(cfg *config.Config) {
-	if cfg.RebuildCmd == "" {
+	if cfg.RebuildCmd() == "" {
 		log.Println("No rebuild command configured, skipping")
 		return
 	}
 
 	go func() {
-		log.Printf("Triggering rebuild: %s", cfg.RebuildCmd)
+		log.Printf("Triggering rebuild: %s", cfg.RebuildCmd())
 
-		cmd := exec.Command("sh", "-c", cfg.RebuildCmd)
+		cmd := exec.Command("sh", "-c", cfg.RebuildCmd())
+		cmd.Dir = cfg.Dir
 
 		// Open log file in append mode.
 		logFile, err := os.OpenFile(cfg.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)

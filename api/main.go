@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"chaos.awaits.us/api/auth"
 	"chaos.awaits.us/api/config"
 	"chaos.awaits.us/api/post"
 	"chaos.awaits.us/api/rebuild"
@@ -24,7 +25,7 @@ func main() {
 	}
 
 	// Ensure required directories exist.
-	for _, dir := range []string{cfg.ContentDir, cfg.TUSUploadDir} {
+	for _, dir := range []string{cfg.ContentDir(), cfg.TUSUploadDir(), cfg.AuthDir(), cfg.SiteDir()} {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			log.Fatalf("Failed to create directory %s: %v", dir, err)
 		}
@@ -60,11 +61,22 @@ func main() {
 	mux.Handle("/files/", http.StripPrefix("/files/", uploadHandler))
 	mux.Handle("/files", http.StripPrefix("/files", uploadHandler))
 
+	// Auth routes.
+	mux.HandleFunc("GET /auth/login", auth.LoginPage())
+	mux.HandleFunc("POST /auth/send", auth.SendLink(cfg))
+	mux.HandleFunc("GET /auth/verify", auth.Verify(cfg))
+
+	// Serve the static site at the root.
+	mux.Handle("/", http.FileServer(http.Dir(cfg.SiteDir())))
+
+	// Wrap all routes with auth middleware.
+	handler := auth.Middleware(cfg, mux)
+
 	// Run an initial site build on startup.
 	rebuild.Trigger(cfg)
 
 	log.Printf("Listening on %s", cfg.Listen)
-	if err := http.ListenAndServe(cfg.Listen, mux); err != nil {
+	if err := http.ListenAndServe(cfg.Listen, handler); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
 }

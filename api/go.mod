@@ -5,6 +5,7 @@ go 1.25.6
 require (
 	github.com/adrium/goheif v0.0.0-20230113233934-ca402e77a786
 	github.com/gen2brain/jpegli v0.3.4
+	github.com/resend/resend-go/v2 v2.28.0
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	github.com/tus/tusd/v2 v2.9.1
 	golang.org/x/image v0.36.0

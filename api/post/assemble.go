@@ -67,7 +67,7 @@ func Assemble(cfg *config.Config, event tusd.HookEvent) error {
 
 	// Create post directory: {content_dir}/YYYY/MM/DD/{nanoid}/
 	postDir := filepath.Join(
-		cfg.ContentDir,
+		cfg.ContentDir(),
 		postDate.Format("2006"),
 		postDate.Format("01"),
 		postDate.Format("02"),
@@ -178,7 +178,7 @@ type tusInfoFile struct {
 // findUploadsForPost scans the TUS upload directory for all uploads
 // with the given post-id in their metadata.
 func findUploadsForPost(cfg *config.Config, postID string) ([]tusInfoFile, error) {
-	pattern := filepath.Join(cfg.TUSUploadDir, "*.info")
+	pattern := filepath.Join(cfg.TUSUploadDir(), "*.info")
 	infoFiles, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func findUploadsForPost(cfg *config.Config, postID string) ([]tusInfoFile, error
 // uploadDataPath returns the path to the raw upload data file for a given
 // tusd upload ID.
 func uploadDataPath(cfg *config.Config, uploadID string) string {
-	return filepath.Join(cfg.TUSUploadDir, uploadID)
+	return filepath.Join(cfg.TUSUploadDir(), uploadID)
 }
 
 // extractGPS attempts to read EXIF GPS coordinates from an image file.
@@ -286,7 +286,7 @@ func cleanupUploads(cfg *config.Config, uploads []tusInfoFile, bodyUploadID stri
 	ids[bodyUploadID] = true
 
 	for id := range ids {
-		dataPath := filepath.Join(cfg.TUSUploadDir, id)
+		dataPath := filepath.Join(cfg.TUSUploadDir(), id)
 		infoPath := dataPath + ".info"
 		lockPath := dataPath + ".lock"
 

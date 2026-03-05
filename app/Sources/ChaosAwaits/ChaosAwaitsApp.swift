@@ -7,11 +7,19 @@ struct ChaosAwaitsApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
+                .environment(appState.authManager)
                 .environment(appState.networkMonitor)
                 .environment(appState.uploadManager)
                 .task {
+                    await appState.syncAuth()
                     await appState.uploadManager.importSharedPosts()
+                }
+                .onOpenURL { url in
+                    Task {
+                        await appState.authManager.handleDeepLink(url)
+                        await appState.syncAuth()
+                    }
                 }
                 #if canImport(UIKit)
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
@@ -25,6 +33,21 @@ struct ChaosAwaitsApp: App {
     }
 }
 
+/// Routes between server setup, login, and the main compose view.
+struct RootView: View {
+    @Environment(AuthManager.self) private var authManager
+
+    var body: some View {
+        if !authManager.isServerConfigured {
+            ServerSetupView()
+        } else if !authManager.isAuthenticated {
+            LoginView()
+        } else {
+            ContentView()
+        }
+    }
+}
+
 /// Holds app-wide state, initialized lazily after the app process is running.
 @Observable
 @MainActor
@@ -32,6 +55,7 @@ final class AppState {
     let modelContainer: ModelContainer
     let networkMonitor: NetworkMonitor
     let uploadManager: UploadManager
+    let authManager: AuthManager
 
     init() {
         let container = try! ModelContainer(for: PendingPost.self)
@@ -40,10 +64,21 @@ final class AppState {
         let monitor = NetworkMonitor()
         monitor.start()
         self.networkMonitor = monitor
+
+        let auth = AuthManager()
+        self.authManager = auth
+
+        let serverURL = auth.serverURL ?? URL(string: "http://localhost:8080")!
         self.uploadManager = UploadManager(
-            serverURL: URL(string: "http://localhost:8080")!,
+            serverURL: serverURL,
             networkMonitor: monitor,
             modelContainer: container
         )
+    }
+
+    /// Sync auth state to the upload manager whenever auth changes.
+    func syncAuth() async {
+        guard let serverURL = authManager.serverURL else { return }
+        await uploadManager.configure(serverURL: serverURL, authToken: authManager.sessionToken)
     }
 }

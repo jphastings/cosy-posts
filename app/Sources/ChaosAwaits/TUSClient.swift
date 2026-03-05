@@ -8,6 +8,7 @@ import Foundation
 actor TUSClient {
     private let endpoint: URL
     private let session: URLSession
+    private var authToken: String?
 
     /// Initialize the TUS client.
     /// - Parameters:
@@ -16,6 +17,18 @@ actor TUSClient {
     init(endpoint: URL, session: URLSession = .shared) {
         self.endpoint = endpoint
         self.session = session
+    }
+
+    /// Set the Bearer auth token for authenticated requests.
+    func setAuthToken(_ token: String?) {
+        self.authToken = token
+    }
+
+    /// Apply auth header to a request if a token is set.
+    private func applyAuth(to request: inout URLRequest) {
+        if let authToken {
+            request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
     }
 
     /// Create a new upload on the server.
@@ -36,6 +49,8 @@ actor TUSClient {
             }.joined(separator: ",")
             request.setValue(encoded, forHTTPHeaderField: "Upload-Metadata")
         }
+
+        applyAuth(to: &request)
 
         let (_, response) = try await session.data(for: request)
 
@@ -66,6 +81,7 @@ actor TUSClient {
         var request = URLRequest(url: uploadURL)
         request.httpMethod = "HEAD"
         request.setValue("1.0.0", forHTTPHeaderField: "Tus-Resumable")
+        applyAuth(to: &request)
 
         let (_, response) = try await session.data(for: request)
 
@@ -100,6 +116,7 @@ actor TUSClient {
         request.setValue(String(offset), forHTTPHeaderField: "Upload-Offset")
         request.setValue("application/offset+octet-stream", forHTTPHeaderField: "Content-Type")
         request.httpBody = chunk
+        applyAuth(to: &request)
 
         let (_, response) = try await session.data(for: request)
 

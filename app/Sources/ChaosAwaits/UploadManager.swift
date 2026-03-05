@@ -24,6 +24,13 @@ final class UploadManager {
         self.tusClient = TUSClient(endpoint: serverURL.appendingPathComponent("files/"))
     }
 
+    /// Update the server URL and auth token (called when auth state changes).
+    func configure(serverURL: URL, authToken: String?) async {
+        self.serverURL = serverURL
+        self.tusClient = TUSClient(endpoint: serverURL.appendingPathComponent("files/"))
+        await tusClient.setAuthToken(authToken)
+    }
+
     /// Enqueue a new post from the compose view.
     /// - Parameters:
     ///   - bodyText: The post body text.

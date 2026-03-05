@@ -18,6 +18,17 @@
 	<string>0.1.0</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Select photos and videos to share with your community.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>us.awaits.chaos.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>chaos</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>processing</string>

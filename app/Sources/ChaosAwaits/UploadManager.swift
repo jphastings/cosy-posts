@@ -27,9 +27,13 @@ final class UploadManager {
         self.tusClient = TUSClient(endpoint: serverURL.appendingPathComponent("files/"))
     }
 
-    /// Update the server URL and auth token (called when auth state changes).
-    func configure(serverURL: URL, authToken: String?) async {
+    /// The authenticated user's email, sent as `author` metadata on uploads.
+    var authorEmail: String?
+
+    /// Update the server URL, auth token, and author email (called when auth state changes).
+    func configure(serverURL: URL, authToken: String?, email: String?) async {
         self.serverURL = serverURL
+        self.authorEmail = email
         self.tusClient = TUSClient(endpoint: serverURL.appendingPathComponent("files/"))
         await tusClient.setAuthToken(authToken)
     }
@@ -116,11 +120,12 @@ final class UploadManager {
                 let filename = fileURL.lastPathComponent
                 let contentType = mimeType(for: fileURL)
 
-                let metadata: [String: String] = [
+                var metadata: [String: String] = [
                     "post-id": post.postID,
                     "filename": filename,
                     "content-type": contentType,
                 ]
+                if let author = authorEmail { metadata["author"] = author }
 
                 _ = try await tusClient.uploadFile(data: data, metadata: metadata)
 
@@ -130,7 +135,7 @@ final class UploadManager {
 
             // Upload body text last (this triggers post assembly on the server)
             let bodyData = Data(post.bodyText.utf8)
-            let bodyMetadata: [String: String] = [
+            var bodyMetadata: [String: String] = [
                 "post-id": post.postID,
                 "filename": "body",
                 "content-type": "text/plain",
@@ -138,6 +143,7 @@ final class UploadManager {
                 "date": dateString,
                 "content-ext": post.contentExt,
             ]
+            if let author = authorEmail { bodyMetadata["author"] = author }
 
             _ = try await tusClient.uploadFile(data: bodyData, metadata: bodyMetadata)
 

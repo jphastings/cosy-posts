@@ -25,6 +25,16 @@ final class AuthManager {
         }
     }
 
+    var email: String? {
+        didSet {
+            if let email {
+                UserDefaults.standard.set(email, forKey: "userEmail")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "userEmail")
+            }
+        }
+    }
+
     /// Error message to display on the login screen (e.g. expired/used token).
     var loginError: String?
 
@@ -36,6 +46,7 @@ final class AuthManager {
             self.serverURL = URL(string: urlString)
         }
         self.sessionToken = UserDefaults.standard.string(forKey: "sessionToken")
+        self.email = UserDefaults.standard.string(forKey: "userEmail")
     }
 
     /// Handle a chaos:// deep link.
@@ -75,11 +86,13 @@ final class AuthManager {
             struct VerifyResponse: Decodable {
                 let session: String
                 let role: String
+                let email: String
             }
 
             let result = try JSONDecoder().decode(VerifyResponse.self, from: data)
             self.loginError = nil
             self.sessionToken = result.session
+            self.email = result.email
         } catch {
             self.loginError = "Could not connect to the server. Please try again."
         }

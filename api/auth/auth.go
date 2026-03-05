@@ -284,6 +284,7 @@ func Verify(cfg *config.Config) http.HandlerFunc {
 			json.NewEncoder(w).Encode(map[string]string{
 				"session": sessionID,
 				"role":    role,
+				"email":   email,
 			})
 			return
 		}

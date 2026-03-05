@@ -24,6 +24,7 @@ import (
 type Frontmatter struct {
 	Date     string    `yaml:"date"`
 	Location *Location `yaml:"location,omitempty"`
+	Author   string    `yaml:"author,omitempty"`
 	Tags     []string  `yaml:"tags,omitempty"`
 }
 
@@ -149,6 +150,7 @@ func Assemble(cfg *config.Config, event tusd.HookEvent) error {
 	fm := Frontmatter{
 		Date:     dateStr,
 		Location: location,
+		Author:   info.MetaData["author"],
 		Tags:     tags,
 	}
 

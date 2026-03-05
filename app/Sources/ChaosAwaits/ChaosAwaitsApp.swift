@@ -79,6 +79,6 @@ final class AppState {
     /// Sync auth state to the upload manager whenever auth changes.
     func syncAuth() async {
         guard let serverURL = authManager.serverURL else { return }
-        await uploadManager.configure(serverURL: serverURL, authToken: authManager.sessionToken)
+        await uploadManager.configure(serverURL: serverURL, authToken: authManager.sessionToken, email: authManager.email)
     }
 }

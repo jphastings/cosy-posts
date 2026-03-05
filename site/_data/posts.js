@@ -43,6 +43,7 @@ function findPosts(dir) {
         posts.push({
           date: frontmatter.date || "",
           location: frontmatter.location || null,
+          author: frontmatter.author || "",
           tags: frontmatter.tags || [],
           body: body.trim(),
           media,

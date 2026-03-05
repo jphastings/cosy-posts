@@ -1,0 +1,16 @@
+---
+layout: base.njk
+pagination:
+  data: posts
+  size: 1
+  alias: post
+permalink: /p/{{ post.id }}/
+---
+
+<header class="site-header">
+  <h1><a href="/" style="color:inherit;text-decoration:none">chaos.awaits.us</a></h1>
+</header>
+
+<main class="feed">
+  {% include "post-card.njk" %}
+</main>

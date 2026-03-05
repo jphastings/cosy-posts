@@ -1,0 +1,46 @@
+<article class="post" data-post-id="{{ post.id }}">
+  {% if post.media.length > 0 %}
+  <div class="carousel" data-count="{{ post.media.length }}">
+    <div class="carousel-track">
+      {% for m in post.media %}
+      <div class="carousel-slide">
+        {% if m.isVideo %}
+        <video src="{{ m.path }}" controls playsinline preload="metadata"></video>
+        {% else %}
+        <img src="{{ m.path }}" alt="" loading="lazy">
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% if post.media.length > 1 %}
+    <button class="carousel-prev" aria-label="Previous">&lsaquo;</button>
+    <button class="carousel-next" aria-label="Next">&rsaquo;</button>
+    <div class="carousel-dots">
+      {% for m in post.media %}
+      <span class="dot{% if loop.first %} active{% endif %}"></span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if post.author and members[post.author] %}
+  {% set member = members[post.author] %}
+  <div class="post-actions">
+    <a class="contact-btn" href="#" data-author="{{ post.author }}" data-post-url="/p/{{ post.id }}/">
+      <span class="contact-icon"></span>
+      <span class="contact-label">Contact {{ member.name }}</span>
+    </a>
+  </div>
+  {% endif %}
+
+  {% if post.body %}
+  <div class="post-body">
+    {{ post.body | renderMarkdown | safe }}
+  </div>
+  {% endif %}
+
+  <time class="post-date" datetime="{{ post.date | isoDate }}">
+    {{ post.date | readableDate }}
+  </time>
+</article>

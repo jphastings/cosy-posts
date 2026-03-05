@@ -130,7 +130,7 @@ body {
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   scrollbar-width: none;
-  touch-action: pan-x pinch-zoom;
+  touch-action: manipulation;
 }
 
 .carousel-track::-webkit-scrollbar {

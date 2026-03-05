@@ -2,6 +2,9 @@ import Foundation
 import SwiftData
 import PhotosUI
 import SwiftUI
+import os
+
+private let uploadLog = Logger(subsystem: "us.awaits.chaos", category: "Upload")
 
 /// Manages the upload queue, processing pending posts when the network is available.
 @Observable
@@ -145,6 +148,7 @@ final class UploadManager {
             // Clean up local media files
             cleanupLocalFiles(for: post)
         } catch {
+            uploadLog.error("Upload failed for post \(post.postID): \(error.localizedDescription)")
             post.postStatus = .failed
             post.errorMessage = error.localizedDescription
             try? context.save()

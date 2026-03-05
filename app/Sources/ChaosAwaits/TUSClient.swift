@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let tusLog = Logger(subsystem: "us.awaits.chaos", category: "TUS")
 
 /// TUS (tus.io) resumable upload client.
 ///
@@ -71,6 +74,7 @@ actor TUSClient {
             throw TUSError.invalidLocation(location)
         }
 
+        tusLog.info("Created upload: Location=\(location) resolved=\(uploadURL.absoluteString)")
         return uploadURL
     }
 
@@ -109,6 +113,7 @@ actor TUSClient {
     /// - Returns: The new offset after the upload completes.
     func upload(uploadURL: URL, data: Data, offset: Int64 = 0) async throws -> Int64 {
         let chunk = data.suffix(from: Int(offset))
+        tusLog.info("PATCH \(uploadURL.absoluteString) offset=\(offset) size=\(chunk.count)")
 
         var request = URLRequest(url: uploadURL)
         request.httpMethod = "PATCH"

@@ -9,12 +9,15 @@
 /* Begin PBXBuildFile section */
 		1E1B6E5900764DAC8D79BFC0 /* MediaItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DEBABE8FCB8DAF9D63F30D7 /* MediaItem.swift */; };
 		39B10818715AC316E2BA96C0 /* TUSClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F3B9AA93BCCB3050801312D /* TUSClient.swift */; };
+		4D0A5DD8434874674E38DAC8 /* ServerSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D33C6BD37F590F2ABD933B1 /* ServerSetupView.swift */; };
 		537B790638E794BCEDDC6BC1 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7995423FB399105E1191EF74 /* ShareViewController.swift */; };
 		7F721543AE644BE5E628444D /* SharedPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D5E972E21670AA6094BC953 /* SharedPost.swift */; };
+		946F7C7973E856794E6A34E6 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F9CE483A10D68939F0D2A2 /* AuthManager.swift */; };
 		A079B89DF457C52436C3AA2C /* UploadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA61E0A0AC148159AEE8213 /* UploadManager.swift */; };
 		AE2610BBD55EBF7617BFD30A /* ChaosAwaitsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E42E058F7A5DCBA2B185AED /* ChaosAwaitsApp.swift */; };
 		AFA625CFD676A97AF95464E2 /* ComposeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1429D48ACF47A63CC2CC875D /* ComposeViewModel.swift */; };
 		B40DFEFD3CA8E358BB967F8E /* Nanoid.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC13D62BA474C18BF3697A2 /* Nanoid.swift */; };
+		B976E1201A1B884DE4474AE4 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE47FC6FE5F0E4BC08F7016 /* LoginView.swift */; };
 		BC30CB8879C1438905829FD8 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1FF369EC52B2A962523EBC /* NetworkMonitor.swift */; };
 		C05126EA7F4C95995325E698 /* PendingPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC16382D89140FBB391DC0B1 /* PendingPost.swift */; };
 		C843441DE305C1C080200D3B /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 087F46D921EC038853442FC7 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -50,6 +53,7 @@
 		087F46D921EC038853442FC7 /* ShareExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		0D5E972E21670AA6094BC953 /* SharedPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedPost.swift; sourceTree = "<group>"; };
 		1429D48ACF47A63CC2CC875D /* ComposeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeViewModel.swift; sourceTree = "<group>"; };
+		1CE47FC6FE5F0E4BC08F7016 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		20BE90CD0AAE4561B3D8DDB4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		2DEBABE8FCB8DAF9D63F30D7 /* MediaItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItem.swift; sourceTree = "<group>"; };
 		2E42E058F7A5DCBA2B185AED /* ChaosAwaitsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChaosAwaitsApp.swift; sourceTree = "<group>"; };
@@ -60,9 +64,11 @@
 		74A60F1F3458B817837C806B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		74CA05043C8942D1B98D032D /* ChaosAwaits.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ChaosAwaits.entitlements; sourceTree = "<group>"; };
 		7995423FB399105E1191EF74 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		9D33C6BD37F590F2ABD933B1 /* ServerSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerSetupView.swift; sourceTree = "<group>"; };
 		AEC13D62BA474C18BF3697A2 /* Nanoid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nanoid.swift; sourceTree = "<group>"; };
 		DC16382D89140FBB391DC0B1 /* PendingPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingPost.swift; sourceTree = "<group>"; };
 		DEE599024105A6FA25462462 /* ShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareExtension.entitlements; sourceTree = "<group>"; };
+		E5F9CE483A10D68939F0D2A2 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		E68FE0198BDCFFAAEB5260CA /* ChaosAwaits.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ChaosAwaits.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED1FF369EC52B2A962523EBC /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -71,16 +77,19 @@
 		00C93D4FBC53794D4EC5B29D /* ChaosAwaits */ = {
 			isa = PBXGroup;
 			children = (
+				E5F9CE483A10D68939F0D2A2 /* AuthManager.swift */,
 				74CA05043C8942D1B98D032D /* ChaosAwaits.entitlements */,
 				2E42E058F7A5DCBA2B185AED /* ChaosAwaitsApp.swift */,
 				1429D48ACF47A63CC2CC875D /* ComposeViewModel.swift */,
 				20BE90CD0AAE4561B3D8DDB4 /* ContentView.swift */,
 				74A60F1F3458B817837C806B /* Info.plist */,
+				1CE47FC6FE5F0E4BC08F7016 /* LoginView.swift */,
 				663598B75D5BD43CBA9F96F5 /* MediaCarouselView.swift */,
 				2DEBABE8FCB8DAF9D63F30D7 /* MediaItem.swift */,
 				AEC13D62BA474C18BF3697A2 /* Nanoid.swift */,
 				ED1FF369EC52B2A962523EBC /* NetworkMonitor.swift */,
 				DC16382D89140FBB391DC0B1 /* PendingPost.swift */,
+				9D33C6BD37F590F2ABD933B1 /* ServerSetupView.swift */,
 				0D5E972E21670AA6094BC953 /* SharedPost.swift */,
 				6F3B9AA93BCCB3050801312D /* TUSClient.swift */,
 				4EA61E0A0AC148159AEE8213 /* UploadManager.swift */,
@@ -191,14 +200,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				946F7C7973E856794E6A34E6 /* AuthManager.swift in Sources */,
 				AE2610BBD55EBF7617BFD30A /* ChaosAwaitsApp.swift in Sources */,
 				AFA625CFD676A97AF95464E2 /* ComposeViewModel.swift in Sources */,
 				CD39CB925AF648BFA78849AD /* ContentView.swift in Sources */,
+				B976E1201A1B884DE4474AE4 /* LoginView.swift in Sources */,
 				E620C51DCDC0255EE238BE1D /* MediaCarouselView.swift in Sources */,
 				1E1B6E5900764DAC8D79BFC0 /* MediaItem.swift in Sources */,
 				B40DFEFD3CA8E358BB967F8E /* Nanoid.swift in Sources */,
 				BC30CB8879C1438905829FD8 /* NetworkMonitor.swift in Sources */,
 				C05126EA7F4C95995325E698 /* PendingPost.swift in Sources */,
+				4D0A5DD8434874674E38DAC8 /* ServerSetupView.swift in Sources */,
 				7F721543AE644BE5E628444D /* SharedPost.swift in Sources */,
 				39B10818715AC316E2BA96C0 /* TUSClient.swift in Sources */,
 				A079B89DF457C52436C3AA2C /* UploadManager.swift in Sources */,

@@ -192,19 +192,36 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 
 		role := lookupRole(cfg.Dir, email)
 		if role != "" {
-			// Authorized: send magic link.
-			token, err := generateHex(32)
+			// Authorized: send magic link(s).
+			siteToken, err := generateHex(32)
 			if err != nil {
 				log.Printf("auth: generate token: %v", err)
 				http.Error(w, "Internal error", http.StatusInternalServerError)
 				return
 			}
-			if err := saveToken(cfg.AuthDir(), token, email); err != nil {
+			if err := saveToken(cfg.AuthDir(), siteToken, email); err != nil {
 				log.Printf("auth: save token: %v", err)
 				http.Error(w, "Internal error", http.StatusInternalServerError)
 				return
 			}
-			if err := sendMagicLink(cfg, email, token, role); err != nil {
+
+			// Post-role users get a separate token for the app deep link.
+			appToken := ""
+			if role == "post" {
+				appToken, err = generateHex(32)
+				if err != nil {
+					log.Printf("auth: generate app token: %v", err)
+					http.Error(w, "Internal error", http.StatusInternalServerError)
+					return
+				}
+				if err := saveToken(cfg.AuthDir(), appToken, email); err != nil {
+					log.Printf("auth: save app token: %v", err)
+					http.Error(w, "Internal error", http.StatusInternalServerError)
+					return
+				}
+			}
+
+			if err := sendMagicLink(cfg, email, siteToken, appToken, role); err != nil {
 				log.Printf("auth: send email to %s: %v", email, err)
 				// Still redirect so we don't leak info.
 			}
@@ -305,12 +322,14 @@ func Middleware(cfg *config.Config, next http.Handler) http.Handler {
 			sessionID = cookie.Value
 		}
 		if sessionID == "" {
+			log.Printf("auth: denied %s %s (no session)", r.Method, path)
 			authDenied(w, r)
 			return
 		}
 
 		email, role, err := validateSession(cfg.AuthDir(), sessionID)
 		if err != nil {
+			log.Printf("auth: denied %s %s (%v)", r.Method, path, err)
 			authDenied(w, r)
 			return
 		}
@@ -337,16 +356,16 @@ func authDenied(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `{"error":"unauthorized"}`)
 }
 
-func sendMagicLink(cfg *config.Config, email, token, role string) error {
-	siteLink := cfg.BaseURL() + "/auth/verify?token=" + token
-	appLink := "chaos://auth?token=" + token + "&server=" + cfg.BaseURL()
+func sendMagicLink(cfg *config.Config, email, siteToken, appToken, role string) error {
+	siteLink := cfg.BaseURL() + "/auth/verify?token=" + siteToken
 
 	var html string
-	if role == "post" {
+	if role == "post" && appToken != "" {
+		appLink := "chaos://auth?token=" + appToken + "&server=" + cfg.BaseURL()
 		html = fmt.Sprintf(`<p>Click to log in:</p>
 <p><a href="%s">Log in to the site</a></p>
 <p><a href="%s">Log in to the app</a></p>
-<p>This link expires in 15 minutes.</p>`, siteLink, appLink)
+<p>These links expire in 15 minutes.</p>`, siteLink, appLink)
 	} else {
 		html = fmt.Sprintf(`<p>Click to log in:</p>
 <p><a href="%s">Log in to chaos.awaits.us</a></p>

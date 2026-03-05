@@ -11,6 +11,18 @@ struct LoginView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if let error = authManager.loginError {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                    Text(error)
+                        .font(.subheadline)
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(.red.opacity(0.85))
+            }
+
             if let serverURL = authManager.serverURL {
                 let loginURL = serverURL.appendingPathComponent("auth/login")
                 #if canImport(UIKit)

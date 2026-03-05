@@ -25,6 +25,9 @@ final class AuthManager {
         }
     }
 
+    /// Error message to display on the login screen (e.g. expired/used token).
+    var loginError: String?
+
     var isAuthenticated: Bool { sessionToken != nil }
     var isServerConfigured: Bool { serverURL != nil }
 
@@ -65,6 +68,7 @@ final class AuthManager {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else {
+                self.loginError = "This login link has already been used. Please request a new one."
                 return
             }
 
@@ -74,9 +78,10 @@ final class AuthManager {
             }
 
             let result = try JSONDecoder().decode(VerifyResponse.self, from: data)
+            self.loginError = nil
             self.sessionToken = result.session
         } catch {
-            // Token exchange failed; user will need to log in again.
+            self.loginError = "Could not connect to the server. Please try again."
         }
     }
 

@@ -69,49 +69,147 @@
             
           });
         }
-        // --- Customizable select for contact preferences ---
-        var sel = document.querySelector('.contact-pref-select');
-        if (sel) {
-          function renderSelect() {
-            var pref = getPref();
-            var disabled = ALL_METHODS.filter(function (m) {
-              return pref.indexOf(m) === -1;
-            });
-            var order = pref.concat(disabled);
-            // Reorder options
-            order.forEach(function (method) {
-              var opt = sel.querySelector('option[value="' + method + '"]');
-              if (! opt) 
-                return;
-              
-              sel.appendChild(opt);
-              if (pref.indexOf(method) !== -1) {
-                opt.classList.remove('disabled');
-              } else {
-                opt.classList.add('disabled');
-              }
-            });
-            // Set the selected value to the top preference
-            if (pref.length > 0) 
-              sel.value = pref[0];
-            
-          }
-          sel.addEventListener('change', function () {
-            var clicked = sel.value;
-            var pref = getPref();
-            var idx = pref.indexOf(clicked);
-            if (idx !== -1) { // Disable: remove from pref (but don't allow disabling all)
-              if (pref.length > 1) 
-                pref.splice(idx, 1);
-              
-            } else { // Enable: add to end of pref
-              pref.push(clicked);
-            } setPref(pref);
-            renderSelect();
-            updateContactButtons();
-          });
-          renderSelect();
+        // --- Contact preference dialog ---
+        var METHOD_NAMES = { whatsapp: 'WhatsApp', signal: 'Signal', email: 'Email' };
+        var prefBtn = document.querySelector('.contact-pref-btn');
+        var prefDialog = document.querySelector('.contact-pref-dialog');
+        var prefList = prefDialog ? prefDialog.querySelector('.pref-list') : null;
+        var prefCloseBtn = prefDialog ? prefDialog.querySelector('.pref-dialog-close') : null;
+
+        function syncPrefBtnIcon() {
+          if (!prefBtn) return;
+          var pref = getPref();
+          var img = prefBtn.querySelector('img');
+          if (img && pref.length > 0) img.src = '/img/' + pref[0] + '.svg';
         }
+
+        function getOrderedMethods() {
+          var pref = getPref();
+          var unchecked = ALL_METHODS.filter(function (m) {
+            return pref.indexOf(m) === -1;
+          }).sort();
+          return pref.map(function (m) { return { method: m, checked: true }; })
+            .concat(unchecked.map(function (m) { return { method: m, checked: false }; }));
+        }
+
+        function renderPrefList() {
+          if (!prefList) return;
+          prefList.innerHTML = '';
+          var items = getOrderedMethods();
+          items.forEach(function (item) {
+            var li = document.createElement('li');
+            li.setAttribute('data-method', item.method);
+            li.draggable = true;
+            if (!item.checked) li.classList.add('unchecked');
+
+            var handle = document.createElement('span');
+            handle.className = 'pref-drag-handle';
+            handle.textContent = '\u2630';
+
+            var icon = document.createElement('span');
+            icon.className = 'pref-icon';
+            icon.innerHTML = '<img src="/img/' + item.method + '.svg" alt="">';
+
+            var label = document.createElement('span');
+            label.className = 'pref-label';
+            label.textContent = METHOD_NAMES[item.method] || item.method;
+
+            var check = document.createElement('input');
+            check.type = 'checkbox';
+            check.className = 'pref-check';
+            check.checked = item.checked;
+            if (item.method === 'email') { check.checked = true; check.disabled = true; }
+
+            li.appendChild(handle);
+            li.appendChild(icon);
+            li.appendChild(label);
+            li.appendChild(check);
+            prefList.appendChild(li);
+
+            // Checkbox toggle
+            check.addEventListener('change', function () {
+              var pref = getPref();
+              if (check.checked) {
+                if (pref.indexOf(item.method) === -1) pref.push(item.method);
+              } else {
+                var idx = pref.indexOf(item.method);
+                if (idx !== -1 && pref.length > 1) pref.splice(idx, 1);
+                else { check.checked = true; return; }
+              }
+              setPref(pref);
+              updateContactButtons();
+              syncPrefBtnIcon();
+              renderPrefList();
+            });
+          });
+        }
+
+        // Drag and drop reorder
+        var dragItem = null;
+        if (prefList) {
+          prefList.addEventListener('dragstart', function (e) {
+            var li = e.target.closest('li');
+            if (!li) return;
+            dragItem = li;
+            li.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+          });
+          prefList.addEventListener('dragend', function () {
+            if (dragItem) dragItem.classList.remove('dragging');
+            prefList.querySelectorAll('li').forEach(function (li) {
+              li.classList.remove('drag-over');
+            });
+            dragItem = null;
+          });
+          prefList.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            var li = e.target.closest('li');
+            prefList.querySelectorAll('li').forEach(function (el) {
+              el.classList.remove('drag-over');
+            });
+            if (li && li !== dragItem) li.classList.add('drag-over');
+          });
+          prefList.addEventListener('drop', function (e) {
+            e.preventDefault();
+            var target = e.target.closest('li');
+            if (!target || !dragItem || target === dragItem) return;
+            // Build new order from DOM
+            var allLi = Array.from(prefList.querySelectorAll('li'));
+            var fromIdx = allLi.indexOf(dragItem);
+            var toIdx = allLi.indexOf(target);
+            allLi.splice(fromIdx, 1);
+            allLi.splice(toIdx, 0, dragItem);
+            // Derive new pref: checked items in new order, unchecked sorted to bottom
+            var pref = getPref();
+            var newPref = [];
+            allLi.forEach(function (li) {
+              var m = li.getAttribute('data-method');
+              if (pref.indexOf(m) !== -1) newPref.push(m);
+            });
+            // Ensure email is always in pref
+            if (newPref.indexOf('email') === -1) newPref.push('email');
+            setPref(newPref);
+            updateContactButtons();
+            syncPrefBtnIcon();
+            renderPrefList();
+          });
+        }
+
+        // Open/close dialog
+        if (prefBtn && prefDialog) {
+          prefBtn.addEventListener('click', function () {
+            renderPrefList();
+            prefDialog.showModal();
+          });
+          prefCloseBtn.addEventListener('click', function () {
+            prefDialog.close();
+          });
+          prefDialog.addEventListener('click', function (e) {
+            if (e.target === prefDialog) prefDialog.close();
+          });
+        }
+        syncPrefBtnIcon();
         updateContactButtons();
         // --- Bookmarks ---
         var BM_KEY = 'bookmarks';

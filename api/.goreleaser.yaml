@@ -39,32 +39,19 @@ changelog:
       - "^docs:"
       - "^test:"
 
-dockers:
-  - image_templates:
-      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-amd64"
-    use: buildx
-    build_flag_templates:
-      - "--platform=linux/amd64"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
-    goarch: amd64
-
-  - image_templates:
-      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-arm64"
-    use: buildx
-    build_flag_templates:
-      - "--platform=linux/arm64"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
-    goarch: arm64
-
-docker_manifests:
-  - name_template: "ghcr.io/jphastings/cosy-posts:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-amd64"
-      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-arm64"
-  - name_template: "ghcr.io/jphastings/cosy-posts:latest"
-    image_templates:
-      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-amd64"
-      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-arm64"
+dockers_v2:
+  - images:
+      - "ghcr.io/jphastings/cosy-posts"
+    tags:
+      - "v{{ .Version }}"
+      - latest
+    labels:
+      "org.opencontainers.image.title": "cosy-posts"
+      "org.opencontainers.image.description": "A private space to share photos, videos, audio and notes with a closed circle of friends"
+      "org.opencontainers.image.url": "https://github.com/jphastings/cosy-posts"
+      "org.opencontainers.image.source": "https://github.com/jphastings/cosy-posts"
+      "org.opencontainers.image.version": "{{ .Version }}"
+      "org.opencontainers.image.licenses": "MIT"
 
 homebrew_casks:
 - name: cosy-posts

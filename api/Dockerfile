@@ -1,12 +1,7 @@
 FROM scratch
 
-LABEL org.opencontainers.image.title="cosy-posts" \
-      org.opencontainers.image.description="A private space to share photos, videos, audio and notes with a closed circle of friends" \
-      org.opencontainers.image.url="https://github.com/jphastings/cosy-posts" \
-      org.opencontainers.image.source="https://github.com/jphastings/cosy-posts" \
-      org.opencontainers.image.licenses="MIT"
-
-COPY cosy-posts /cosy-posts
+ARG TARGETPLATFORM
+COPY ${TARGETPLATFORM}/cosy-posts /cosy-posts
 
 ## Env vars useful for within Docker
 

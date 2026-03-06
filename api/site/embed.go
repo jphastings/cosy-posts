@@ -1,0 +1,24 @@
+package site
+
+import "embed"
+
+//go:embed static/css/style.css
+var styleCSS []byte
+
+//go:embed static/img/bookmark.svg
+var bookmarkSVG []byte
+
+//go:embed static/img/bookmarked.svg
+var bookmarkedSVG []byte
+
+//go:embed static/img/email.svg
+var emailSVG []byte
+
+//go:embed static/img/signal.svg
+var signalSVG []byte
+
+//go:embed static/img/whatsapp.svg
+var whatsappSVG []byte
+
+//go:embed templates/*
+var templateFS embed.FS

@@ -8,6 +8,7 @@ require (
 	github.com/resend/resend-go/v2 v2.28.0
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	github.com/tus/tusd/v2 v2.9.1
+	github.com/yuin/goldmark v1.7.16
 	golang.org/x/image v0.36.0
 	gopkg.in/yaml.v3 v3.0.1
 )

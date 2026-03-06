@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ title or site.name }}</title>
+    <title>{{.SiteName}}</title>
     <link rel="stylesheet" href="/css/style.css">
   </head>
   <body>
-    {{ content | safe }}
+    {{template "content" .}}
     <script>
       (function () {
-        var MEMBERS = {{ members | dump | safe }};
+        var MEMBERS = {{.MembersJSON}};
         var ALL_METHODS = ['whatsapp', 'signal', 'email'];
         var PREF_KEY = 'contact-pref';
         var DEFAULT_PREF = 'whatsapp,signal,email';
@@ -20,18 +20,13 @@
         function setPref(list) {
           localStorage.setItem(PREF_KEY, list.join(','));
         }
-        // Resolve the best contact method for an author given user's preference order.
         function resolveMethod(authorEmail) {
           var member = MEMBERS[authorEmail];
-          if (! member) 
-            return null;
-          
+          if (!member) return null;
           var pref = getPref();
           for (var i = 0; i < pref.length; i++) {
             for (var j = 0; j < member.methods.length; j++) {
-              if (member.methods[j].type === pref[i]) 
-                return member.methods[j];
-              
+              if (member.methods[j].type === pref[i]) return member.methods[j];
             }
           }
           return null;
@@ -39,17 +34,12 @@
         function buildContactURL(method, postURL) {
           var fullURL = location.origin + postURL;
           if (method.type === 'whatsapp') {
-            var num = method
-              .url
-              .replace(/.*wa\.me\//, '')
-              .replace(/[^0-9]/g, '');
-            return 'https://wa.me/' + num + '?text=' + encodeURIComponent(`.\n\n${fullURL}`);
+            var num = method.url.replace(/.*wa\.me\//, '').replace(/[^0-9]/g, '');
+            return 'https://wa.me/' + num + '?text=' + encodeURIComponent('.\n\n' + fullURL);
           }
-          if (method.type === 'signal') 
-            return method.url;
-          
+          if (method.type === 'signal') return method.url;
           if (method.type === 'email') {
-            return 'mailto:' + method.url + '?body=' + encodeURIComponent(`.\n\n${fullURL}`);
+            return 'mailto:' + method.url + '?body=' + encodeURIComponent('.\n\n' + fullURL);
           }
           return method.url;
         }
@@ -58,49 +48,30 @@
             var author = btn.getAttribute('data-author');
             var postURL = btn.getAttribute('data-post-url');
             var method = resolveMethod(author);
-            if (!method) {
-              btn.style.display = 'none';
-              return;
-            }
+            if (!method) { btn.style.display = 'none'; return; }
             btn.style.display = '';
             btn.href = buildContactURL(method, postURL);
             btn.setAttribute('data-method', method.type);
             var img = btn.querySelector('.contact-icon img');
-            if (img)
-              img.src = '/img/' + method.type + '.svg';
-            
+            if (img) img.src = '/img/' + method.type + '.svg';
           });
         }
         // --- Contact preference dialog ---
-        var METHOD_NAMES = {
-          whatsapp: 'WhatsApp',
-          signal: 'Signal',
-          email: 'Email'
-        };
+        var METHOD_NAMES = { whatsapp: 'WhatsApp', signal: 'Signal', email: 'Email' };
         var prefBtn = document.querySelector('.contact-pref-btn');
         var prefDialog = document.querySelector('.contact-pref-dialog');
-        var prefList = prefDialog
-          ? prefDialog.querySelector('.pref-list')
-          : null;
-        var prefCloseBtn = prefDialog
-          ? prefDialog.querySelector('.pref-dialog-close')
-          : null;
+        var prefList = prefDialog ? prefDialog.querySelector('.pref-list') : null;
+        var prefCloseBtn = prefDialog ? prefDialog.querySelector('.pref-dialog-close') : null;
         function syncPrefBtnIcon() {
-          if (! prefBtn) 
-            return;
-          
+          if (!prefBtn) return;
           var pref = getPref();
           var img = prefBtn.querySelector('img');
-          if (img && pref.length > 0) 
-            img.src = '/img/' + pref[0] + '.svg';
-          
+          if (img && pref.length > 0) img.src = '/img/' + pref[0] + '.svg';
         }
         function getOrderedMethods() {
           var pref = getPref();
-          var hidden = ALL_METHODS.filter(function (m) {
-            return pref.indexOf(m) === -1;
-          }).sort();
-          return {shown: pref, hidden: hidden};
+          var hidden = ALL_METHODS.filter(function (m) { return pref.indexOf(m) === -1; }).sort();
+          return { shown: pref, hidden: hidden };
         }
         function createMethodLi(method, isHidden) {
           var li = document.createElement('li');
@@ -134,13 +105,9 @@
           if (!prefList) return;
           prefList.innerHTML = '';
           var order = getOrderedMethods();
-          order.shown.forEach(function (m) {
-            prefList.appendChild(createMethodLi(m, false));
-          });
+          order.shown.forEach(function (m) { prefList.appendChild(createMethodLi(m, false)); });
           prefList.appendChild(createDivider());
-          order.hidden.forEach(function (m) {
-            prefList.appendChild(createMethodLi(m, true));
-          });
+          order.hidden.forEach(function (m) { prefList.appendChild(createMethodLi(m, true)); });
           updateDividerVisibility(false);
         }
         function updateHiddenStyles() {
@@ -171,25 +138,21 @@
           updateContactButtons();
           syncPrefBtnIcon();
         }
-
         // Pointer-event-based sortable
         if (prefList) {
           var dragging = null;
           var startY = 0;
           var offsetY = 0;
           var indicator = null;
-
           function getItems() {
             return Array.from(prefList.children).filter(function (el) {
               return !el.classList.contains('drop-indicator');
             });
           }
-
           function removeIndicator() {
             if (indicator && indicator.parentNode) indicator.parentNode.removeChild(indicator);
             indicator = null;
           }
-
           function getClosestItem(y) {
             var items = getItems();
             var closest = null;
@@ -208,62 +171,43 @@
             });
             return { item: closest, before: insertBefore };
           }
-
           prefList.addEventListener('pointerdown', function (e) {
             var li = e.target.closest('li');
             if (!li || li.classList.contains('drop-indicator')) return;
             if (!prefList.contains(li)) return;
-
             dragging = li;
             var rect = li.getBoundingClientRect();
             startY = e.clientY;
             offsetY = e.clientY - rect.top;
             li.setPointerCapture(e.pointerId);
-
             li.addEventListener('pointermove', onMove);
             li.addEventListener('pointerup', onUp);
             li.addEventListener('pointercancel', onUp);
-
             updateDividerVisibility(true);
-            // Delay adding dragging class to distinguish from taps
-            li._dragTimeout = setTimeout(function () {
-              li.classList.add('dragging');
-            }, 0);
+            li._dragTimeout = setTimeout(function () { li.classList.add('dragging'); }, 0);
           });
-
           function onMove(e) {
             if (!dragging) return;
             dragging.classList.add('dragging');
-
-            // Position the dragged item with transform
             var dy = e.clientY - startY;
             dragging.style.transform = 'translateY(' + dy + 'px)';
-
-            // Show drop indicator
             removeIndicator();
             var target = getClosestItem(e.clientY);
             if (target.item) {
               indicator = document.createElement('div');
               indicator.className = 'drop-indicator';
-              if (target.before) {
-                target.item.before(indicator);
-              } else {
-                target.item.after(indicator);
-              }
+              if (target.before) { target.item.before(indicator); }
+              else { target.item.after(indicator); }
             }
           }
-
           function onUp(e) {
             if (!dragging) return;
             clearTimeout(dragging._dragTimeout);
             dragging.removeEventListener('pointermove', onMove);
             dragging.removeEventListener('pointerup', onUp);
             dragging.removeEventListener('pointercancel', onUp);
-
             dragging.style.transform = '';
             dragging.classList.remove('dragging');
-
-            // Move to indicator position
             if (indicator && indicator.parentNode) {
               indicator.before(dragging);
               removeIndicator();
@@ -273,7 +217,6 @@
             } else {
               updateDividerVisibility(false);
             }
-
             dragging = null;
           }
         }
@@ -283,13 +226,9 @@
             renderPrefList();
             prefDialog.showModal();
           });
-          prefCloseBtn.addEventListener('click', function () {
-            prefDialog.close();
-          });
+          prefCloseBtn.addEventListener('click', function () { prefDialog.close(); });
           prefDialog.addEventListener('click', function (e) {
-            if (e.target === prefDialog) 
-              prefDialog.close();
-            
+            if (e.target === prefDialog) prefDialog.close();
           });
         }
         syncPrefBtnIcon();
@@ -297,75 +236,50 @@
         // --- Bookmarks ---
         var BM_KEY = 'bookmarks';
         function getBookmarks() {
-          try {
-            return JSON.parse(localStorage.getItem(BM_KEY)) || [];
-          } catch (e) {
-            return [];
-          }
+          try { return JSON.parse(localStorage.getItem(BM_KEY)) || []; }
+          catch (e) { return []; }
         }
-        function setBookmarks(ids) {
-          localStorage.setItem(BM_KEY, JSON.stringify(ids));
-        }
+        function setBookmarks(ids) { localStorage.setItem(BM_KEY, JSON.stringify(ids)); }
         function updateBookmarkIcons() {
           var bm = getBookmarks();
           document.querySelectorAll('.bookmark-btn').forEach(function (btn) {
             var post = btn.closest('.post');
-            if (! post) 
-              return;
-            
+            if (!post) return;
             var id = post.getAttribute('data-post-id');
             var img = btn.querySelector('img');
-            if (img) 
-              img.src = bm.indexOf(id) !== -1
-                ? '/img/bookmarked.svg'
-                : '/img/bookmark.svg';
-            
+            if (img) img.src = bm.indexOf(id) !== -1 ? '/img/bookmarked.svg' : '/img/bookmark.svg';
           });
         }
         document.querySelectorAll('.bookmark-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var post = btn.closest('.post');
-            if (! post) 
-              return;
-            
+            if (!post) return;
             var id = post.getAttribute('data-post-id');
             var bm = getBookmarks();
             var idx = bm.indexOf(id);
-            if (idx !== -1) 
-              bm.splice(idx, 1);
-             else 
-              bm.push(id);
-             setBookmarks(bm);
+            if (idx !== -1) bm.splice(idx, 1);
+            else bm.push(id);
+            setBookmarks(bm);
             updateBookmarkIcons();
             updateFilterBtnVisibility();
-            if (bookmarkFiltering) 
-              applyBookmarkFilter();
-            
+            if (bookmarkFiltering) applyBookmarkFilter();
           });
         });
         updateBookmarkIcons();
         // --- Bookmark filter (header) ---
         var bookmarkFiltering = false;
         var filterBtn = document.querySelector('.bookmark-filter-btn');
-        var filterLabel = filterBtn
-          ? filterBtn.querySelector('.bookmark-filter-label')
-          : null;
+        var filterLabel = filterBtn ? filterBtn.querySelector('.bookmark-filter-label') : null;
         function updateFilterBtnVisibility() {
-          if (! filterBtn) 
-            return;
-          
+          if (!filterBtn) return;
           var hasBookmarks = getBookmarks().length > 0;
           filterBtn.classList.toggle('visible', hasBookmarks || bookmarkFiltering);
-          if (! hasBookmarks && bookmarkFiltering) {
+          if (!hasBookmarks && bookmarkFiltering) {
             bookmarkFiltering = false;
             filterBtn.classList.remove('active');
             var img = filterBtn.querySelector('img');
-            if (img) 
-              img.src = '/img/bookmark.svg';
-            
-            if (filterLabel) 
-              filterLabel.textContent = '';
-            
+            if (img) img.src = '/img/bookmark.svg';
+            if (filterLabel) filterLabel.textContent = '';
             applyBookmarkFilter();
           }
         }
@@ -373,26 +287,16 @@
           var bm = getBookmarks();
           document.querySelectorAll('.post').forEach(function (post) {
             var id = post.getAttribute('data-post-id');
-            post.style.display = (bookmarkFiltering && bm.indexOf(id) === -1)
-              ? 'none'
-              : '';
+            post.style.display = (bookmarkFiltering && bm.indexOf(id) === -1) ? 'none' : '';
           });
         }
         if (filterBtn) {
           filterBtn.addEventListener('click', function () {
-            bookmarkFiltering = ! bookmarkFiltering;
+            bookmarkFiltering = !bookmarkFiltering;
             filterBtn.classList.toggle('active', bookmarkFiltering);
             var img = filterBtn.querySelector('img');
-            if (img) 
-              img.src = bookmarkFiltering
-                ? '/img/bookmarked.svg'
-                : '/img/bookmark.svg';
-            
-            if (filterLabel) 
-              filterLabel.textContent = bookmarkFiltering
-                ? 'Only bookmarked'
-                : '';
-            
+            if (img) img.src = bookmarkFiltering ? '/img/bookmarked.svg' : '/img/bookmark.svg';
+            if (filterLabel) filterLabel.textContent = bookmarkFiltering ? 'Only bookmarked' : '';
             applyBookmarkFilter();
           });
         }
@@ -403,35 +307,20 @@
           var dots = c.querySelectorAll('.dot');
           var prev = c.querySelector('.carousel-prev');
           var next = c.querySelector('.carousel-next');
-          if (! track) 
-            return;
-          
+          if (!track) return;
           var update = function () {
             var i = Math.round(track.scrollLeft / track.offsetWidth);
-            dots.forEach(function (d, j) {
-              d.classList.toggle('active', j === i);
-            });
-            if (prev) 
-              prev.disabled = i === 0;
-            
-            if (next) 
-              next.disabled = i >= dots.length - 1;
-            
+            dots.forEach(function (d, j) { d.classList.toggle('active', j === i); });
+            if (prev) prev.disabled = i === 0;
+            if (next) next.disabled = i >= dots.length - 1;
           };
           track.addEventListener('scroll', update);
-          if (prev) 
-            prev.addEventListener('click', function () {
-              track.scrollBy({
-                left: - track.offsetWidth,
-                behavior: 'smooth'
-              });
-            });
-          
-          if (next) 
-            next.addEventListener('click', function () {
-              track.scrollBy({left: track.offsetWidth, behavior: 'smooth'});
-            });
-          
+          if (prev) prev.addEventListener('click', function () {
+            track.scrollBy({ left: -track.offsetWidth, behavior: 'smooth' });
+          });
+          if (next) next.addEventListener('click', function () {
+            track.scrollBy({ left: track.offsetWidth, behavior: 'smooth' });
+          });
           update();
         });
       })();

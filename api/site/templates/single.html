@@ -1,0 +1,8 @@
+{{define "content"}}
+<header class="site-header">
+  <h1><a href="/">{{.SiteName}}</a></h1>
+</header>
+<main class="feed">
+  {{template "post-card" .Post}}
+</main>
+{{end}}

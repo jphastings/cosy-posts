@@ -101,6 +101,8 @@ github.com/tus/lockfile v1.2.0/go.mod h1:JyfWCHNyfd7eGxudGohrkt38kuKRki6L0JH82p2
 github.com/tus/tusd/v2 v2.9.1 h1:SXVqJX/TfBB66KNwbLCDiY7SQ+Z4Pt1Hjn0QhYE8cos=
 github.com/tus/tusd/v2 v2.9.1/go.mod h1:dLZDtnBajEsX5ehCvet9Xg41NZGcLdWChuxMjM5xuUE=
 github.com/vimeo/go-util v1.4.1/go.mod h1:r+yspV//C48HeMXV8nEvtUeNiIiGfVv3bbEHzOgudwE=
+github.com/yuin/goldmark v1.7.16 h1:n+CJdUxaFMiDUNnWC3dMWCIQJSkxH4uz3ZwQBkAlVNE=
+github.com/yuin/goldmark v1.7.16/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/contrib/detectors/gcp v1.38.0/go.mod h1:SU+iU7nu5ud4oCb3LQOhIZ3nRLj6FNVrKgtflbaf2ts=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0/go.mod h1:fvPi2qXDqFs8M4B4fmJhE92TyQs9Ydjlg3RvfUp+NbQ=

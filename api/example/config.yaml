@@ -3,13 +3,12 @@ log_file: ./rebuild.log
 
 directories:
   content: ../../site/content
-  site: ../../site/_site
   uploads: /tmp/cosy-uploads
   auth: ./auth
 
 site:
   name: Cosy Posts
-  build_command: cd ../../site && npx @11ty/eleventy
+  # build_command: cd ../../site && hugo build
   base_url: https://example.org
 
 email:

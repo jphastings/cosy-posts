@@ -1,0 +1,459 @@
+:root {
+  --bg: #fafafa;
+  --card-bg: #fff;
+  --text: #262626;
+  --text-secondary: #8e8e8e;
+  --border: #dbdbdb;
+  --action-hover: #f0f0f0;
+  --whatsapp: #25d366;
+  --signal: #3a76f0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000;
+    --card-bg: #000;
+    --text: #f5f5f5;
+    --text-secondary: #a8a8a8;
+    --border: #262626;
+    --action-hover: #1a1a1a;
+    --whatsapp: #25d366;
+    --signal: #3a76f0;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+*:not(dialog) {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+}
+
+.site-header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.site-header h1 a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* Contact preference button (header) */
+.contact-pref-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.contact-pref-btn:hover {
+  background: var(--action-hover);
+}
+
+.contact-pref-btn img {
+  display: block;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+/* Contact preference dialog */
+.contact-pref-dialog {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--text);
+  padding: 0;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  font-family: inherit;
+}
+
+
+.contact-pref-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.pref-dialog-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px 10px;
+}
+
+.pref-dialog-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pref-dialog-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.pref-dialog-close:hover {
+  color: var(--text);
+  background: var(--action-hover);
+}
+
+.pref-list {
+  list-style: none;
+  padding: 0 8px 8px;
+}
+
+.pref-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  transition: background 0.15s, opacity 0.15s, filter 0.15s, transform 0.15s;
+  position: relative;
+}
+
+.pref-list li:hover {
+  background: var(--action-hover);
+}
+
+.pref-list li.dragging {
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--card-bg);
+  opacity: 0.95;
+}
+
+.pref-list li.hidden-method {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+
+.pref-list .drop-indicator {
+  height: 2px;
+  background: var(--signal);
+  border-radius: 1px;
+  margin: -1px 8px;
+  pointer-events: none;
+}
+
+.pref-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  cursor: grab;
+  user-select: none;
+}
+
+.pref-divider.pref-divider-hidden {
+  display: none;
+}
+
+.pref-divider::before,
+.pref-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.pref-divider-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pref-drag-handle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: grab;
+  user-select: none;
+}
+
+.pref-icon img {
+  display: block;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.pref-label {
+  flex: 1;
+  font-size: 14px;
+}
+
+.feed {
+  max-width: 470px;
+  margin: 0 auto;
+}
+
+/* Post card */
+.post {
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+/* Carousel */
+.carousel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  background: var(--card-bg);
+}
+
+.carousel-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  touch-action: manipulation;
+}
+
+.carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-slide img,
+.carousel-slide video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Dot indicators */
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 0;
+  background: var(--card-bg);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  opacity: 0.35;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.dot.active {
+  opacity: 1;
+  background: var(--text);
+  transform: scale(1.3);
+}
+
+/* Prev/next arrows */
+.carousel-prev,
+.carousel-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: #262626;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.carousel:hover .carousel-prev,
+.carousel:hover .carousel-next {
+  opacity: 1;
+}
+
+.carousel-prev { left: 8px; }
+.carousel-next { right: 8px; }
+
+.carousel-prev:disabled,
+.carousel-next:disabled {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* Post actions row */
+.post-actions {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+}
+
+.post-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.post-author-name {
+  font-size: 13px;
+}
+
+.contact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 400;
+  transition: background 0.15s;
+}
+
+.contact-btn:hover {
+  background: var(--action-hover);
+}
+
+.contact-icon img {
+  display: block;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.contact-btn[data-method="whatsapp"] .contact-icon { color: var(--whatsapp); }
+.contact-btn[data-method="signal"] .contact-icon { color: var(--signal); }
+.contact-btn[data-method="email"] .contact-icon { color: var(--text-secondary); }
+
+.bookmark-btn,
+.bookmark-filter-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.bookmark-filter-btn {
+  display: none;
+  margin-right: 8px;
+  align-items: center;
+  gap: 4px;
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+
+.bookmark-filter-btn.visible {
+  display: flex;
+}
+
+.bookmark-filter-btn.active {
+  color: var(--text);
+}
+
+.bookmark-filter-label {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.bookmark-filter-label:empty {
+  display: none;
+}
+
+.bookmark-btn:hover,
+.bookmark-filter-btn:hover {
+  color: var(--text);
+  background: var(--action-hover);
+}
+
+.bookmark-btn img,
+.bookmark-filter-btn img {
+  display: block;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+/* Body text */
+.post-body {
+  padding: 0 12px 4px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.post-body p {
+  margin-bottom: 4px;
+}
+
+.post-body a {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Date */
+.post-date {
+  display: block;
+  padding: 0 12px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Empty state */
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+}

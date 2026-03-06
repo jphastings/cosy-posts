@@ -5,11 +5,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"chaos.awaits.us/api/auth"
 	"chaos.awaits.us/api/config"
 	"chaos.awaits.us/api/post"
 	"chaos.awaits.us/api/rebuild"
+	"chaos.awaits.us/api/site"
 	"chaos.awaits.us/api/upload"
 
 	tusd "github.com/tus/tusd/v2/pkg/handler"
@@ -41,7 +43,7 @@ func main() {
 			return
 		}
 
-		// Trigger site rebuild in the background.
+		// Trigger site rebuild in the background (only if external build configured).
 		rebuild.Trigger(cfg)
 	}
 
@@ -66,13 +68,26 @@ func main() {
 	mux.HandleFunc("POST /auth/send", auth.SendLink(cfg))
 	mux.HandleFunc("GET /auth/verify", auth.Verify(cfg))
 
-	// Serve the static site at the root.
-	mux.Handle("/", http.FileServer(http.Dir(cfg.SiteDir())))
+	// Serve the site at the root.
+	if cfg.RebuildCmd() != "" {
+		// External build system: serve pre-built static files.
+		mux.Handle("/", http.FileServer(http.Dir(cfg.SiteDir())))
+		log.Printf("Using external build command for site")
+	} else {
+		// Built-in site: render dynamically from embedded templates.
+		csvPath := filepath.Join(cfg.Dir, "can-post.csv")
+		siteHandler, err := site.NewHandler(cfg.ContentDir(), csvPath, cfg.SiteName())
+		if err != nil {
+			log.Fatalf("Failed to create site handler: %v", err)
+		}
+		mux.Handle("/", siteHandler)
+		log.Printf("Using built-in site renderer")
+	}
 
 	// Wrap all routes with auth middleware.
 	handler := auth.Middleware(cfg, mux)
 
-	// Run an initial site build on startup.
+	// Run an initial site build on startup (no-op if no build command).
 	rebuild.Trigger(cfg)
 
 	log.Printf("Listening on %s", cfg.Listen)

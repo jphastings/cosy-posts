@@ -1,80 +1,89 @@
 package config
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
+	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/spf13/viper"
 )
 
-// Config holds the server configuration loaded from YAML.
+// Config holds the server configuration loaded from YAML or environment variables.
 type Config struct {
-	Listen  string `yaml:"listen"`
-	LogFile string `yaml:"log_file"`
+	Listen  string `mapstructure:"listen"`
+	LogFile string `mapstructure:"log_file"`
 
 	Directories struct {
-		Content string `yaml:"content"`
-		Site    string `yaml:"site"`
-		Uploads string `yaml:"uploads"`
-		Auth    string `yaml:"auth"`
-	} `yaml:"directories"`
+		Content string `mapstructure:"content"`
+		Site    string `mapstructure:"site"`
+		Uploads string `mapstructure:"uploads"`
+		Auth    string `mapstructure:"auth"`
+	} `mapstructure:"directories"`
 
 	Site struct {
-		Name         string `yaml:"name"`
-		BuildCommand string `yaml:"build_command"`
-		BaseURL      string `yaml:"base_url"`
-	} `yaml:"site"`
+		Name         string `mapstructure:"name"`
+		BuildCommand string `mapstructure:"build_command"`
+		BaseURL      string `mapstructure:"base_url"`
+	} `mapstructure:"site"`
 
 	Email struct {
-		From         string `yaml:"from"`
-		ResendAPIKey string `yaml:"resend_api_key"`
-	} `yaml:"email"`
+		From         string `mapstructure:"from"`
+		ResendAPIKey string `mapstructure:"resend_api_key"`
+	} `mapstructure:"email"`
 
-	Dir string `yaml:"-"` // resolved directory of the config file itself
+	Dir string `mapstructure:"-"` // resolved directory of the config file itself
 }
 
 // Convenience accessors matching existing usage.
-func (c *Config) ContentDir() string  { return c.Directories.Content }
-func (c *Config) SiteDir() string     { return c.Directories.Site }
+func (c *Config) ContentDir() string   { return c.Directories.Content }
+func (c *Config) SiteDir() string      { return c.Directories.Site }
 func (c *Config) TUSUploadDir() string { return c.Directories.Uploads }
-func (c *Config) AuthDir() string     { return c.Directories.Auth }
-func (c *Config) SiteName() string    { return c.Site.Name }
-func (c *Config) RebuildCmd() string  { return c.Site.BuildCommand }
-func (c *Config) BaseURL() string     { return c.Site.BaseURL }
+func (c *Config) AuthDir() string      { return c.Directories.Auth }
+func (c *Config) SiteName() string     { return c.Site.Name }
+func (c *Config) RebuildCmd() string   { return c.Site.BuildCommand }
+func (c *Config) BaseURL() string      { return c.Site.BaseURL }
 func (c *Config) ResendAPIKey() string { return c.Email.ResendAPIKey }
-func (c *Config) FromEmail() string   { return c.Email.From }
+func (c *Config) FromEmail() string    { return c.Email.From }
 
-// Load reads and parses a YAML config file at the given path.
+// Load reads config from a YAML file (if provided) and/or environment variables.
+// Environment variables use the CHAOS_ prefix with underscores for nesting:
+//
+//	CHAOS_LISTEN, CHAOS_LOG_FILE,
+//	CHAOS_DIRECTORIES_CONTENT, CHAOS_DIRECTORIES_UPLOADS, etc.
+//	CHAOS_SITE_NAME, CHAOS_SITE_BUILD_COMMAND, CHAOS_SITE_BASE_URL,
+//	CHAOS_EMAIL_FROM, CHAOS_EMAIL_RESEND_API_KEY
 func Load(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading config file: %w", err)
+	v := viper.New()
+
+	// Defaults.
+	v.SetDefault("listen", ":8080")
+	v.SetDefault("directories.content", "./content")
+	v.SetDefault("directories.uploads", "./uploads")
+	v.SetDefault("directories.auth", "./auth")
+	v.SetDefault("directories.site", "./site")
+
+	// Environment variable binding.
+	v.SetEnvPrefix("CHAOS")
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+
+	// Load config file if specified.
+	if path != "" {
+		v.SetConfigFile(path)
+		if err := v.ReadInConfig(); err != nil {
+			return nil, err
+		}
 	}
 
 	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("parsing config file: %w", err)
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, err
 	}
 
-	if cfg.Listen == "" {
-		cfg.Listen = ":8080"
+	// Resolve relative paths against the config file's directory (or cwd).
+	configDir := "."
+	if path != "" {
+		configDir, _ = filepath.Abs(filepath.Dir(path))
 	}
-	if cfg.Directories.Content == "" {
-		cfg.Directories.Content = "./content"
-	}
-	if cfg.Directories.Uploads == "" {
-		cfg.Directories.Uploads = "./uploads"
-	}
-	if cfg.Directories.Auth == "" {
-		cfg.Directories.Auth = "./auth"
-	}
-	if cfg.Directories.Site == "" {
-		cfg.Directories.Site = "./site"
-	}
-
-	// Resolve relative paths against the config file's directory.
-	configDir, _ := filepath.Abs(filepath.Dir(path))
 	cfg.Dir = configDir
 	cfg.Directories.Content = resolve(configDir, cfg.Directories.Content)
 	cfg.Directories.Site = resolve(configDir, cfg.Directories.Site)

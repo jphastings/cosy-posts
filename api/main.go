@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -9,16 +8,18 @@ import (
 
 	"github.com/jphastings/cosy-posts/api/auth"
 	"github.com/jphastings/cosy-posts/api/config"
+	"github.com/jphastings/cosy-posts/api/info"
 	"github.com/jphastings/cosy-posts/api/post"
 	"github.com/jphastings/cosy-posts/api/rebuild"
 	"github.com/jphastings/cosy-posts/api/site"
 	"github.com/jphastings/cosy-posts/api/upload"
+	flag "github.com/spf13/pflag"
 
 	tusd "github.com/tus/tusd/v2/pkg/handler"
 )
 
 func main() {
-	configPath := flag.String("config", "config.yaml", "path to YAML config file")
+	configPath := flag.String("config", "", "path to YAML config file")
 	flag.Parse()
 
 	cfg, err := config.Load(*configPath)
@@ -58,6 +59,8 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
+
+	mux.HandleFunc("GET /api/info", info.Handler(cfg))
 
 	// Mount TUS upload handler at /files/.
 	mux.Handle("/files/", http.StripPrefix("/files/", uploadHandler))

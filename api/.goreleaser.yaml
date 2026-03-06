@@ -13,6 +13,10 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X github.com/jphastings/cosy-posts/api/info.Version={{.Version}}
+      - -X github.com/jphastings/cosy-posts/api/info.GitSHA={{.ShortCommit}}
     goos:
       - linux
       - darwin

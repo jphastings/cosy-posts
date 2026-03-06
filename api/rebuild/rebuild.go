@@ -10,11 +10,11 @@ import (
 )
 
 // Trigger runs the configured rebuild command in a background goroutine.
-// stdout and stderr are appended to the configured log file.
+// stdout and stderr are sent to the process's own stdout/stderr.
 // This function returns immediately without waiting for the command to finish.
 func Trigger(cfg *config.Config) {
-	if cfg.RebuildCmd() == "" {
-		log.Println("No rebuild command configured, skipping")
+	if !cfg.HasExternalSite() {
+		log.Println("No external site configured, skipping rebuild")
 		return
 	}
 
@@ -27,17 +27,8 @@ func Trigger(cfg *config.Config) {
 			"CAN_POST_CSV="+filepath.Join(cfg.Dir, "can-post.csv"),
 			"SITE_NAME="+cfg.SiteName(),
 		)
-
-		// Open log file in append mode.
-		logFile, err := os.OpenFile(cfg.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
-		if err != nil {
-			log.Printf("Error opening rebuild log file %s: %v", cfg.LogFile, err)
-			return
-		}
-		defer logFile.Close()
-
-		cmd.Stdout = logFile
-		cmd.Stderr = logFile
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 
 		if err := cmd.Run(); err != nil {
 			log.Printf("Rebuild command failed: %v", err)

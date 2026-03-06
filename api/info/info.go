@@ -18,7 +18,6 @@ var (
 
 type Response struct {
 	Name    string `json:"name"`
-	URL     string `json:"url"`
 	Version string `json:"version"`
 	GitSHA  string `json:"git_sha"`
 	Stats   Stats  `json:"stats"`
@@ -33,11 +32,10 @@ type Stats struct {
 
 func Handler(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		stats := countContent(cfg.ContentDir())
+		stats := countContent(cfg.ContentDir)
 
 		resp := Response{
 			Name:    cfg.SiteName(),
-			URL:     cfg.BaseURL(),
 			Version: Version,
 			GitSHA:  GitSHA,
 			Stats:   stats,

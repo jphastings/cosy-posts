@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -9,20 +11,14 @@ import (
 
 // Config holds the server configuration loaded from YAML or environment variables.
 type Config struct {
-	Listen  string `mapstructure:"listen"`
-	LogFile string `mapstructure:"log_file"`
-
-	Directories struct {
-		Content string `mapstructure:"content"`
-		Site    string `mapstructure:"site"`
-		Uploads string `mapstructure:"uploads"`
-		Auth    string `mapstructure:"auth"`
-	} `mapstructure:"directories"`
+	Listen     string `mapstructure:"listen"`
+	ContentDir string `mapstructure:"content_dir"`
+	AuthDir    string `mapstructure:"auth_dir"`
 
 	Site struct {
 		Name         string `mapstructure:"name"`
 		BuildCommand string `mapstructure:"build_command"`
-		BaseURL      string `mapstructure:"base_url"`
+		Directory    string `mapstructure:"directory"`
 	} `mapstructure:"site"`
 
 	Email struct {
@@ -30,39 +26,38 @@ type Config struct {
 		ResendAPIKey string `mapstructure:"resend_api_key"`
 	} `mapstructure:"email"`
 
-	Dir string `mapstructure:"-"` // resolved directory of the config file itself
+	Dir       string `mapstructure:"-"` // resolved directory of the config file itself
+	UploadDir string `mapstructure:"-"` // temporary directory for TUS uploads
 }
 
 // Convenience accessors matching existing usage.
-func (c *Config) ContentDir() string   { return c.Directories.Content }
-func (c *Config) SiteDir() string      { return c.Directories.Site }
-func (c *Config) TUSUploadDir() string { return c.Directories.Uploads }
-func (c *Config) AuthDir() string      { return c.Directories.Auth }
+func (c *Config) SiteDir() string      { return c.Site.Directory }
+func (c *Config) TUSUploadDir() string { return c.UploadDir }
 func (c *Config) SiteName() string     { return c.Site.Name }
 func (c *Config) RebuildCmd() string   { return c.Site.BuildCommand }
-func (c *Config) BaseURL() string      { return c.Site.BaseURL }
 func (c *Config) ResendAPIKey() string { return c.Email.ResendAPIKey }
 func (c *Config) FromEmail() string    { return c.Email.From }
 
+// HasExternalSite returns true when both a build command and site directory are configured.
+func (c *Config) HasExternalSite() bool {
+	return c.Site.BuildCommand != "" && c.Site.Directory != ""
+}
+
 // Load reads config from a YAML file (if provided) and/or environment variables.
-// Environment variables use the CHAOS_ prefix with underscores for nesting:
+// Environment variables use the COSY_ prefix with underscores for nesting:
 //
-//	CHAOS_LISTEN, CHAOS_LOG_FILE,
-//	CHAOS_DIRECTORIES_CONTENT, CHAOS_DIRECTORIES_UPLOADS, etc.
-//	CHAOS_SITE_NAME, CHAOS_SITE_BUILD_COMMAND, CHAOS_SITE_BASE_URL,
-//	CHAOS_EMAIL_FROM, CHAOS_EMAIL_RESEND_API_KEY
+//	COSY_LISTEN, COSY_CONTENT_DIR, COSY_AUTH_DIR,
+//	COSY_SITE_NAME, COSY_SITE_BUILD_COMMAND, COSY_SITE_DIRECTORY,
+//	COSY_EMAIL_FROM, COSY_EMAIL_RESEND_API_KEY
 func Load(path string) (*Config, error) {
 	v := viper.New()
 
 	// Defaults.
 	v.SetDefault("listen", ":8080")
-	v.SetDefault("directories.content", "./content")
-	v.SetDefault("directories.uploads", "./uploads")
-	v.SetDefault("directories.auth", "./auth")
-	v.SetDefault("directories.site", "./site")
+	v.SetDefault("content_dir", "./content")
 
 	// Environment variable binding.
-	v.SetEnvPrefix("CHAOS")
+	v.SetEnvPrefix("COSY")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
@@ -79,19 +74,36 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 
+	// Validate required fields.
+	if cfg.Email.From == "" {
+		return nil, fmt.Errorf("email.from (COSY_EMAIL_FROM) is required")
+	}
+	if cfg.Email.ResendAPIKey == "" {
+		return nil, fmt.Errorf("email.resend_api_key (COSY_EMAIL_RESEND_API_KEY) is required")
+	}
+
 	// Resolve relative paths against the config file's directory (or cwd).
 	configDir := "."
 	if path != "" {
 		configDir, _ = filepath.Abs(filepath.Dir(path))
 	}
 	cfg.Dir = configDir
-	cfg.Directories.Content = resolve(configDir, cfg.Directories.Content)
-	cfg.Directories.Site = resolve(configDir, cfg.Directories.Site)
-	cfg.Directories.Uploads = resolve(configDir, cfg.Directories.Uploads)
-	cfg.Directories.Auth = resolve(configDir, cfg.Directories.Auth)
-	if cfg.LogFile != "" {
-		cfg.LogFile = resolve(configDir, cfg.LogFile)
+	cfg.ContentDir = resolve(configDir, cfg.ContentDir)
+	if cfg.AuthDir == "" {
+		cfg.AuthDir = configDir
+	} else {
+		cfg.AuthDir = resolve(configDir, cfg.AuthDir)
 	}
+	if cfg.Site.Directory != "" {
+		cfg.Site.Directory = resolve(configDir, cfg.Site.Directory)
+	}
+
+	// Create a temporary directory for TUS uploads.
+	uploadDir, err := os.MkdirTemp("", "cosy-uploads-*")
+	if err != nil {
+		return nil, fmt.Errorf("creating upload temp dir: %w", err)
+	}
+	cfg.UploadDir = uploadDir
 
 	return &cfg, nil
 }

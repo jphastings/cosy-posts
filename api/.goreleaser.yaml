@@ -39,6 +39,33 @@ changelog:
       - "^docs:"
       - "^test:"
 
+dockers:
+  - image_templates:
+      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-amd64"
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+    goarch: amd64
+
+  - image_templates:
+      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-arm64"
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+    goarch: arm64
+
+docker_manifests:
+  - name_template: "ghcr.io/jphastings/cosy-posts:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-amd64"
+      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/jphastings/cosy-posts:latest"
+    image_templates:
+      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-amd64"
+      - "ghcr.io/jphastings/cosy-posts:{{ .Version }}-arm64"
+
 homebrew_casks:
 - name: cosy-posts
   repository:

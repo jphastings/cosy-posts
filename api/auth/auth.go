@@ -166,15 +166,30 @@ func lookupRole(configDir, email string) string {
 }
 
 // LoginPage serves the login form.
-func LoginPage() http.HandlerFunc {
+func LoginPage(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		name := cfg.SiteName()
+		if name == "" {
+			name = r.Host
+		}
 		if r.URL.Query().Has("sent") {
-			fmt.Fprint(w, loginSentHTML)
+			fmt.Fprint(w, strings.ReplaceAll(loginSentHTML, "{{name}}", name))
 		} else {
-			fmt.Fprint(w, loginFormHTML)
+			fmt.Fprint(w, strings.ReplaceAll(loginFormHTML, "{{name}}", name))
 		}
 	}
+}
+
+// requestBaseURL returns the base URL (scheme + host) from the inbound request.
+func requestBaseURL(r *http.Request) string {
+	scheme := "https"
+	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	} else if r.TLS == nil {
+		scheme = "http"
+	}
+	return scheme + "://" + r.Host
 }
 
 // SendLink handles the login form submission.
@@ -199,7 +214,7 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 				http.Error(w, "Internal error", http.StatusInternalServerError)
 				return
 			}
-			if err := saveToken(cfg.AuthDir(), siteToken, email); err != nil {
+			if err := saveToken(cfg.AuthDir, siteToken, email); err != nil {
 				log.Printf("auth: save token: %v", err)
 				http.Error(w, "Internal error", http.StatusInternalServerError)
 				return
@@ -214,14 +229,14 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 					http.Error(w, "Internal error", http.StatusInternalServerError)
 					return
 				}
-				if err := saveToken(cfg.AuthDir(), appToken, email); err != nil {
+				if err := saveToken(cfg.AuthDir, appToken, email); err != nil {
 					log.Printf("auth: save app token: %v", err)
 					http.Error(w, "Internal error", http.StatusInternalServerError)
 					return
 				}
 			}
 
-			if err := sendMagicLink(cfg, email, siteToken, appToken, role); err != nil {
+			if err := sendMagicLink(cfg, requestBaseURL(r), email, siteToken, appToken, role); err != nil {
 				log.Printf("auth: send email to %s: %v", email, err)
 				// Still redirect so we don't leak info.
 			}
@@ -247,7 +262,7 @@ func Verify(cfg *config.Config) http.HandlerFunc {
 		token := r.URL.Query().Get("token")
 		wantsJSON := strings.Contains(r.Header.Get("Accept"), "application/json")
 
-		email, err := validateToken(cfg.AuthDir(), token)
+		email, err := validateToken(cfg.AuthDir, token)
 		if err != nil {
 			log.Printf("auth: verify: %v", err)
 			if wantsJSON {
@@ -272,7 +287,7 @@ func Verify(cfg *config.Config) http.HandlerFunc {
 			return
 		}
 
-		sessionID, err := createSession(cfg.AuthDir(), email, role)
+		sessionID, err := createSession(cfg.AuthDir, email, role)
 		if err != nil {
 			log.Printf("auth: create session: %v", err)
 			http.Error(w, "Internal error", http.StatusInternalServerError)
@@ -289,7 +304,7 @@ func Verify(cfg *config.Config) http.HandlerFunc {
 			return
 		}
 
-		secure := strings.HasPrefix(cfg.BaseURL(), "https")
+		secure := requestBaseURL(r)[:5] == "https"
 		http.SetCookie(w, &http.Cookie{
 			Name:     cookieName,
 			Value:    sessionID,
@@ -328,7 +343,7 @@ func Middleware(cfg *config.Config, next http.Handler) http.Handler {
 			return
 		}
 
-		email, role, err := validateSession(cfg.AuthDir(), sessionID)
+		email, role, err := validateSession(cfg.AuthDir, sessionID)
 		if err != nil {
 			log.Printf("auth: denied %s %s (%v)", r.Method, path, err)
 			authDenied(w, r)
@@ -357,19 +372,19 @@ func authDenied(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `{"error":"unauthorized"}`)
 }
 
-func sendMagicLink(cfg *config.Config, email, siteToken, appToken, role string) error {
-	siteLink := cfg.BaseURL() + "/auth/verify?token=" + siteToken
+func sendMagicLink(cfg *config.Config, baseURL, email, siteToken, appToken, role string) error {
+	siteLink := baseURL + "/auth/verify?token=" + siteToken
 
 	var html string
 	if role == "post" && appToken != "" {
-		appLink := "chaos://auth?token=" + appToken + "&server=" + cfg.BaseURL()
+		appLink := "cosy://auth?token=" + appToken + "&server=" + baseURL
 		html = fmt.Sprintf(`<p>Click to log in:</p>
 <p><a href="%s">Log in to the site</a></p>
 <p><a href="%s">Log in to the app</a></p>
 <p>These links expire in 15 minutes.</p>`, siteLink, appLink)
 	} else {
 		html = fmt.Sprintf(`<p>Click to log in:</p>
-<p><a href="%s">Log in to chaos.awaits.us</a></p>
+<p><a href="%s">Log in to the site</a></p>
 <p>This link expires in 15 minutes.</p>`, siteLink)
 	}
 
@@ -399,7 +414,7 @@ const loginFormHTML = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login — chaos.awaits.us</title>
+<title>Login — {{name}}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -418,7 +433,7 @@ background:#262626;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
 </head>
 <body>
 <div class="card">
-<h1>chaos.awaits.us</h1>
+<h1>{{name}}</h1>
 <form method="POST" action="/auth/send">
 <input type="email" name="email" placeholder="your@email.com" required autofocus>
 <button type="submit">Send Login Link</button>
@@ -432,7 +447,7 @@ const loginSentHTML = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Check your email — chaos.awaits.us</title>
+<title>Check your email — {{name}}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;

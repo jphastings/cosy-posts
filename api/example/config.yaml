@@ -1,15 +1,12 @@
 listen: ":8080"
-log_file: ./rebuild.log
 
-directories:
-  content: ../../site/content
-  uploads: /tmp/cosy-uploads
-  auth: ./auth
+content_dir: ../../site/content
+auth_dir: ./auth
 
 site:
   name: Cosy Posts
   # build_command: cd ../../site && hugo build
-  base_url: https://example.org
+  # directory: ../../site/public
 
 email:
   from: system@example.org

@@ -68,7 +68,7 @@ func Assemble(cfg *config.Config, event tusd.HookEvent) error {
 
 	// Create post directory: {content_dir}/YYYY/MM/DD/{nanoid}/
 	postDir := filepath.Join(
-		cfg.ContentDir(),
+		cfg.ContentDir,
 		postDate.Format("2006"),
 		postDate.Format("01"),
 		postDate.Format("02"),

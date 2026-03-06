@@ -7,12 +7,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"chaos.awaits.us/api/auth"
-	"chaos.awaits.us/api/config"
-	"chaos.awaits.us/api/post"
-	"chaos.awaits.us/api/rebuild"
-	"chaos.awaits.us/api/site"
-	"chaos.awaits.us/api/upload"
+	"github.com/jphastings/cosy-posts/api/auth"
+	"github.com/jphastings/cosy-posts/api/config"
+	"github.com/jphastings/cosy-posts/api/post"
+	"github.com/jphastings/cosy-posts/api/rebuild"
+	"github.com/jphastings/cosy-posts/api/site"
+	"github.com/jphastings/cosy-posts/api/upload"
 
 	tusd "github.com/tus/tusd/v2/pkg/handler"
 )

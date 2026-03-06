@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"chaos.awaits.us/api/config"
+	"github.com/jphastings/cosy-posts/api/config"
 )
 
 // Trigger runs the configured rebuild command in a background goroutine.

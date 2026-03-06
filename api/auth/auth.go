@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"chaos.awaits.us/api/config"
+	"github.com/jphastings/cosy-posts/api/config"
 	"github.com/resend/resend-go/v2"
 )
 

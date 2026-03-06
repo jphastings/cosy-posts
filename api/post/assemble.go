@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"chaos.awaits.us/api/config"
-	"chaos.awaits.us/api/photo"
+	"github.com/jphastings/cosy-posts/api/config"
+	"github.com/jphastings/cosy-posts/api/photo"
 
 	goexif "github.com/rwcarlsen/goexif/exif"
 	tusd "github.com/tus/tusd/v2/pkg/handler"

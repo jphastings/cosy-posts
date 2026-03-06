@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"chaos.awaits.us/api/config"
+	"github.com/jphastings/cosy-posts/api/config"
 
 	"github.com/tus/tusd/v2/pkg/filelocker"
 	"github.com/tus/tusd/v2/pkg/filestore"
@@ -18,10 +18,10 @@ type CompletionFunc func(event tusd.HookEvent)
 
 // Handler wraps the tusd handler and manages upload tracking.
 type Handler struct {
-	tusHandler  *tusd.Handler
-	onBodyDone  CompletionFunc
-	mu          sync.Mutex
-	cfg         *config.Config
+	tusHandler *tusd.Handler
+	onBodyDone CompletionFunc
+	mu         sync.Mutex
+	cfg        *config.Config
 }
 
 // NewHandler creates a new TUS upload handler.

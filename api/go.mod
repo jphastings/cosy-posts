@@ -1,4 +1,4 @@
-module chaos.awaits.us/api
+module github.com/jphastings/cosy-posts/api
 
 go 1.25.6
 

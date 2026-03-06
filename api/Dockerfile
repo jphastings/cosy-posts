@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.title="cosy-posts" \
       org.opencontainers.image.source="https://github.com/jphastings/cosy-posts" \
       org.opencontainers.image.licenses="MIT"
 
-COPY api /api
+COPY cosy-posts /cosy-posts
 
 ## Env vars useful for within Docker
 
@@ -33,4 +33,4 @@ VOLUME /data/auth
 
 EXPOSE 80
 
-ENTRYPOINT ["/api"]
+ENTRYPOINT ["/cosy-posts"]

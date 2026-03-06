@@ -71,11 +71,11 @@ type frontmatter struct {
 
 // Handler serves the embedded site, reading content from the filesystem.
 type Handler struct {
-	contentDir   string
-	csvPath      string
-	siteName     string
-	homeTmpl     *template.Template
-	singleTmpl   *template.Template
+	contentDir string
+	csvPath    string
+	siteName   string
+	homeTmpl   *template.Template
+	singleTmpl *template.Template
 }
 
 // NewHandler creates a site handler. contentDir is the path to the content
@@ -108,11 +108,11 @@ func NewHandler(contentDir, csvPath, siteName string) (*Handler, error) {
 	}
 
 	return &Handler{
-		contentDir:   absContentDir,
-		csvPath:      csvPath,
-		siteName:     siteName,
-		homeTmpl:     homeTmpl,
-		singleTmpl:   singleTmpl,
+		contentDir: absContentDir,
+		csvPath:    csvPath,
+		siteName:   siteName,
+		homeTmpl:   homeTmpl,
+		singleTmpl: singleTmpl,
 	}, nil
 }
 
@@ -120,30 +120,36 @@ func NewHandler(contentDir, csvPath, siteName string) (*Handler, error) {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
-	// Static assets from embedded files.
+	// Static assets from embedded files (immutable, cache 1 week).
 	switch path {
 	case "/css/style.css":
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=604800")
 		w.Write(styleCSS)
 		return
 	case "/img/bookmark.svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Cache-Control", "public, max-age=15552000")
 		w.Write(bookmarkSVG)
 		return
 	case "/img/bookmarked.svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Cache-Control", "public, max-age=15552000")
 		w.Write(bookmarkedSVG)
 		return
 	case "/img/email.svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Cache-Control", "public, max-age=15552000")
 		w.Write(emailSVG)
 		return
 	case "/img/signal.svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Cache-Control", "public, max-age=15552000")
 		w.Write(signalSVG)
 		return
 	case "/img/whatsapp.svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Cache-Control", "public, max-age=15552000")
 		w.Write(whatsappSVG)
 		return
 	}
@@ -154,7 +160,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Try to serve media files from content directory.
+	// Media files from content directory (immutable uploads, cache 1 week).
 	// URLs look like /content/2026/03/04/{id}/media_0.jpg
 	if strings.HasPrefix(path, "/content/") {
 		rel := strings.TrimPrefix(path, "/content/")
@@ -166,6 +172,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
+		w.Header().Set("Cache-Control", "public, max-age=604800, immutable")
 		http.ServeFile(w, r, abs)
 		return
 	}
@@ -186,6 +193,7 @@ func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "public, max-age=21600")
 	if err := h.homeTmpl.ExecuteTemplate(w, "base.html", data); err != nil {
 		log.Printf("site: render home: %v", err)
 	}

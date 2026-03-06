@@ -34,7 +34,7 @@
               
             }
           }
-          return member.methods[0] || null;
+          return null;
         }
         function buildContactURL(method, postURL) {
           var fullURL = location.origin + postURL;
@@ -58,144 +58,225 @@
             var author = btn.getAttribute('data-author');
             var postURL = btn.getAttribute('data-post-url');
             var method = resolveMethod(author);
-            if (! method) 
+            if (!method) {
+              btn.style.display = 'none';
               return;
-            
+            }
+            btn.style.display = '';
             btn.href = buildContactURL(method, postURL);
             btn.setAttribute('data-method', method.type);
             var img = btn.querySelector('.contact-icon img');
-            if (img) 
+            if (img)
               img.src = '/img/' + method.type + '.svg';
             
           });
         }
         // --- Contact preference dialog ---
-        var METHOD_NAMES = { whatsapp: 'WhatsApp', signal: 'Signal', email: 'Email' };
+        var METHOD_NAMES = {
+          whatsapp: 'WhatsApp',
+          signal: 'Signal',
+          email: 'Email'
+        };
         var prefBtn = document.querySelector('.contact-pref-btn');
         var prefDialog = document.querySelector('.contact-pref-dialog');
-        var prefList = prefDialog ? prefDialog.querySelector('.pref-list') : null;
-        var prefCloseBtn = prefDialog ? prefDialog.querySelector('.pref-dialog-close') : null;
-
+        var prefList = prefDialog
+          ? prefDialog.querySelector('.pref-list')
+          : null;
+        var prefCloseBtn = prefDialog
+          ? prefDialog.querySelector('.pref-dialog-close')
+          : null;
         function syncPrefBtnIcon() {
-          if (!prefBtn) return;
+          if (! prefBtn) 
+            return;
+          
           var pref = getPref();
           var img = prefBtn.querySelector('img');
-          if (img && pref.length > 0) img.src = '/img/' + pref[0] + '.svg';
+          if (img && pref.length > 0) 
+            img.src = '/img/' + pref[0] + '.svg';
+          
         }
-
         function getOrderedMethods() {
           var pref = getPref();
-          var unchecked = ALL_METHODS.filter(function (m) {
+          var hidden = ALL_METHODS.filter(function (m) {
             return pref.indexOf(m) === -1;
           }).sort();
-          return pref.map(function (m) { return { method: m, checked: true }; })
-            .concat(unchecked.map(function (m) { return { method: m, checked: false }; }));
+          return {shown: pref, hidden: hidden};
         }
-
+        function createMethodLi(method, isHidden) {
+          var li = document.createElement('li');
+          li.setAttribute('data-method', method);
+          if (isHidden) li.classList.add('hidden-method');
+          var handle = document.createElement('span');
+          handle.className = 'pref-drag-handle';
+          handle.textContent = '\u2630';
+          var icon = document.createElement('span');
+          icon.className = 'pref-icon';
+          icon.innerHTML = '<img src="/img/' + method + '.svg" alt="">';
+          var label = document.createElement('span');
+          label.className = 'pref-label';
+          label.textContent = METHOD_NAMES[method] || method;
+          li.appendChild(handle);
+          li.appendChild(icon);
+          li.appendChild(label);
+          return li;
+        }
+        function createDivider() {
+          var li = document.createElement('li');
+          li.className = 'pref-divider';
+          li.setAttribute('data-divider', 'true');
+          var text = document.createElement('span');
+          text.className = 'pref-divider-text';
+          text.textContent = '\u2193 Not shown \u2193';
+          li.appendChild(text);
+          return li;
+        }
         function renderPrefList() {
           if (!prefList) return;
           prefList.innerHTML = '';
-          var items = getOrderedMethods();
-          items.forEach(function (item) {
-            var li = document.createElement('li');
-            li.setAttribute('data-method', item.method);
-            li.draggable = true;
-            if (!item.checked) li.classList.add('unchecked');
-
-            var handle = document.createElement('span');
-            handle.className = 'pref-drag-handle';
-            handle.textContent = '\u2630';
-
-            var icon = document.createElement('span');
-            icon.className = 'pref-icon';
-            icon.innerHTML = '<img src="/img/' + item.method + '.svg" alt="">';
-
-            var label = document.createElement('span');
-            label.className = 'pref-label';
-            label.textContent = METHOD_NAMES[item.method] || item.method;
-
-            var check = document.createElement('input');
-            check.type = 'checkbox';
-            check.className = 'pref-check';
-            check.checked = item.checked;
-            if (item.method === 'email') { check.checked = true; check.disabled = true; }
-
-            li.appendChild(handle);
-            li.appendChild(icon);
-            li.appendChild(label);
-            li.appendChild(check);
-            prefList.appendChild(li);
-
-            // Checkbox toggle
-            check.addEventListener('change', function () {
-              var pref = getPref();
-              if (check.checked) {
-                if (pref.indexOf(item.method) === -1) pref.push(item.method);
-              } else {
-                var idx = pref.indexOf(item.method);
-                if (idx !== -1 && pref.length > 1) pref.splice(idx, 1);
-                else { check.checked = true; return; }
-              }
-              setPref(pref);
-              updateContactButtons();
-              syncPrefBtnIcon();
-              renderPrefList();
-            });
+          var order = getOrderedMethods();
+          order.shown.forEach(function (m) {
+            prefList.appendChild(createMethodLi(m, false));
+          });
+          prefList.appendChild(createDivider());
+          order.hidden.forEach(function (m) {
+            prefList.appendChild(createMethodLi(m, true));
+          });
+          updateDividerVisibility(false);
+        }
+        function updateHiddenStyles() {
+          var pastDivider = false;
+          Array.from(prefList.children).forEach(function (el) {
+            if (el.classList.contains('drop-indicator')) return;
+            if (el.hasAttribute('data-divider')) { pastDivider = true; return; }
+            el.classList.toggle('hidden-method', pastDivider);
           });
         }
+        function updateDividerVisibility(forceShow) {
+          var divider = prefList.querySelector('[data-divider]');
+          if (!divider) return;
+          var hasHidden = !!prefList.querySelector('.hidden-method');
+          divider.classList.toggle('pref-divider-hidden', !hasHidden && !forceShow);
+        }
+        function savePrefFromDOM() {
+          var newPref = [];
+          var pastDivider = false;
+          Array.from(prefList.children).forEach(function (el) {
+            if (el.classList.contains('drop-indicator')) return;
+            if (el.hasAttribute('data-divider')) { pastDivider = true; return; }
+            var m = el.getAttribute('data-method');
+            if (!pastDivider) newPref.push(m);
+          });
+          if (newPref.length === 0) newPref.push('email');
+          setPref(newPref);
+          updateContactButtons();
+          syncPrefBtnIcon();
+        }
 
-        // Drag and drop reorder
-        var dragItem = null;
+        // Pointer-event-based sortable
         if (prefList) {
-          prefList.addEventListener('dragstart', function (e) {
-            var li = e.target.closest('li');
-            if (!li) return;
-            dragItem = li;
-            li.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-          });
-          prefList.addEventListener('dragend', function () {
-            if (dragItem) dragItem.classList.remove('dragging');
-            prefList.querySelectorAll('li').forEach(function (li) {
-              li.classList.remove('drag-over');
-            });
-            dragItem = null;
-          });
-          prefList.addEventListener('dragover', function (e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            var li = e.target.closest('li');
-            prefList.querySelectorAll('li').forEach(function (el) {
-              el.classList.remove('drag-over');
-            });
-            if (li && li !== dragItem) li.classList.add('drag-over');
-          });
-          prefList.addEventListener('drop', function (e) {
-            e.preventDefault();
-            var target = e.target.closest('li');
-            if (!target || !dragItem || target === dragItem) return;
-            // Build new order from DOM
-            var allLi = Array.from(prefList.querySelectorAll('li'));
-            var fromIdx = allLi.indexOf(dragItem);
-            var toIdx = allLi.indexOf(target);
-            allLi.splice(fromIdx, 1);
-            allLi.splice(toIdx, 0, dragItem);
-            // Derive new pref: checked items in new order, unchecked sorted to bottom
-            var pref = getPref();
-            var newPref = [];
-            allLi.forEach(function (li) {
-              var m = li.getAttribute('data-method');
-              if (pref.indexOf(m) !== -1) newPref.push(m);
-            });
-            // Ensure email is always in pref
-            if (newPref.indexOf('email') === -1) newPref.push('email');
-            setPref(newPref);
-            updateContactButtons();
-            syncPrefBtnIcon();
-            renderPrefList();
-          });
-        }
+          var dragging = null;
+          var startY = 0;
+          var offsetY = 0;
+          var indicator = null;
 
+          function getItems() {
+            return Array.from(prefList.children).filter(function (el) {
+              return !el.classList.contains('drop-indicator');
+            });
+          }
+
+          function removeIndicator() {
+            if (indicator && indicator.parentNode) indicator.parentNode.removeChild(indicator);
+            indicator = null;
+          }
+
+          function getClosestItem(y) {
+            var items = getItems();
+            var closest = null;
+            var closestDist = Infinity;
+            var insertBefore = true;
+            items.forEach(function (item) {
+              if (item === dragging) return;
+              var rect = item.getBoundingClientRect();
+              var mid = rect.top + rect.height / 2;
+              var dist = Math.abs(y - mid);
+              if (dist < closestDist) {
+                closestDist = dist;
+                closest = item;
+                insertBefore = y < mid;
+              }
+            });
+            return { item: closest, before: insertBefore };
+          }
+
+          prefList.addEventListener('pointerdown', function (e) {
+            var li = e.target.closest('li');
+            if (!li || li.classList.contains('drop-indicator')) return;
+            if (!prefList.contains(li)) return;
+
+            dragging = li;
+            var rect = li.getBoundingClientRect();
+            startY = e.clientY;
+            offsetY = e.clientY - rect.top;
+            li.setPointerCapture(e.pointerId);
+
+            li.addEventListener('pointermove', onMove);
+            li.addEventListener('pointerup', onUp);
+            li.addEventListener('pointercancel', onUp);
+
+            updateDividerVisibility(true);
+            // Delay adding dragging class to distinguish from taps
+            li._dragTimeout = setTimeout(function () {
+              li.classList.add('dragging');
+            }, 0);
+          });
+
+          function onMove(e) {
+            if (!dragging) return;
+            dragging.classList.add('dragging');
+
+            // Position the dragged item with transform
+            var dy = e.clientY - startY;
+            dragging.style.transform = 'translateY(' + dy + 'px)';
+
+            // Show drop indicator
+            removeIndicator();
+            var target = getClosestItem(e.clientY);
+            if (target.item) {
+              indicator = document.createElement('div');
+              indicator.className = 'drop-indicator';
+              if (target.before) {
+                target.item.before(indicator);
+              } else {
+                target.item.after(indicator);
+              }
+            }
+          }
+
+          function onUp(e) {
+            if (!dragging) return;
+            clearTimeout(dragging._dragTimeout);
+            dragging.removeEventListener('pointermove', onMove);
+            dragging.removeEventListener('pointerup', onUp);
+            dragging.removeEventListener('pointercancel', onUp);
+
+            dragging.style.transform = '';
+            dragging.classList.remove('dragging');
+
+            // Move to indicator position
+            if (indicator && indicator.parentNode) {
+              indicator.before(dragging);
+              removeIndicator();
+              updateHiddenStyles();
+              savePrefFromDOM();
+              updateDividerVisibility(false);
+            } else {
+              updateDividerVisibility(false);
+            }
+
+            dragging = null;
+          }
+        }
         // Open/close dialog
         if (prefBtn && prefDialog) {
           prefBtn.addEventListener('click', function () {
@@ -206,7 +287,9 @@
             prefDialog.close();
           });
           prefDialog.addEventListener('click', function (e) {
-            if (e.target === prefDialog) prefDialog.close();
+            if (e.target === prefDialog) 
+              prefDialog.close();
+            
           });
         }
         syncPrefBtnIcon();

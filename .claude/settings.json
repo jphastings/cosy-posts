@@ -11,7 +11,8 @@
       "Bash(xcodebuild *)",
       "Bash(xcrun *)",
       "WebFetch(domain:tus.github.io)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(npx @11ty/eleventy *)"
     ]
   },
   "hooks": {

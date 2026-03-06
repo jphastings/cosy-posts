@@ -141,7 +141,10 @@ body {
   padding: 8px;
   border-radius: 8px;
   cursor: grab;
-  transition: background 0.15s, opacity 0.15s;
+  touch-action: none;
+  user-select: none;
+  transition: background 0.15s, opacity 0.15s, filter 0.15s, transform 0.15s;
+  position: relative;
 }
 
 .pref-list li:hover {
@@ -149,15 +152,50 @@ body {
 }
 
 .pref-list li.dragging {
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--card-bg);
+  opacity: 0.95;
+}
+
+.pref-list li.hidden-method {
+  filter: grayscale(1);
   opacity: 0.4;
 }
 
-.pref-list li.drag-over {
-  border-top: 2px solid var(--text-secondary);
+.pref-list .drop-indicator {
+  height: 2px;
+  background: var(--signal);
+  border-radius: 1px;
+  margin: -1px 8px;
+  pointer-events: none;
 }
 
-.pref-list li.unchecked {
-  opacity: 0.35;
+.pref-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  cursor: grab;
+  user-select: none;
+}
+
+.pref-divider.pref-divider-hidden {
+  display: none;
+}
+
+.pref-divider::before,
+.pref-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.pref-divider-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .pref-drag-handle {
@@ -176,18 +214,6 @@ body {
 .pref-label {
   flex: 1;
   font-size: 14px;
-}
-
-.pref-check {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.pref-check:disabled {
-  cursor: default;
-  opacity: 0.5;
 }
 
 .feed {
@@ -380,6 +406,10 @@ body {
   font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.bookmark-filter-label:empty {
+  display: none;
 }
 
 .bookmark-btn:hover,

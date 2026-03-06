@@ -1,0 +1,35 @@
+{{- $csvPath := getenv "CAN_POST_CSV" -}}
+{{- $members := dict -}}
+{{- if $csvPath -}}
+  {{- $data := os.ReadFile $csvPath -}}
+  {{- if $data -}}
+    {{- range split $data "\n" -}}
+      {{- $line := trim . " \r" -}}
+      {{- if $line -}}
+        {{- $cols := split $line "," -}}
+        {{- $email := trim (index $cols 0) " " -}}
+        {{- $name := $email -}}
+        {{- if gt (len $cols) 1 -}}
+          {{- $n := trim (index $cols 1) " " -}}
+          {{- if $n -}}{{ $name = $n }}{{ end -}}
+        {{- end -}}
+        {{- $methods := slice -}}
+        {{- range $i, $col := $cols -}}
+          {{- if ge $i 2 -}}
+            {{- $url := trim $col " " -}}
+            {{- if $url -}}
+              {{- if in $url "wa.me" -}}
+                {{- $methods = $methods | append (dict "type" "whatsapp" "url" $url) -}}
+              {{- else if in $url "signal.me" -}}
+                {{- $methods = $methods | append (dict "type" "signal" "url" $url) -}}
+              {{- end -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+        {{- $methods = $methods | append (dict "type" "email" "url" $email) -}}
+        {{- $members = merge $members (dict $email (dict "name" $name "methods" $methods)) -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $members -}}

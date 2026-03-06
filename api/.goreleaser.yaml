@@ -45,7 +45,7 @@ homebrew_casks:
   repository:
     owner: jphastings
     name: homebrew-tools
-    token: "{{ .Env.GITHUB_TOKEN }}"
+    token: "{{ .Env.GH_TOKEN }}"
   homepage: "https://github.com/jphastings/cosy-posts"
   url:
     verified: github.com/jphastings/cosy-posts

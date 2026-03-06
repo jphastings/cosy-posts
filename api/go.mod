@@ -4,6 +4,7 @@ go 1.25.6
 
 require (
 	github.com/adrium/goheif v0.0.0-20230113233934-ca402e77a786
+	github.com/gen2brain/heic v0.4.9
 	github.com/gen2brain/jpegli v0.3.4
 	github.com/resend/resend-go/v2 v2.28.0
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
@@ -14,6 +15,7 @@ require (
 )
 
 require (
+	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/tetratelabs/wazero v1.9.0 // indirect
 	github.com/tus/lockfile v1.2.0 // indirect
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8 // indirect

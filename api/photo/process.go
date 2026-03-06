@@ -12,7 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/adrium/goheif"
+	"github.com/adrium/goheif/heif"
+	"github.com/gen2brain/heic"
 	"github.com/gen2brain/jpegli"
 	"github.com/rwcarlsen/goexif/exif"
 	"golang.org/x/image/draw"
@@ -118,7 +119,8 @@ func extractExif(path string, format imageFormat) []byte {
 			return nil
 		}
 		defer f.Close()
-		data, err := goheif.ExtractExif(f)
+		hf := heif.Open(f)
+		data, err := hf.EXIF()
 		if err != nil {
 			return nil
 		}
@@ -394,7 +396,7 @@ func decodeImage(path string, format imageFormat) (image.Image, error) {
 }
 
 func decodeHEIC(r io.Reader) (image.Image, error) {
-	img, err := goheif.Decode(r)
+	img, err := heic.Decode(r)
 	if err != nil {
 		return nil, fmt.Errorf("decoding HEIC: %w", err)
 	}

@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct ChaosAwaitsApp: App {
+struct CosyPostsAdminApp: App {
     @State private var appState = AppState()
 
     var body: some Scene {

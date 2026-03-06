@@ -1,4 +1,4 @@
-name: ChaosAwaits
+name: CosyPostsAdmin
 options:
   bundleIdPrefix: us.awaits.chaos
   deploymentTarget:
@@ -13,19 +13,19 @@ settings:
     GENERATE_INFOPLIST_FILE: true
 
 targets:
-  ChaosAwaits:
+  CosyPostsAdmin:
     type: application
     supportedDestinations: [iOS, macOS]
     sources:
-      - Sources/ChaosAwaits
+      - Sources/CosyPostsAdmin
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: us.awaits.chaos.app
-        INFOPLIST_FILE: Sources/ChaosAwaits/Info.plist
+        INFOPLIST_FILE: Sources/CosyPostsAdmin/Info.plist
         GENERATE_INFOPLIST_FILE: false
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     entitlements:
-      path: Sources/ChaosAwaits/ChaosAwaits.entitlements
+      path: Sources/CosyPostsAdmin/CosyPostsAdmin.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-write: true

@@ -9,7 +9,7 @@ struct ServerSetupView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            Text("chaos.awaits.us")
+            Text("Cosy Posts")
                 .font(.title2.weight(.semibold))
                 .tracking(-0.5)
 
@@ -17,7 +17,7 @@ struct ServerSetupView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            TextField("https://chaos.awaits.us", text: $urlText)
+            TextField("https://example.org", text: $urlText)
                 .textFieldStyle(.roundedBorder)
                 .textContentType(.URL)
                 .autocorrectionDisabled()

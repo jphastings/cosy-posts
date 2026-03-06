@@ -5,7 +5,7 @@ import WebKit
 
 /// Shows the server's login page in a web view.
 /// The user enters their email, receives a magic link, and taps the app link
-/// which triggers a chaos:// deep link handled by the app.
+/// which triggers a cosy:// deep link handled by the app.
 struct LoginView: View {
     @Environment(AuthManager.self) private var authManager
 

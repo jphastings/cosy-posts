@@ -1,0 +1,481 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0C7C72816C894B8275F611EF /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C846ED64F06861D7F7A32ECA /* NetworkMonitor.swift */; };
+		1083ED115264A0341EE8EC86 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 60995587CAD3431837815D6B /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		11C8B8C8320C7A01BC5CC9B6 /* CoSyPostsAdminApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AE81AC66489681EC0E3F962 /* CoSyPostsAdminApp.swift */; };
+		184A23012C6F4FF371EA8885 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 491CD24E0EC32D908CF8BAC9 /* LoginView.swift */; };
+		1ABD1BF415D2529EC66EC05C /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF04570B5354F76CD638FF0 /* AuthManager.swift */; };
+		2BA08007FCFE2D385C42670B /* Nanoid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 855B800C08EC98A09C2863D7 /* Nanoid.swift */; };
+		40FF0BBF9D17BA0F768D9241 /* PendingPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FD06520F3EC55D98A561ADE /* PendingPost.swift */; };
+		50FB10DFDE4DAF739445ADA2 /* ComposeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D11916A795EA78FD27EF01A /* ComposeViewModel.swift */; };
+		64BB90A6705A8A07D57B25C5 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE6FB5291A8FECD68912BBF9 /* ContentView.swift */; };
+		6FF9FA2D07B64BD42412193F /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26B2AEF11E644EBA31ED7DA /* ShareViewController.swift */; };
+		8CBC025526D6D75EC7160B06 /* TUSClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8E3AC7CAA3976B6A42A1892 /* TUSClient.swift */; };
+		96ECEECD3A7DA8DDA3C0389F /* MediaItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = F319EE07CCD237F3E2F741AE /* MediaItem.swift */; };
+		99FED608ED32ADBB95F2CD10 /* UploadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FA1519FFC9BAD19BB8F7C5 /* UploadManager.swift */; };
+		C6A2D6C433806F49F22E35D8 /* ServerSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F63DB6C21487A5FB3AEEE1CD /* ServerSetupView.swift */; };
+		CBF03021B07D2CB40BE4DB4D /* SharedPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82AB88460FB969E3CEFB7F8 /* SharedPost.swift */; };
+		EC2937044B8848E8725AB0C4 /* MediaCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74DF9850A482DA51B71D4AFD /* MediaCarouselView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C11D5EC33D7BBC368FF53A5E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CC3166E61260536F0AF711BF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 814AFC2A7385498C6E06FC66;
+			remoteInfo = ShareExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0C11FADB9525798197BB1824 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				1083ED115264A0341EE8EC86 /* ShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		3BDA0B069AD89E36F7045EC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		3D2F736647B65C861082AE27 /* CoSyPostsAdmin.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CoSyPostsAdmin.entitlements; sourceTree = "<group>"; };
+		491CD24E0EC32D908CF8BAC9 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		4AE81AC66489681EC0E3F962 /* CoSyPostsAdminApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoSyPostsAdminApp.swift; sourceTree = "<group>"; };
+		60995587CAD3431837815D6B /* ShareExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		74DF9850A482DA51B71D4AFD /* MediaCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCarouselView.swift; sourceTree = "<group>"; };
+		79A5D35C20BBEDC41A0D8348 /* ShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareExtension.entitlements; sourceTree = "<group>"; };
+		7D11916A795EA78FD27EF01A /* ComposeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeViewModel.swift; sourceTree = "<group>"; };
+		855B800C08EC98A09C2863D7 /* Nanoid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nanoid.swift; sourceTree = "<group>"; };
+		9FD06520F3EC55D98A561ADE /* PendingPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingPost.swift; sourceTree = "<group>"; };
+		AAF04570B5354F76CD638FF0 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		B12C77F490D196C6099751F8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C26B2AEF11E644EBA31ED7DA /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		C82AB88460FB969E3CEFB7F8 /* SharedPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedPost.swift; sourceTree = "<group>"; };
+		C846ED64F06861D7F7A32ECA /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		D4FA1519FFC9BAD19BB8F7C5 /* UploadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadManager.swift; sourceTree = "<group>"; };
+		D73C7D66ADAFA04C25DBE689 /* CosyPostsAdmin.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CosyPostsAdmin.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DE6FB5291A8FECD68912BBF9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		F319EE07CCD237F3E2F741AE /* MediaItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItem.swift; sourceTree = "<group>"; };
+		F63DB6C21487A5FB3AEEE1CD /* ServerSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerSetupView.swift; sourceTree = "<group>"; };
+		F8E3AC7CAA3976B6A42A1892 /* TUSClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TUSClient.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		10CD71A1FE2D757FE312AF1B = {
+			isa = PBXGroup;
+			children = (
+				2A4EA1A24C761B76FBD8E04F /* CosyPostsAdmin */,
+				C57216B126DFD3E93C5A5D12 /* ShareExtension */,
+				84A00A3362BE165933E2D7BD /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2A4EA1A24C761B76FBD8E04F /* CosyPostsAdmin */ = {
+			isa = PBXGroup;
+			children = (
+				AAF04570B5354F76CD638FF0 /* AuthManager.swift */,
+				7D11916A795EA78FD27EF01A /* ComposeViewModel.swift */,
+				DE6FB5291A8FECD68912BBF9 /* ContentView.swift */,
+				3D2F736647B65C861082AE27 /* CoSyPostsAdmin.entitlements */,
+				4AE81AC66489681EC0E3F962 /* CoSyPostsAdminApp.swift */,
+				3BDA0B069AD89E36F7045EC4 /* Info.plist */,
+				491CD24E0EC32D908CF8BAC9 /* LoginView.swift */,
+				74DF9850A482DA51B71D4AFD /* MediaCarouselView.swift */,
+				F319EE07CCD237F3E2F741AE /* MediaItem.swift */,
+				855B800C08EC98A09C2863D7 /* Nanoid.swift */,
+				C846ED64F06861D7F7A32ECA /* NetworkMonitor.swift */,
+				9FD06520F3EC55D98A561ADE /* PendingPost.swift */,
+				F63DB6C21487A5FB3AEEE1CD /* ServerSetupView.swift */,
+				C82AB88460FB969E3CEFB7F8 /* SharedPost.swift */,
+				F8E3AC7CAA3976B6A42A1892 /* TUSClient.swift */,
+				D4FA1519FFC9BAD19BB8F7C5 /* UploadManager.swift */,
+			);
+			name = CosyPostsAdmin;
+			path = Sources/CosyPostsAdmin;
+			sourceTree = "<group>";
+		};
+		84A00A3362BE165933E2D7BD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D73C7D66ADAFA04C25DBE689 /* CosyPostsAdmin.app */,
+				60995587CAD3431837815D6B /* ShareExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C57216B126DFD3E93C5A5D12 /* ShareExtension */ = {
+			isa = PBXGroup;
+			children = (
+				B12C77F490D196C6099751F8 /* Info.plist */,
+				79A5D35C20BBEDC41A0D8348 /* ShareExtension.entitlements */,
+				C26B2AEF11E644EBA31ED7DA /* ShareViewController.swift */,
+			);
+			name = ShareExtension;
+			path = Sources/ShareExtension;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		814AFC2A7385498C6E06FC66 /* ShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C0346345CF2ACBD7874DC4E9 /* Build configuration list for PBXNativeTarget "ShareExtension" */;
+			buildPhases = (
+				5B40921F975428F93C08FA56 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ShareExtension;
+			packageProductDependencies = (
+			);
+			productName = ShareExtension;
+			productReference = 60995587CAD3431837815D6B /* ShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		A995BF4B5D3020B6F78FFCF4 /* CosyPostsAdmin */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C83F13CBA66B1139D0D9A03E /* Build configuration list for PBXNativeTarget "CosyPostsAdmin" */;
+			buildPhases = (
+				E6D7A193DDAFF7D9C6DABC21 /* Sources */,
+				0C11FADB9525798197BB1824 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0B0E46F87CB3EA57C2FAE944 /* PBXTargetDependency */,
+			);
+			name = CosyPostsAdmin;
+			packageProductDependencies = (
+			);
+			productName = CosyPostsAdmin;
+			productReference = D73C7D66ADAFA04C25DBE689 /* CosyPostsAdmin.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CC3166E61260536F0AF711BF /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2630;
+			};
+			buildConfigurationList = 7D8BE7E7A76DA2635F1D9DF3 /* Build configuration list for PBXProject "CosyPostsAdmin" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 10CD71A1FE2D757FE312AF1B;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A995BF4B5D3020B6F78FFCF4 /* CosyPostsAdmin */,
+				814AFC2A7385498C6E06FC66 /* ShareExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5B40921F975428F93C08FA56 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6FF9FA2D07B64BD42412193F /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E6D7A193DDAFF7D9C6DABC21 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1ABD1BF415D2529EC66EC05C /* AuthManager.swift in Sources */,
+				11C8B8C8320C7A01BC5CC9B6 /* CoSyPostsAdminApp.swift in Sources */,
+				50FB10DFDE4DAF739445ADA2 /* ComposeViewModel.swift in Sources */,
+				64BB90A6705A8A07D57B25C5 /* ContentView.swift in Sources */,
+				184A23012C6F4FF371EA8885 /* LoginView.swift in Sources */,
+				EC2937044B8848E8725AB0C4 /* MediaCarouselView.swift in Sources */,
+				96ECEECD3A7DA8DDA3C0389F /* MediaItem.swift in Sources */,
+				2BA08007FCFE2D385C42670B /* Nanoid.swift in Sources */,
+				0C7C72816C894B8275F611EF /* NetworkMonitor.swift in Sources */,
+				40FF0BBF9D17BA0F768D9241 /* PendingPost.swift in Sources */,
+				C6A2D6C433806F49F22E35D8 /* ServerSetupView.swift in Sources */,
+				CBF03021B07D2CB40BE4DB4D /* SharedPost.swift in Sources */,
+				8CBC025526D6D75EC7160B06 /* TUSClient.swift in Sources */,
+				99FED608ED32ADBB95F2CD10 /* UploadManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0B0E46F87CB3EA57C2FAE944 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 814AFC2A7385498C6E06FC66 /* ShareExtension */;
+			targetProxy = C11D5EC33D7BBC368FF53A5E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		004802CA0EA7127EB8073E1A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/ShareExtension/ShareExtension.entitlements;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/ShareExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = us.awaits.chaos.app.share;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		035F4F8D365136AF39A69558 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		0E2EAB179F211CC30749C2A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/CosyPostsAdmin/CosyPostsAdmin.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/CosyPostsAdmin/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = us.awaits.chaos.app;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5EC1B4318A175F8927FB4766 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		8C5DFF0C91C5DB8AF602E591 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/ShareExtension/ShareExtension.entitlements;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/ShareExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = us.awaits.chaos.app.share;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C5A69A63D7DA3E16260047BF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/CosyPostsAdmin/CosyPostsAdmin.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/CosyPostsAdmin/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = us.awaits.chaos.app;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		7D8BE7E7A76DA2635F1D9DF3 /* Build configuration list for PBXProject "CosyPostsAdmin" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				035F4F8D365136AF39A69558 /* Debug */,
+				5EC1B4318A175F8927FB4766 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C0346345CF2ACBD7874DC4E9 /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				004802CA0EA7127EB8073E1A /* Debug */,
+				8C5DFF0C91C5DB8AF602E591 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C83F13CBA66B1139D0D9A03E /* Build configuration list for PBXNativeTarget "CosyPostsAdmin" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0E2EAB179F211CC30749C2A3 /* Debug */,
+				C5A69A63D7DA3E16260047BF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = CC3166E61260536F0AF711BF /* Project object */;
+}

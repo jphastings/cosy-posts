@@ -1,7 +1,7 @@
 import Foundation
 import os
 
-private let tusLog = Logger(subsystem: "us.awaits.chaos", category: "TUS")
+private let tusLog = Logger(subsystem: "com.cosyposts", category: "TUS")
 
 /// TUS (tus.io) resumable upload client.
 ///

@@ -9,7 +9,7 @@ final class NetworkMonitor {
     var connectionType: ConnectionType = .unknown
 
     private let monitor = NWPathMonitor()
-    private let queue = DispatchQueue(label: "us.awaits.chaos.networkmonitor")
+    private let queue = DispatchQueue(label: "com.cosyposts.networkmonitor")
 
     enum ConnectionType: Sendable {
         case wifi

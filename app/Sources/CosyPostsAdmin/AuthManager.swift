@@ -49,10 +49,10 @@ final class AuthManager {
         self.email = UserDefaults.standard.string(forKey: "userEmail")
     }
 
-    /// Handle a chaos:// deep link.
-    /// Expected format: chaos://auth?token={token}&server={serverURL}
+    /// Handle a cosy:// deep link.
+    /// Expected format: cosy://auth?token={token}&server={serverURL}
     func handleDeepLink(_ url: URL) async {
-        guard url.scheme == "chaos", url.host == "auth" else { return }
+        guard url.scheme == "cosy", url.host == "auth" else { return }
 
         let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
         guard let token = components?.queryItems?.first(where: { $0.name == "token" })?.value else {

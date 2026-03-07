@@ -12,9 +12,8 @@
       "Bash(xcrun *)",
       "WebFetch(domain:tus.github.io)",
       "WebFetch(domain:github.com)",
-      "Bash(npx @11ty/eleventy *)",
-      "Bash(hugo build)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(echo \"exit: $?\")"
     ]
   },
   "hooks": {

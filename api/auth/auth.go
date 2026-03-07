@@ -153,6 +153,18 @@ func appendToCSV(path, email string) error {
 	return err
 }
 
+// ValidateAuthFiles checks that can-post.csv and can-view.csv exist and are
+// readable in configDir. Call at startup to fail fast with a clear message.
+func ValidateAuthFiles(configDir string) error {
+	for _, name := range []string{"can-post.csv", "can-view.csv"} {
+		path := filepath.Join(configDir, name)
+		if _, err := os.Stat(path); err != nil {
+			return fmt.Errorf("%s: %w\n\nCreate this file in %s with one email address per line to control access.\ncan-post.csv: users who can upload content\ncan-view.csv: users who can only view content", name, err, configDir)
+		}
+	}
+	return nil
+}
+
 // lookupRole returns the role for an email, or "" if not authorized.
 // CSV files are read from configDir (alongside config.yaml), not authDir.
 func lookupRole(configDir, email string) string {

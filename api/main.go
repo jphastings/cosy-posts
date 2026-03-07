@@ -27,6 +27,11 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	// Validate auth CSV files exist.
+	if err := auth.ValidateAuthFiles(cfg.Dir); err != nil {
+		log.Fatalf("Auth configuration error: %v", err)
+	}
+
 	// Ensure required directories exist.
 	for _, dir := range []string{cfg.ContentDir, cfg.TUSUploadDir(), cfg.AuthDir} {
 		if err := os.MkdirAll(dir, 0o755); err != nil {

@@ -1,10 +1,11 @@
 ---
 # chaos-0cpg
 title: Allow adding more media after initial selection
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-03-07T21:57:19Z
-updated_at: 2026-03-07T21:57:19Z
+updated_at: 2026-03-07T22:29:24Z
 ---
 
 Currently you can only select media once. Add the ability to add more media items after the initial selection.

@@ -1,4 +1,4 @@
-# chaos.awaits.us
+# Cosy Posts
 
 Private community platform for video/photo/audio/text sharing.
 
@@ -21,9 +21,9 @@ Monorepo with two main components:
 - `golang.org/x/image` — Image processing (CatmullRom downscaling)
 - `gopkg.in/yaml.v3` — YAML config and frontmatter
 
-**Package structure**: `config/`, `upload/`, `photo/`, `post/`, `rebuild/`
+**Package structure**: `config/`, `upload/`, `photo/`, `post/`, `rebuild/`, `auth/`, `site/`, `info/`
 
-**Config file** (`api/config.yaml`): `listen`, `content_dir`, `tus_upload_dir`, `rebuild_command`, `log_file`
+**Config**: YAML file or env vars with `COSY_` prefix. Key fields: `listen`, `content_dir`, `auth_dir`, `site.name`, `site.build_command`, `site.directory`, `email.from`, `email.resend_api_key`
 
 **TUS metadata per upload**: `post-id` (required), `filename`, `content-type`. Body uploads add: `role: body`, `date` (ISO 8601), `content-ext` ("md"/"djot")
 
@@ -37,9 +37,9 @@ Monorepo with two main components:
 
 **Frontmatter fields**: `date` (ISO 8601, declared by uploader), `location` (`lat`/`lng` from first media with EXIF GPS), `tags` (array of #hashtags extracted from body text)
 
-**Site rebuild**: Configurable shell command, exec'd as subprocess, stdout/stderr piped to configured log file. Non-blocking.
+**Site rebuild**: Configurable shell command, exec'd as subprocess, stdout/stderr piped to stdout/stderr. Non-blocking.
 
-**Auth**: Skipped for now.
+**Auth**: Email magic link via Resend. CSV-based authorization (`can-post.csv`, `can-view.csv` in auth dir). Filesystem token/session storage.
 
 ## iOS App (`app/`)
 
@@ -53,7 +53,7 @@ Monorepo with two main components:
 
 **Key implementation details**:
 
-- App Group: `group.us.awaits.chaos`
+- App Group: `group.me.byjp.cosyposts`
 - Nanoid: `0-9a-z` alphabet, 21 chars
 - xcodegen used for project generation (`app/project.yml`)
 - `@Observable` pattern (not `ObservableObject`/`@Published`)

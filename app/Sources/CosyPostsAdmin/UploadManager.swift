@@ -191,7 +191,7 @@ final class UploadManager {
 
     /// Shared App Group container for share extension communication.
     static func sharedContainerURL() -> URL? {
-        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.us.awaits.chaos")
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.me.byjp.cosyposts")
     }
 
     /// Import posts created by the share extension from the shared container.

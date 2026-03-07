@@ -95,7 +95,7 @@ enum ShareHelper {
 
     static func saveToContainer(bodyText: String, items: [(data: Data, filename: String)]) throws {
         guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.us.awaits.chaos"
+            forSecurityApplicationGroupIdentifier: "group.me.byjp.cosyposts"
         ) else { return }
 
         let postID = NanoidHelper.generate()

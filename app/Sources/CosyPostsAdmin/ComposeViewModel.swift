@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import AVFoundation
 
 /// View model for the compose/post creation screen.
 @Observable
@@ -38,23 +39,44 @@ final class ComposeViewModel {
         mediaItems.removeAll { !selectedIDs.contains($0.pickerItem.itemIdentifier) }
     }
 
-    /// Load a thumbnail image for a media item.
+    /// Load a thumbnail image for a media item (supports both images and videos).
     private func loadThumbnail(for id: UUID) async {
         guard let index = mediaItems.firstIndex(where: { $0.id == id }) else { return }
         let item = mediaItems[index]
 
+        var thumbnail: Image?
+
+        // Try loading as image data first.
         if let data = try? await item.pickerItem.loadTransferable(type: Data.self),
            let platformImage = PlatformImage(data: data) {
-            let thumbnail = Image(platformImage: platformImage)
-            if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
-                mediaItems[idx].thumbnail = thumbnail
-                mediaItems[idx].loadingThumbnail = false
-            }
-        } else {
-            if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
-                mediaItems[idx].loadingThumbnail = false
-            }
+            thumbnail = Image(platformImage: platformImage)
         }
+
+        // If that failed, try loading as a video and generating a thumbnail frame.
+        if thumbnail == nil,
+           let videoURL = try? await item.pickerItem.loadTransferable(type: VideoTransferable.self) {
+            thumbnail = await generateVideoThumbnail(url: videoURL.url)
+        }
+
+        if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
+            mediaItems[idx].thumbnail = thumbnail
+            mediaItems[idx].loadingThumbnail = false
+        }
+    }
+
+    /// Generate a thumbnail from the first frame of a video.
+    private nonisolated func generateVideoThumbnail(url: URL) async -> Image? {
+        let asset = AVURLAsset(url: url)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: 512, height: 512)
+
+        guard let cgImage = try? await generator.image(at: .zero).image else {
+            return nil
+        }
+
+        let platformImage = PlatformImage(cgImage: cgImage)
+        return Image(platformImage: platformImage)
     }
 
     /// Remove a media item at the given index.

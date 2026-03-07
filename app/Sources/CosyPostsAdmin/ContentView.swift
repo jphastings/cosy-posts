@@ -206,6 +206,9 @@ final class SiteInfoLoader {
             guard let http = response as? HTTPURLResponse else { return }
             guard http.statusCode == 200 else {
                 infoLog.error("HTTP \(http.statusCode) from \(url)")
+                if http.statusCode == 401 {
+                    NotificationCenter.default.post(name: .authSessionExpired, object: nil)
+                }
                 return
             }
             info = try JSONDecoder().decode(SiteInfo.self, from: data)

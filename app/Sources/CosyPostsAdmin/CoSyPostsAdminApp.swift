@@ -21,6 +21,9 @@ struct CosyPostsAdminApp: App {
                         await appState.syncAuth()
                     }
                 }
+                .onReceive(NotificationCenter.default.publisher(for: .authSessionExpired)) { _ in
+                    appState.authManager.logout()
+                }
                 #if canImport(UIKit)
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                     Task {

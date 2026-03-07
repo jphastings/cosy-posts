@@ -1,6 +1,11 @@
 import Foundation
 import SwiftUI
 
+extension Notification.Name {
+    /// Posted by any component that receives an HTTP 401, indicating the session is invalid.
+    static let authSessionExpired = Notification.Name("authSessionExpired")
+}
+
 /// Manages authentication state: server URL, session token, and deep link handling.
 @Observable
 @MainActor

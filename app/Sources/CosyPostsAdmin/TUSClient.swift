@@ -62,7 +62,7 @@ actor TUSClient {
         }
 
         guard httpResponse.statusCode == 201 else {
-            throw TUSError.serverError(statusCode: httpResponse.statusCode)
+            throw TUSError.server(statusCode: httpResponse.statusCode)
         }
 
         guard let location = httpResponse.value(forHTTPHeaderField: "Location") else {
@@ -94,7 +94,7 @@ actor TUSClient {
         }
 
         guard httpResponse.statusCode == 200 else {
-            throw TUSError.serverError(statusCode: httpResponse.statusCode)
+            throw TUSError.server(statusCode: httpResponse.statusCode)
         }
 
         guard let offsetString = httpResponse.value(forHTTPHeaderField: "Upload-Offset"),
@@ -130,7 +130,7 @@ actor TUSClient {
         }
 
         guard httpResponse.statusCode == 204 else {
-            throw TUSError.serverError(statusCode: httpResponse.statusCode)
+            throw TUSError.server(statusCode: httpResponse.statusCode)
         }
 
         guard let newOffsetString = httpResponse.value(forHTTPHeaderField: "Upload-Offset"),
@@ -174,6 +174,14 @@ enum TUSError: Error, LocalizedError {
     case missingLocation
     case invalidLocation(String)
     case missingOffset
+
+    /// Create a server error, posting an auth-expired notification on 401.
+    static func server(statusCode: Int) -> TUSError {
+        if statusCode == 401 {
+            NotificationCenter.default.post(name: .authSessionExpired, object: nil)
+        }
+        return .serverError(statusCode: statusCode)
+    }
 
     var errorDescription: String? {
         switch self {

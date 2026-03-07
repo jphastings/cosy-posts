@@ -1,6 +1,9 @@
 import SwiftUI
 import SwiftData
 import PhotosUI
+import os
+
+private let infoLog = Logger(subsystem: "com.cosyposts", category: "SiteInfo")
 
 struct ContentView: View {
     @State private var viewModel = ComposeViewModel()
@@ -146,9 +149,13 @@ struct ContentView: View {
             #endif
             .sheet(isPresented: $showingSiteSheet) {
                 SiteInfoSheet(authManager: authManager, loader: siteInfoLoader)
+                    #if !os(macOS)
                     .presentationDetents([.medium])
+                    #else
+                    .frame(minWidth: 340, minHeight: 400)
+                    #endif
             }
-            .task {
+            .task(id: authManager.serverURL) {
                 guard let serverURL = authManager.serverURL else { return }
                 await siteInfoLoader.load(serverURL: serverURL, token: authManager.sessionToken)
             }
@@ -188,6 +195,7 @@ final class SiteInfoLoader {
         defer { isLoading = false }
 
         let url = serverURL.appendingPathComponent("api/info")
+        infoLog.info("Loading site info from \(url)")
         var request = URLRequest(url: url)
         if let token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -195,10 +203,15 @@ final class SiteInfoLoader {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { return }
+            guard let http = response as? HTTPURLResponse else { return }
+            guard http.statusCode == 200 else {
+                infoLog.error("HTTP \(http.statusCode) from \(url)")
+                return
+            }
             info = try JSONDecoder().decode(SiteInfo.self, from: data)
+            infoLog.info("Loaded: \(self.info?.name ?? "nil")")
         } catch {
-            // Silently fail — sheet shows what it can
+            infoLog.error("Failed: \(error)")
         }
     }
 }

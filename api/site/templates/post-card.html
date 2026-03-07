@@ -29,16 +29,19 @@
       {{if .AuthorName}}
         <strong class="post-author-name">{{.AuthorName}}</strong>
         <a class="contact-btn" href="#" target="_blank" rel="noopener" data-author="{{.Author}}" data-post-url="{{.URL}}">
-          <span class="contact-icon">
-            <img src="/img/whatsapp.svg" alt=""></span>
+          <span class="contact-icon contact-icon-whatsapp">{{icon "whatsapp"}}</span>
+          <span class="contact-icon contact-icon-signal">{{icon "signal"}}</span>
+          <span class="contact-icon contact-icon-email">{{icon "email"}}</span>
           <span class="contact-label">Send a message</span>
         </a>
       {{end}}
     </div>
     <button class="delete-btn" aria-label="Delete post">
-      <img src="/img/trash.svg" alt=""></button>
+      {{icon "trash"}}</button>
     <button class="bookmark-btn" aria-label="Bookmark">
-      <img src="/img/bookmark.svg" alt=""></button>
+      <span class="icon-bookmark">{{icon "bookmark"}}</span>
+      <span class="icon-bookmarked">{{icon "bookmarked"}}</span>
+    </button>
   </div>
   {{if .BodyHTML}}
     <div class="post-body">

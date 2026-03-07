@@ -99,8 +99,26 @@ func NewHandler(contentDir, csvPath, siteName string) (*Handler, error) {
 		return nil, fmt.Errorf("resolving content dir: %w", err)
 	}
 
+	// Build icon template function that inlines SVG content.
+	icons := map[string]template.HTML{
+		"bookmark":   template.HTML(bookmarkSVG),
+		"bookmarked": template.HTML(bookmarkedSVG),
+		"trash":      template.HTML(trashSVG),
+		"whatsapp":   template.HTML(whatsappSVG),
+		"signal":     template.HTML(signalSVG),
+		"email":      template.HTML(emailSVG),
+	}
+	funcMap := template.FuncMap{
+		"icon": func(name string) template.HTML {
+			if svg, ok := icons[name]; ok {
+				return svg
+			}
+			return ""
+		},
+	}
+
 	// Parse shared templates (base + post-card), then clone for each page type.
-	shared, err := template.ParseFS(templateFS, "templates/base.html", "templates/post-card.html")
+	shared, err := template.New("").Funcs(funcMap).ParseFS(templateFS, "templates/base.html", "templates/post-card.html")
 	if err != nil {
 		return nil, fmt.Errorf("parsing shared templates: %w", err)
 	}

@@ -78,7 +78,7 @@ body {
   background: var(--action-hover);
 }
 
-.contact-pref-btn img {
+.contact-pref-btn svg {
   display: block;
   width: 1.2em;
   height: 1.2em;
@@ -205,7 +205,7 @@ body {
   user-select: none;
 }
 
-.pref-icon img {
+.pref-icon svg {
   display: block;
   width: 1.2em;
   height: 1.2em;
@@ -363,15 +363,17 @@ body {
   background: var(--action-hover);
 }
 
-.contact-icon img {
+.contact-icon svg {
   display: block;
   width: 1.2em;
   height: 1.2em;
 }
 
-.contact-btn[data-method="whatsapp"] .contact-icon { color: var(--whatsapp); }
-.contact-btn[data-method="signal"] .contact-icon { color: var(--signal); }
-.contact-btn[data-method="email"] .contact-icon { color: var(--text-secondary); }
+/* Show only the icon matching the resolved contact method */
+.contact-icon { display: none; }
+.contact-btn[data-method="whatsapp"] .contact-icon-whatsapp { display: inline-flex; color: var(--whatsapp); }
+.contact-btn[data-method="signal"] .contact-icon-signal { display: inline-flex; color: var(--signal); }
+.contact-btn[data-method="email"] .contact-icon-email { display: inline-flex; color: var(--text-secondary); }
 
 .bookmark-btn,
 .bookmark-filter-btn {
@@ -418,11 +420,27 @@ body {
   background: var(--action-hover);
 }
 
-.bookmark-btn img,
-.bookmark-filter-btn img {
+.bookmark-btn svg,
+.bookmark-filter-btn svg {
   display: block;
   width: 1.2em;
   height: 1.2em;
+}
+
+/* Toggle between outline/filled bookmark icons */
+.bookmark-btn .icon-bookmarked,
+.bookmark-filter-btn .icon-bookmarked {
+  display: none;
+}
+
+.bookmark-btn.bookmarked .icon-bookmark,
+.bookmark-filter-btn.active .icon-bookmark {
+  display: none;
+}
+
+.bookmark-btn.bookmarked .icon-bookmarked,
+.bookmark-filter-btn.active .icon-bookmarked {
+  display: block;
 }
 
 /* Delete button — hidden unless body has data-can-delete */
@@ -447,7 +465,7 @@ body[data-can-delete] .delete-btn {
   background: var(--action-hover);
 }
 
-.delete-btn img {
+.delete-btn svg {
   display: block;
   width: 1.2em;
   height: 1.2em;

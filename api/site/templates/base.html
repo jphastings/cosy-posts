@@ -52,8 +52,6 @@
             btn.style.display = '';
             btn.href = buildContactURL(method, postURL);
             btn.setAttribute('data-method', method.type);
-            var img = btn.querySelector('.contact-icon img');
-            if (img) img.src = '/img/' + method.type + '.svg';
           });
         }
         // --- Contact preference dialog ---
@@ -65,14 +63,22 @@
         function syncPrefBtnIcon() {
           if (!prefBtn) return;
           var pref = getPref();
-          var img = prefBtn.querySelector('img');
-          if (img && pref.length > 0) img.src = '/img/' + pref[0] + '.svg';
+          var top = pref.length > 0 ? pref[0] : 'whatsapp';
+          prefBtn.querySelectorAll('.icon-contact').forEach(function (el) {
+            el.style.display = el.getAttribute('data-method') === top ? '' : 'none';
+          });
         }
         function getOrderedMethods() {
           var pref = getPref();
           var hidden = ALL_METHODS.filter(function (m) { return pref.indexOf(m) === -1; }).sort();
           return { shown: pref, hidden: hidden };
         }
+        // Grab inline SVGs from the pref button for reuse in the dialog.
+        var ICON_SVGS = {};
+        document.querySelectorAll('.contact-pref-btn .icon-contact').forEach(function (el) {
+          var m = el.getAttribute('data-method');
+          if (m) ICON_SVGS[m] = el.innerHTML;
+        });
         function createMethodLi(method, isHidden) {
           var li = document.createElement('li');
           li.setAttribute('data-method', method);
@@ -82,7 +88,7 @@
           handle.textContent = '\u2630';
           var icon = document.createElement('span');
           icon.className = 'pref-icon';
-          icon.innerHTML = '<img src="/img/' + method + '.svg" alt="">';
+          icon.innerHTML = ICON_SVGS[method] || '';
           var label = document.createElement('span');
           label.className = 'pref-label';
           label.textContent = METHOD_NAMES[method] || method;
@@ -246,8 +252,7 @@
             var post = btn.closest('.post');
             if (!post) return;
             var id = post.getAttribute('data-post-id');
-            var img = btn.querySelector('img');
-            if (img) img.src = bm.indexOf(id) !== -1 ? '/img/bookmarked.svg' : '/img/bookmark.svg';
+            btn.classList.toggle('bookmarked', bm.indexOf(id) !== -1);
           });
         }
         document.querySelectorAll('.bookmark-btn').forEach(function (btn) {
@@ -277,8 +282,6 @@
           if (!hasBookmarks && bookmarkFiltering) {
             bookmarkFiltering = false;
             filterBtn.classList.remove('active');
-            var img = filterBtn.querySelector('img');
-            if (img) img.src = '/img/bookmark.svg';
             if (filterLabel) filterLabel.textContent = '';
             applyBookmarkFilter();
           }
@@ -294,8 +297,6 @@
           filterBtn.addEventListener('click', function () {
             bookmarkFiltering = !bookmarkFiltering;
             filterBtn.classList.toggle('active', bookmarkFiltering);
-            var img = filterBtn.querySelector('img');
-            if (img) img.src = bookmarkFiltering ? '/img/bookmarked.svg' : '/img/bookmark.svg';
             if (filterLabel) filterLabel.textContent = bookmarkFiltering ? 'Only bookmarked' : '';
             applyBookmarkFilter();
           });

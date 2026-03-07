@@ -5,9 +5,14 @@
   </h1>
   <button class="bookmark-filter-btn" aria-label="Show bookmarked posts">
     <span class="bookmark-filter-label"></span>
-    <img src="/img/bookmark.svg" alt=""></button>
+    <span class="icon-bookmark">{{icon "bookmark"}}</span>
+    <span class="icon-bookmarked">{{icon "bookmarked"}}</span>
+  </button>
   <button class="contact-pref-btn" aria-label="Contact preferences">
-    <img src="/img/whatsapp.svg" alt=""></button>
+    <span class="icon-contact" data-method="whatsapp">{{icon "whatsapp"}}</span>
+    <span class="icon-contact" data-method="signal" style="display:none">{{icon "signal"}}</span>
+    <span class="icon-contact" data-method="email" style="display:none">{{icon "email"}}</span>
+  </button>
 </header>
 <dialog class="contact-pref-dialog">
   <div class="pref-dialog-header">

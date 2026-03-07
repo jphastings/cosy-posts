@@ -50,6 +50,7 @@ type Post struct {
 	AuthorName   string
 	Body         string
 	BodyHTML     template.HTML
+	Locale       string
 	Media        []MediaFile
 	URL          string
 	ISODate      string
@@ -67,6 +68,7 @@ type MediaFile struct {
 type frontmatter struct {
 	Date   string `yaml:"date"`
 	Author string `yaml:"author"`
+	Locale string `yaml:"locale"`
 }
 
 // Handler serves the embedded site, reading content from the filesystem.
@@ -182,7 +184,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 	members := h.parseMembers()
-	posts := h.loadPosts(members)
+	prefLang := preferredLocale(r)
+	posts := h.loadPosts(members, prefLang)
 
 	membersJSON, _ := json.Marshal(members)
 
@@ -194,12 +197,32 @@ func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=21600")
+	w.Header().Set("Vary", "Accept-Language")
 	if err := h.homeTmpl.ExecuteTemplate(w, "base.html", data); err != nil {
 		log.Printf("site: render home: %v", err)
 	}
 }
 
-func (h *Handler) loadPosts(members map[string]Member) []Post {
+// preferredLocale extracts the first language code from the Accept-Language header.
+func preferredLocale(r *http.Request) string {
+	accept := r.Header.Get("Accept-Language")
+	if accept == "" {
+		return ""
+	}
+	// Parse first language tag (e.g. "es-MX,es;q=0.9,en;q=0.8" → "es").
+	for _, part := range strings.Split(accept, ",") {
+		tag := strings.TrimSpace(strings.SplitN(part, ";", 2)[0])
+		if tag == "" || tag == "*" {
+			continue
+		}
+		// Return just the primary subtag (e.g. "es" from "es-MX").
+		lang, _, _ := strings.Cut(tag, "-")
+		return strings.ToLower(lang)
+	}
+	return ""
+}
+
+func (h *Handler) loadPosts(members map[string]Member, prefLang string) []Post {
 	var posts []Post
 
 	filepath.Walk(h.contentDir, func(path string, info os.FileInfo, err error) error {
@@ -216,6 +239,29 @@ func (h *Handler) loadPosts(members map[string]Member) []Post {
 			log.Printf("site: parse post %s: %v", path, err)
 			return nil
 		}
+
+		// If there's a preferred language and it differs from the post's locale,
+		// look for a matching translation file and swap in its body.
+		if prefLang != "" && prefLang != post.Locale {
+			postDir := filepath.Dir(path)
+			for _, ext := range []string{".md", ".djot"} {
+				tp := filepath.Join(postDir, "index."+prefLang+ext)
+				raw, err := os.ReadFile(tp)
+				if err != nil {
+					continue
+				}
+				_, tbody := parseFrontmatter(raw)
+				if tbody != "" {
+					var bodyHTML bytes.Buffer
+					goldmark.Convert([]byte(tbody), &bodyHTML)
+					post.Body = tbody
+					post.BodyHTML = template.HTML(bodyHTML.String())
+					post.Locale = prefLang
+				}
+				break
+			}
+		}
+
 		posts = append(posts, post)
 		return nil
 	})
@@ -226,6 +272,22 @@ func (h *Handler) loadPosts(members map[string]Member) []Post {
 	})
 
 	return posts
+}
+
+// parseTranslationFilename checks if a filename matches index.{lang}.md or
+// index.{lang}.djot and returns the language code.
+func parseTranslationFilename(name string) (string, bool) {
+	for _, ext := range []string{".md", ".djot"} {
+		prefix := "index."
+		if strings.HasPrefix(name, prefix) && strings.HasSuffix(name, ext) {
+			lang := strings.TrimPrefix(name, prefix)
+			lang = strings.TrimSuffix(lang, ext)
+			if lang != "" && !strings.Contains(lang, ".") {
+				return lang, true
+			}
+		}
+	}
+	return "", false
 }
 
 func (h *Handler) parsePost(indexPath string, members map[string]Member) (Post, error) {
@@ -286,6 +348,11 @@ func (h *Handler) parsePost(indexPath string, members map[string]Member) (Post, 
 		}
 	}
 
+	locale := fm.Locale
+	if locale == "" {
+		locale = "en"
+	}
+
 	return Post{
 		ID:           postID,
 		Date:         postDate,
@@ -293,6 +360,7 @@ func (h *Handler) parsePost(indexPath string, members map[string]Member) (Post, 
 		AuthorName:   authorName,
 		Body:         body,
 		BodyHTML:     template.HTML(bodyHTML.String()),
+		Locale:       locale,
 		Media:        media,
 		URL:          contentURL,
 		ISODate:      postDate.Format(time.RFC3339),

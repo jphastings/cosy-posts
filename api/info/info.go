@@ -2,6 +2,7 @@ package info
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"io/fs"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/jphastings/cosy-posts/api/config"
+	"github.com/yuin/goldmark"
 )
 
 // Version and GitSHA are set at build time via ldflags.
@@ -48,6 +50,79 @@ func Handler(cfg *config.Config) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	}
+}
+
+// SiteInfoHandler returns the rendered site-level index.md content as JSON.
+// Supports Accept-Language header for locale fallback.
+func SiteInfoHandler(cfg *config.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		prefLang := preferredLang(r)
+		html := loadSiteInfo(cfg.ContentDir, prefLang)
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"html": string(html),
+		})
+	}
+}
+
+func preferredLang(r *http.Request) string {
+	accept := r.Header.Get("Accept-Language")
+	if accept == "" {
+		return ""
+	}
+	for _, part := range strings.Split(accept, ",") {
+		tag := strings.TrimSpace(strings.SplitN(part, ";", 2)[0])
+		if tag == "" || tag == "*" {
+			continue
+		}
+		lang, _, _ := strings.Cut(tag, "-")
+		return strings.ToLower(lang)
+	}
+	return ""
+}
+
+func loadSiteInfo(contentDir, prefLang string) string {
+	if prefLang != "" {
+		for _, ext := range []string{".md", ".djot"} {
+			path := filepath.Join(contentDir, "index."+prefLang+ext)
+			raw, err := os.ReadFile(path)
+			if err == nil {
+				body := extractBody(raw)
+				if body != "" {
+					var buf bytes.Buffer
+					goldmark.Convert([]byte(body), &buf)
+					return buf.String()
+				}
+			}
+		}
+	}
+	for _, name := range []string{"index.md", "index.djot"} {
+		path := filepath.Join(contentDir, name)
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		body := extractBody(raw)
+		if body != "" {
+			var buf bytes.Buffer
+			goldmark.Convert([]byte(body), &buf)
+			return buf.String()
+		}
+	}
+	return ""
+}
+
+func extractBody(raw []byte) string {
+	content := string(raw)
+	if !strings.HasPrefix(content, "---\n") {
+		return strings.TrimSpace(content)
+	}
+	end := strings.Index(content[4:], "\n---\n")
+	if end == -1 {
+		return strings.TrimSpace(content)
+	}
+	return strings.TrimSpace(content[4+end+5:])
 }
 
 func countContent(contentDir string) Stats {

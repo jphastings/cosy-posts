@@ -239,6 +239,17 @@
         }
         syncPrefBtnIcon();
         updateContactButtons();
+        // --- Info dialog ---
+        var infoBtn = document.querySelector('.info-btn');
+        var infoDialog = document.querySelector('.info-dialog');
+        if (infoBtn && infoDialog) {
+          var infoClose = infoDialog.querySelector('.info-dialog-close');
+          infoBtn.addEventListener('click', function () { infoDialog.showModal(); });
+          if (infoClose) infoClose.addEventListener('click', function () { infoDialog.close(); });
+          infoDialog.addEventListener('click', function (e) {
+            if (e.target === infoDialog) infoDialog.close();
+          });
+        }
         // --- Bookmarks ---
         var BM_KEY = 'bookmarks';
         function getBookmarks() {

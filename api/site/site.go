@@ -104,6 +104,7 @@ func NewHandler(contentDir, csvPath, siteName string) (*Handler, error) {
 		"bookmark":   template.HTML(bookmarkSVG),
 		"bookmarked": template.HTML(bookmarkedSVG),
 		"trash":      template.HTML(trashSVG),
+		"info":       template.HTML(infoSVG),
 		"whatsapp":   template.HTML(whatsappSVG),
 		"signal":     template.HTML(signalSVG),
 		"email":      template.HTML(emailSVG),
@@ -225,11 +226,14 @@ func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 		role = h.roleFunc(r)
 	}
 
+	siteInfo := h.loadSiteInfo(prefLang)
+
 	data := map[string]any{
 		"SiteName":    h.siteName,
 		"MembersJSON": template.JS(membersJSON),
 		"Posts":       posts,
 		"CanDelete":   role == "post",
+		"SiteInfo":    siteInfo,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -268,6 +272,11 @@ func (h *Handler) loadPosts(members map[string]Member, prefLang string) []Post {
 		}
 		name := info.Name()
 		if name != "index.md" && name != "index.djot" {
+			return nil
+		}
+
+		// Skip the site-level index file in the content root.
+		if filepath.Dir(path) == h.contentDir {
 			return nil
 		}
 
@@ -423,6 +432,43 @@ func parseFrontmatter(raw []byte) (frontmatter, string) {
 
 	yaml.Unmarshal([]byte(fmStr), &fm)
 	return fm, strings.TrimSpace(body)
+}
+
+// loadSiteInfo reads the site-level index.md (or locale variant) from the
+// content directory root and returns rendered HTML. Returns empty if no file exists.
+func (h *Handler) loadSiteInfo(prefLang string) template.HTML {
+	// Try locale-specific file first.
+	if prefLang != "" {
+		for _, ext := range []string{".md", ".djot"} {
+			path := filepath.Join(h.contentDir, "index."+prefLang+ext)
+			raw, err := os.ReadFile(path)
+			if err == nil {
+				_, body := parseFrontmatter(raw)
+				if body != "" {
+					var buf bytes.Buffer
+					goldmark.Convert([]byte(body), &buf)
+					return template.HTML(buf.String())
+				}
+			}
+		}
+	}
+
+	// Fall back to default index.md / index.djot.
+	for _, name := range []string{"index.md", "index.djot"} {
+		path := filepath.Join(h.contentDir, name)
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		_, body := parseFrontmatter(raw)
+		if body != "" {
+			var buf bytes.Buffer
+			goldmark.Convert([]byte(body), &buf)
+			return template.HTML(buf.String())
+		}
+	}
+
+	return ""
 }
 
 func (h *Handler) parseMembers() map[string]Member {

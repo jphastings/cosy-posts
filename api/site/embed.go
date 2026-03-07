@@ -14,6 +14,9 @@ var bookmarkedSVG []byte
 //go:embed static/img/email.svg
 var emailSVG []byte
 
+//go:embed static/img/info.svg
+var infoSVG []byte
+
 //go:embed static/img/signal.svg
 var signalSVG []byte
 

@@ -71,6 +71,7 @@ func main() {
 	})
 
 	mux.HandleFunc("GET /api/info", info.Handler(cfg))
+	mux.HandleFunc("GET /api/info/site", info.SiteInfoHandler(cfg))
 
 	// Mount TUS upload handler at /files/.
 	mux.Handle("/files/", http.StripPrefix("/files/", uploadHandler))

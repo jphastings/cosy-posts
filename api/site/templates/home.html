@@ -2,7 +2,21 @@
 <header class="site-header">
   <h1>
     <a href=".">{{.SiteName}}</a>
+    {{if .SiteInfo}}
+    <button class="info-btn" aria-label="About this site">{{icon "info"}}</button>
+    {{end}}
   </h1>
+  {{if .SiteInfo}}
+  <dialog class="info-dialog">
+    <div class="info-dialog-header">
+      <span class="info-dialog-title">{{.SiteName}}</span>
+      <button class="info-dialog-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="info-dialog-body">
+      {{.SiteInfo}}
+    </div>
+  </dialog>
+  {{end}}
   <button class="bookmark-filter-btn" aria-label="Show bookmarked posts">
     <span class="bookmark-filter-label"></span>
     <span class="icon-bookmark">{{icon "bookmark"}}</span>

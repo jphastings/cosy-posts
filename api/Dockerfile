@@ -1,4 +1,4 @@
-FROM scratch
+FROM gcr.io/distroless/base:nonroot
 
 ARG TARGETPLATFORM
 COPY ${TARGETPLATFORM}/cosy-posts /cosy-posts

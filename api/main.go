@@ -28,7 +28,7 @@ func main() {
 	}
 
 	// Validate auth CSV files exist.
-	if err := auth.ValidateAuthFiles(cfg.Dir); err != nil {
+	if err := auth.ValidateAuthFiles(cfg.AuthDir); err != nil {
 		log.Fatalf("Auth configuration error: %v", err)
 	}
 
@@ -88,7 +88,7 @@ func main() {
 		log.Printf("Using external build command for site")
 	} else {
 		// Built-in site: render dynamically from embedded templates.
-		csvPath := filepath.Join(cfg.Dir, "can-post.csv")
+		csvPath := filepath.Join(cfg.AuthDir, "can-post.csv")
 		siteHandler, err := site.NewHandler(cfg.ContentDir, csvPath, cfg.SiteName())
 		if err != nil {
 			log.Fatalf("Failed to create site handler: %v", err)

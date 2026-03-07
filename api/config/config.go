@@ -61,6 +61,14 @@ func Load(path string) (*Config, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
+	// Explicit bindings for nested keys where AutomaticEnv can't
+	// distinguish dots (nesting) from underscores (in key names).
+	v.BindEnv("email.from", "COSY_EMAIL_FROM")
+	v.BindEnv("email.resend_api_key", "COSY_EMAIL_RESEND_API_KEY")
+	v.BindEnv("site.name", "COSY_SITE_NAME")
+	v.BindEnv("site.build_command", "COSY_SITE_BUILD_COMMAND")
+	v.BindEnv("site.directory", "COSY_SITE_DIRECTORY")
+
 	// Load config file if specified.
 	if path != "" {
 		v.SetConfigFile(path)

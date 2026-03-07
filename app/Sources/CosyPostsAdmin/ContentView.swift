@@ -5,6 +5,7 @@ import PhotosUI
 struct ContentView: View {
     @State private var viewModel = ComposeViewModel()
     @State private var showingSiteSheet = false
+    @State private var siteInfoLoader = SiteInfoLoader()
     @Environment(AuthManager.self) private var authManager
     @Environment(UploadManager.self) private var uploadManager
     @Environment(NetworkMonitor.self) private var networkMonitor
@@ -96,7 +97,7 @@ struct ContentView: View {
                     Button {
                         showingSiteSheet = true
                     } label: {
-                        Text(authManager.serverURL?.host ?? "Not connected")
+                        Text(siteInfoLoader.info?.name ?? authManager.serverURL?.host ?? "Not connected")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -144,8 +145,12 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .sheet(isPresented: $showingSiteSheet) {
-                SiteInfoSheet(authManager: authManager)
+                SiteInfoSheet(authManager: authManager, loader: siteInfoLoader)
                     .presentationDetents([.medium])
+            }
+            .task {
+                guard let serverURL = authManager.serverURL else { return }
+                await siteInfoLoader.load(serverURL: serverURL, token: authManager.sessionToken)
             }
         }
     }
@@ -169,6 +174,7 @@ struct SiteStats: Decodable {
     let photos: Int
     let videos: Int
     let audio: Int
+    let members: Int
 }
 
 @Observable
@@ -199,8 +205,8 @@ final class SiteInfoLoader {
 
 struct SiteInfoSheet: View {
     let authManager: AuthManager
+    var loader: SiteInfoLoader
     @Environment(\.dismiss) private var dismiss
-    @State private var loader = SiteInfoLoader()
 
     private var repoURL: URL? {
         guard let sha = loader.info?.gitSHA, sha != "unknown" else { return nil }
@@ -246,6 +252,15 @@ struct SiteInfoSheet: View {
                             }
                             .foregroundStyle(.primary)
                         }
+
+                        if info.stats.members > 0 {
+                            Label {
+                                Text("\(info.stats.members) members")
+                            } icon: {
+                                Image(systemName: "person.2")
+                            }
+                            .foregroundStyle(.primary)
+                        }
                     } header: {
                         Text("Content")
                     }
@@ -255,6 +270,15 @@ struct SiteInfoSheet: View {
                             Spacer()
                             ProgressView()
                             Spacer()
+                        }
+                    }
+                }
+
+                // Visit site
+                if let serverURL = authManager.serverURL {
+                    Section {
+                        Link(destination: serverURL) {
+                            Label("Visit Site", systemImage: "safari")
                         }
                     }
                 }
@@ -299,7 +323,7 @@ struct SiteInfoSheet: View {
                 }
             }
             .task {
-                guard let serverURL = authManager.serverURL else { return }
+                guard loader.info == nil, let serverURL = authManager.serverURL else { return }
                 await loader.load(serverURL: serverURL, token: authManager.sessionToken)
             }
         }

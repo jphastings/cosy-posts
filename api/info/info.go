@@ -1,9 +1,11 @@
 package info
 
 import (
+	"bufio"
 	"encoding/json"
 	"io/fs"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -24,15 +26,17 @@ type Response struct {
 }
 
 type Stats struct {
-	Posts  int `json:"posts"`
-	Photos int `json:"photos"`
-	Videos int `json:"videos"`
-	Audio  int `json:"audio"`
+	Posts   int `json:"posts"`
+	Photos  int `json:"photos"`
+	Videos  int `json:"videos"`
+	Audio   int `json:"audio"`
+	Members int `json:"members"`
 }
 
 func Handler(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		stats := countContent(cfg.ContentDir)
+		stats.Members = countMembers(cfg.AuthDir)
 
 		resp := Response{
 			Name:    cfg.SiteName(),
@@ -76,4 +80,22 @@ func countContent(contentDir string) Stats {
 	})
 
 	return stats
+}
+
+func countMembers(authDir string) int {
+	count := 0
+	for _, name := range []string{"can-post.csv", "can-view.csv"} {
+		f, err := os.Open(filepath.Join(authDir, name))
+		if err != nil {
+			continue
+		}
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			if strings.TrimSpace(scanner.Text()) != "" {
+				count++
+			}
+		}
+		f.Close()
+	}
+	return count
 }

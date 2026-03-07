@@ -6,7 +6,7 @@
     <title>{{.SiteName}}</title>
     <link rel="stylesheet" href="/css/style.css">
   </head>
-  <body>
+  <body{{if .CanDelete}} data-can-delete{{end}}>
     {{template "content" .}}
     <script>
       (function () {
@@ -301,6 +301,30 @@
           });
         }
         updateFilterBtnVisibility();
+        // --- Delete post ---
+        if (document.body.hasAttribute('data-can-delete')) {
+          document.querySelectorAll('.delete-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var post = btn.closest('.post');
+              if (!post) return;
+              var id = post.getAttribute('data-post-id');
+              var date = post.getAttribute('data-post-date') || '';
+              var msg = 'Permanently delete the post from ' + date + '?\n\nThis cannot be undone.';
+              if (!confirm(msg)) return;
+              fetch('/api/posts/' + encodeURIComponent(id), { method: 'DELETE' })
+                .then(function (res) {
+                  if (res.ok) {
+                    post.remove();
+                  } else {
+                    return res.json().then(function (body) {
+                      alert('Failed to delete: ' + (body.error || 'unknown error'));
+                    });
+                  }
+                })
+                .catch(function () { alert('Failed to delete post. Please try again.'); });
+            });
+          });
+        }
         // --- Carousel ---
         document.querySelectorAll('.carousel').forEach(function (c) {
           var track = c.querySelector('.carousel-track');

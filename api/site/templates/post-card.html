@@ -1,5 +1,5 @@
 {{define "post-card"}}
-<article class="post" data-post-id="{{.ID}}">
+<article class="post" data-post-id="{{.ID}}" data-post-date="{{.ReadableDate}}">
   {{if .Media}}
     <div class="carousel" data-count="{{len .Media}}">
       <div class="carousel-track">
@@ -35,6 +35,8 @@
         </a>
       {{end}}
     </div>
+    <button class="delete-btn" aria-label="Delete post">
+      <img src="/img/trash.svg" alt=""></button>
     <button class="bookmark-btn" aria-label="Bookmark">
       <img src="/img/bookmark.svg" alt=""></button>
   </div>

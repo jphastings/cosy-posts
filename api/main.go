@@ -81,6 +81,9 @@ func main() {
 	mux.HandleFunc("POST /auth/send", auth.SendLink(cfg))
 	mux.HandleFunc("GET /auth/verify", auth.Verify(cfg))
 
+	// Delete post endpoint (requires "post" role).
+	mux.HandleFunc("DELETE /api/posts/{id}", post.DeleteHandler(cfg))
+
 	// Serve the site at the root.
 	if cfg.HasExternalSite() {
 		// External build system: serve pre-built static files.
@@ -93,6 +96,9 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to create site handler: %v", err)
 		}
+		siteHandler.SetRoleFunc(func(r *http.Request) string {
+			return auth.RoleFromContext(r.Context())
+		})
 		mux.Handle("/", siteHandler)
 		log.Printf("Using built-in site renderer")
 	}

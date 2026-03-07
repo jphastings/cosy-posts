@@ -78,6 +78,12 @@ type Handler struct {
 	siteName   string
 	homeTmpl   *template.Template
 	singleTmpl *template.Template
+	roleFunc   func(*http.Request) string
+}
+
+// SetRoleFunc sets a function that extracts the user's role from a request.
+func (h *Handler) SetRoleFunc(fn func(*http.Request) string) {
+	h.roleFunc = fn
 }
 
 // NewHandler creates a site handler. contentDir is the path to the content
@@ -154,6 +160,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=15552000")
 		w.Write(whatsappSVG)
 		return
+	case "/img/trash.svg":
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Cache-Control", "public, max-age=15552000")
+		w.Write(trashSVG)
+		return
 	}
 
 	// Home page.
@@ -189,10 +200,18 @@ func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 
 	membersJSON, _ := json.Marshal(members)
 
+	// RoleFunc is provided by the caller via SetRoleFunc to extract the
+	// user's role from the request context.
+	role := ""
+	if h.roleFunc != nil {
+		role = h.roleFunc(r)
+	}
+
 	data := map[string]any{
 		"SiteName":    h.siteName,
 		"MembersJSON": template.JS(membersJSON),
 		"Posts":       posts,
+		"CanDelete":   role == "post",
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

@@ -20,5 +20,8 @@ var signalSVG []byte
 //go:embed static/img/whatsapp.svg
 var whatsappSVG []byte
 
+//go:embed static/img/trash.svg
+var trashSVG []byte
+
 //go:embed templates/*
 var templateFS embed.FS

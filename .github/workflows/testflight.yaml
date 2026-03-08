@@ -36,12 +36,8 @@ jobs:
             -scheme CosyPostsAdmin \
             -destination 'generic/platform=iOS' \
             -archivePath build/CosyPostsAdmin.xcarchive \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${{ vars.APP_STORE_CONNECT_KEY_ID }}.p8 \
-            -authenticationKeyID ${{ vars.APP_STORE_CONNECT_KEY_ID }} \
-            -authenticationKeyIssuerID ${{ vars.APP_STORE_CONNECT_ISSUER_ID }} \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution"
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Export & upload to TestFlight
         run: |

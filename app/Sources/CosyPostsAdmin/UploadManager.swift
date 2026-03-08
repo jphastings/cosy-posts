@@ -3,6 +3,7 @@ import SwiftData
 import PhotosUI
 import Photos
 import SwiftUI
+import AVFoundation
 import os
 
 private let uploadLog = Logger(subsystem: "com.cosyposts", category: "Upload")
@@ -60,24 +61,60 @@ final class UploadManager {
         for (index, item) in mediaItems.enumerated() {
             var exported = false
 
-            // Try PHAsset export first (works reliably on macOS sandbox).
+            // Try PHAsset export (handles iCloud downloads).
             if hasPhotoAccess, let identifier = item.pickerItem.itemIdentifier {
                 let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
                 if let asset = fetchResult.firstObject {
-                    let resources = PHAssetResource.assetResources(for: asset)
-                    if let resource = resources.first {
-                        let ext = URL(string: resource.originalFilename)?.pathExtension ?? "bin"
-                        let filename = "media_\(index).\(ext)"
-                        let fileURL = postDir.appendingPathComponent(filename)
-
-                        let options = PHAssetResourceRequestOptions()
-                        options.isNetworkAccessAllowed = true
-                        do {
-                            try await PHAssetResourceManager.default().writeData(for: resource, toFile: fileURL, options: options)
-                            mediaURLs.append(fileURL)
+                    if asset.mediaType == .video {
+                        // Export video via AVAssetExportSession.
+                        let fileURL = postDir.appendingPathComponent("media_\(index).mov")
+                        if let url = await exportVideo(asset: asset, to: fileURL) {
+                            mediaURLs.append(url)
                             exported = true
-                        } catch {
-                            uploadLog.error("PHAsset export failed for \(resource.originalFilename): \(String(describing: error))")
+                        }
+                    } else {
+                        // Export image via PHImageManager.requestImage at full size.
+                        // requestImageDataAndOrientation fails in sandbox with iCloud Photos,
+                        // but requestImage with max size works and returns a usable image.
+                        let imageOptions = PHImageRequestOptions()
+                        imageOptions.isNetworkAccessAllowed = true
+                        imageOptions.deliveryMode = .highQualityFormat
+
+                        let platformImage: PlatformImage? = await withCheckedContinuation { continuation in
+                            var resumed = false
+                            PHImageManager.default().requestImage(
+                                for: asset,
+                                targetSize: PHImageManagerMaximumSize,
+                                contentMode: .default,
+                                options: imageOptions
+                            ) { image, info in
+                                guard !resumed else { return }
+                                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                                if !isDegraded {
+                                    resumed = true
+                                    if image == nil, let error = info?[PHImageErrorKey] as? NSError {
+                                        uploadLog.error("requestImage failed: \(error.domain, privacy: .public) \(error.code, privacy: .public)")
+                                    }
+                                    continuation.resume(returning: image)
+                                }
+                            }
+                        }
+
+                        if let platformImage {
+                            #if canImport(UIKit)
+                            let data = platformImage.jpegData(compressionQuality: 0.95)
+                            #else
+                            let cgImage = platformImage.cgImage(forProposedRect: nil, context: nil, hints: nil)
+                            let bitmapRep = cgImage.map { NSBitmapImageRep(cgImage: $0) }
+                            let data = bitmapRep?.representation(using: .jpeg, properties: [.compressionFactor: 0.95])
+                            #endif
+
+                            if let data {
+                                let fileURL = postDir.appendingPathComponent("media_\(index).jpg")
+                                try data.write(to: fileURL)
+                                mediaURLs.append(fileURL)
+                                exported = true
+                            }
                         }
                     }
                 }
@@ -235,6 +272,48 @@ final class UploadManager {
             post.postStatus = .failed
             post.errorMessage = error.localizedDescription
             try? context.save()
+        }
+    }
+
+    /// Get the file extension for a PHAsset based on its resource.
+    private func extensionForAsset(_ asset: PHAsset) -> String {
+        let resources = PHAssetResource.assetResources(for: asset)
+        if let resource = resources.first {
+            let filename = resource.originalFilename
+            if let ext = filename.split(separator: ".").last {
+                return String(ext).lowercased()
+            }
+        }
+        return "jpg"
+    }
+
+    /// Export a video asset to a file URL using AVAssetExportSession.
+    private func exportVideo(asset: PHAsset, to fileURL: URL) async -> URL? {
+        let videoOptions = PHVideoRequestOptions()
+        videoOptions.isNetworkAccessAllowed = true
+        videoOptions.deliveryMode = .highQualityFormat
+
+        return await withCheckedContinuation { continuation in
+            PHImageManager.default().requestExportSession(
+                forVideo: asset,
+                options: videoOptions,
+                exportPreset: AVAssetExportPresetPassthrough
+            ) { session, _ in
+                guard let session else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                session.outputURL = fileURL
+                session.outputFileType = .mov
+                session.exportAsynchronously {
+                    if session.status == .completed {
+                        continuation.resume(returning: fileURL)
+                    } else {
+                        uploadLog.error("Video export failed: \(session.error?.localizedDescription ?? "unknown", privacy: .public)")
+                        continuation.resume(returning: nil)
+                    }
+                }
+            }
         }
     }
 

@@ -1,0 +1,67 @@
+name: TestFlight
+
+on:
+  push:
+    tags:
+      - "app/v*"
+  workflow_dispatch:
+
+jobs:
+  testflight:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Set up App Store Connect API key
+        env:
+          API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          API_KEY_ID: ${{ vars.APP_STORE_CONNECT_KEY_ID }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$API_KEY_P8" > ~/private_keys/AuthKey_${API_KEY_ID}.p8
+
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project CosyPostsAdmin.xcodeproj \
+            -scheme CosyPostsAdmin \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/CosyPostsAdmin.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ vars.APP_STORE_CONNECT_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ vars.APP_STORE_CONNECT_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
+
+      - name: Export & upload to TestFlight
+        run: |
+          cat > ExportOptions.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>destination</key>
+            <string>upload</string>
+            <key>teamID</key>
+            <string>7L3537S658</string>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
+            -archivePath build/CosyPostsAdmin.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ vars.APP_STORE_CONNECT_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ vars.APP_STORE_CONNECT_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}

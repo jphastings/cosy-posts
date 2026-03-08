@@ -8,6 +8,7 @@ options:
   minimumXcodeGenVersion: "2.42.0"
 
 settings:
+  DEVELOPMENT_TEAM: 7L3537S658
   base:
     SWIFT_VERSION: "6.0"
     GENERATE_INFOPLIST_FILE: true

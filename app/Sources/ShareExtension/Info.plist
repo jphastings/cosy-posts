@@ -22,12 +22,15 @@
 		<string>com.apple.share-services</string>
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).ShareViewController</string>
-		<key>NSExtensionActivationRule</key>
+		<key>NSExtensionAttributes</key>
 		<dict>
-			<key>NSExtensionActivationSupportsImageWithMaxCount</key>
-			<integer>20</integer>
-			<key>NSExtensionActivationSupportsMovieWithMaxCount</key>
-			<integer>10</integer>
+			<key>NSExtensionActivationRule</key>
+			<dict>
+				<key>NSExtensionActivationSupportsImageWithMaxCount</key>
+				<integer>20</integer>
+				<key>NSExtensionActivationSupportsMovieWithMaxCount</key>
+				<integer>10</integer>
+			</dict>
 		</dict>
 	</dict>
 </dict>

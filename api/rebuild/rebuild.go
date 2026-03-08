@@ -14,7 +14,6 @@ import (
 // This function returns immediately without waiting for the command to finish.
 func Trigger(cfg *config.Config) {
 	if !cfg.HasExternalSite() {
-		log.Println("No external site configured, skipping rebuild")
 		return
 	}
 

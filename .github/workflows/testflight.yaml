@@ -39,8 +39,7 @@ jobs:
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/private_keys/AuthKey_${{ vars.APP_STORE_CONNECT_KEY_ID }}.p8 \
             -authenticationKeyID ${{ vars.APP_STORE_CONNECT_KEY_ID }} \
-            -authenticationKeyIssuerID ${{ vars.APP_STORE_CONNECT_ISSUER_ID }} \
-            CODE_SIGN_IDENTITY="Apple Distribution"
+            -authenticationKeyIssuerID ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
 
       - name: Export & upload to TestFlight
         run: |

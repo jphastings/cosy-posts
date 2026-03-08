@@ -27,7 +27,7 @@ struct MediaCarouselView: View {
     @ViewBuilder
     private func singleItem(_ item: MediaItem, in size: CGSize) -> some View {
         ZStack(alignment: .topTrailing) {
-            Group {
+            ZStack {
                 if let thumbnail = item.thumbnail {
                     thumbnail
                         .resizable()
@@ -38,6 +38,10 @@ struct MediaCarouselView: View {
                         .background(Color.secondary.opacity(0.08))
                 } else {
                     placeholder
+                }
+
+                if item.isDownloading {
+                    downloadingOverlay
                 }
             }
             .frame(maxWidth: size.width, maxHeight: size.height)
@@ -50,7 +54,7 @@ struct MediaCarouselView: View {
     @ViewBuilder
     private func multiItem(_ item: MediaItem, size: CGSize) -> some View {
         ZStack(alignment: .topTrailing) {
-            Group {
+            ZStack {
                 if let thumbnail = item.thumbnail {
                     thumbnail
                         .resizable()
@@ -63,12 +67,27 @@ struct MediaCarouselView: View {
                     placeholder
                         .frame(width: size.height * 0.75, height: size.height)
                 }
+
+                if item.isDownloading {
+                    downloadingOverlay
+                }
             }
             .frame(maxWidth: size.width, maxHeight: size.height)
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
             removeButton { onRemove(item.id) }
         }
+    }
+
+    private var downloadingOverlay: some View {
+        VStack(spacing: 6) {
+            ProgressView()
+                .controlSize(.small)
+            Text("iCloud")
+                .font(.caption2)
+        }
+        .padding(8)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 
     private var placeholder: some View {

@@ -14,7 +14,8 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(echo \"exit: $?\")",
-      "Bash(pkill -x CosyPostsAdmin)"
+      "Bash(pkill -x CosyPostsAdmin)",
+      "Bash(xc *)"
     ]
   },
   "hooks": {

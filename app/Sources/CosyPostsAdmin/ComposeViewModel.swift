@@ -1,6 +1,10 @@
 import SwiftUI
 import PhotosUI
+import Photos
 import AVFoundation
+import os
+
+private let mediaLog = Logger(subsystem: "com.cosyposts", category: "Media")
 
 /// A single locale entry with its body text.
 struct LocaleEntry: Identifiable {
@@ -36,9 +40,10 @@ final class ComposeViewModel {
         }
     }
 
-    /// Whether the post has any content worth uploading.
+    /// Whether the post has any content worth uploading (and no items are still downloading).
     var canUpload: Bool {
-        !mediaItems.isEmpty || localeEntries.contains { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        let hasContent = !mediaItems.isEmpty || localeEntries.contains { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        return hasContent && !hasDownloadingItems
     }
 
     /// The primary locale code (e.g. "en").
@@ -64,58 +69,93 @@ final class ComposeViewModel {
         let existingIDs = Set(mediaItems.map { $0.pickerItem.itemIdentifier })
         let newItems = selectedPhotos.filter { !existingIDs.contains($0.itemIdentifier) }
 
+        var newItemIDs: [UUID] = []
         for item in newItems {
             let mediaItem = MediaItem(pickerItem: item)
             mediaItems.append(mediaItem)
-            let itemID = mediaItem.id
-            Task {
-                await loadThumbnail(for: itemID)
-            }
+            newItemIDs.append(mediaItem.id)
         }
 
         // Remove items that were deselected in the picker
         let selectedIDs = Set(selectedPhotos.map { $0.itemIdentifier })
         mediaItems.removeAll { !selectedIDs.contains($0.pickerItem.itemIdentifier) }
+
+        // Request Photos authorization once, then load all thumbnails.
+        if !newItemIDs.isEmpty {
+            Task {
+                await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+                for itemID in newItemIDs {
+                    await loadThumbnail(for: itemID)
+                }
+            }
+        }
     }
 
-    /// Load a thumbnail image for a media item (supports both images and videos).
+    /// Whether any media items are still downloading from iCloud.
+    var hasDownloadingItems: Bool {
+        mediaItems.contains { $0.isDownloading }
+    }
+
+    /// Load a thumbnail progressively: show degraded first, then update with full quality.
     private func loadThumbnail(for id: UUID) async {
         guard let index = mediaItems.firstIndex(where: { $0.id == id }) else { return }
-        let item = mediaItems[index]
+        let pickerItem = mediaItems[index].pickerItem
 
-        var thumbnail: Image?
+        // Try PHAsset path first (works reliably on macOS sandbox).
+        if let identifier = pickerItem.itemIdentifier {
+            let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
+            if let asset = fetchResult.firstObject {
+                let targetSize = CGSize(width: 512, height: 512)
+                let options = PHImageRequestOptions()
+                options.deliveryMode = .opportunistic
+                options.isNetworkAccessAllowed = true
+                options.version = .current
 
-        // Try loading as image data first.
-        if let data = try? await item.pickerItem.loadTransferable(type: Data.self),
-           let platformImage = PlatformImage(data: data) {
-            thumbnail = Image(platformImage: platformImage)
+                let stream = AsyncStream<(PlatformImage?, Bool)> { continuation in
+                    PHImageManager.default().requestImage(
+                        for: asset,
+                        targetSize: targetSize,
+                        contentMode: .aspectFit,
+                        options: options
+                    ) { image, info in
+                        let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                        continuation.yield((image, isDegraded))
+                        if !isDegraded {
+                            continuation.finish()
+                        }
+                    }
+                }
+
+                for await (platformImage, isDegraded) in stream {
+                    guard let idx = mediaItems.firstIndex(where: { $0.id == id }) else { break }
+                    if let platformImage {
+                        mediaItems[idx].thumbnail = Image(platformImage: platformImage)
+                    }
+                    if isDegraded {
+                        mediaItems[idx].isDownloading = true
+                        mediaItems[idx].loadingThumbnail = false
+                    } else {
+                        mediaItems[idx].isDownloading = false
+                        mediaItems[idx].loadingThumbnail = false
+                    }
+                }
+                return
+            }
         }
 
-        // If that failed, try loading as a video and generating a thumbnail frame.
-        if thumbnail == nil,
-           let videoURL = try? await item.pickerItem.loadTransferable(type: VideoTransferable.self) {
-            thumbnail = await generateVideoThumbnail(url: videoURL.url)
+        // Fallback: try Transferable (works on iOS).
+        if let image = try? await pickerItem.loadTransferable(type: Image.self) {
+            if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
+                mediaItems[idx].thumbnail = image
+                mediaItems[idx].loadingThumbnail = false
+            }
+            return
         }
 
+        mediaLog.error("Thumbnail loading failed for item \(id)")
         if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
-            mediaItems[idx].thumbnail = thumbnail
             mediaItems[idx].loadingThumbnail = false
         }
-    }
-
-    /// Generate a thumbnail from the first frame of a video.
-    private nonisolated func generateVideoThumbnail(url: URL) async -> Image? {
-        let asset = AVURLAsset(url: url)
-        let generator = AVAssetImageGenerator(asset: asset)
-        generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = CGSize(width: 512, height: 512)
-
-        guard let cgImage = try? await generator.image(at: .zero).image else {
-            return nil
-        }
-
-        let platformImage = PlatformImage(cgImage: cgImage)
-        return Image(platformImage: platformImage)
     }
 
     /// Remove a media item at the given index.

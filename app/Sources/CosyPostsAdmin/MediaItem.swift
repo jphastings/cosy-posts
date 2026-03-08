@@ -30,6 +30,27 @@ struct MediaItem: Identifiable {
     let pickerItem: PhotosPickerItem
     var thumbnail: Image?
     var loadingThumbnail: Bool = true
+    /// True while a high-quality version is being downloaded from iCloud.
+    var isDownloading: Bool = false
+}
+
+/// A transferable type that receives a file URL from the photo picker (any media type).
+struct MediaFileTransferable: Transferable {
+    let url: URL
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(contentType: .data) { file in
+            SentTransferredFile(file.url)
+        } importing: { received in
+            let tempDir = FileManager.default.temporaryDirectory
+            let dest = tempDir.appendingPathComponent(received.file.lastPathComponent)
+            if FileManager.default.fileExists(atPath: dest.path) {
+                try FileManager.default.removeItem(at: dest)
+            }
+            try FileManager.default.copyItem(at: received.file, to: dest)
+            return Self(url: dest)
+        }
+    }
 }
 
 /// A transferable type that receives a video file URL from the photo picker.
@@ -40,7 +61,6 @@ struct VideoTransferable: Transferable {
         FileRepresentation(contentType: .movie) { video in
             SentTransferredFile(video.url)
         } importing: { received in
-            // Copy to a temporary location so the file outlives the picker's sandbox.
             let tempDir = FileManager.default.temporaryDirectory
             let dest = tempDir.appendingPathComponent(received.file.lastPathComponent)
             if FileManager.default.fileExists(atPath: dest.path) {

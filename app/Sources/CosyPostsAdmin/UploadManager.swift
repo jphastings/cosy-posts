@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 import PhotosUI
+import Photos
 import SwiftUI
 import os
 
@@ -52,14 +53,50 @@ final class UploadManager {
         let postDir = postsDir.appendingPathComponent(postID)
         try FileManager.default.createDirectory(at: postDir, withIntermediateDirectories: true)
 
+        // Request Photos authorization once before processing all items.
+        let photoAuthStatus = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        let hasPhotoAccess = photoAuthStatus == .authorized || photoAuthStatus == .limited
+
         for (index, item) in mediaItems.enumerated() {
-            if let data = try? await item.pickerItem.loadTransferable(type: Data.self) {
+            var exported = false
+
+            // Try PHAsset export first (works reliably on macOS sandbox).
+            if hasPhotoAccess, let identifier = item.pickerItem.itemIdentifier {
+                let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
+                if let asset = fetchResult.firstObject {
+                    let resources = PHAssetResource.assetResources(for: asset)
+                    if let resource = resources.first {
+                        let ext = URL(string: resource.originalFilename)?.pathExtension ?? "bin"
+                        let filename = "media_\(index).\(ext)"
+                        let fileURL = postDir.appendingPathComponent(filename)
+
+                        let options = PHAssetResourceRequestOptions()
+                        options.isNetworkAccessAllowed = true
+                        do {
+                            try await PHAssetResourceManager.default().writeData(for: resource, toFile: fileURL, options: options)
+                            mediaURLs.append(fileURL)
+                            exported = true
+                        } catch {
+                            uploadLog.error("PHAsset export failed for \(resource.originalFilename): \(String(describing: error))")
+                        }
+                    }
+                }
+            }
+
+            // Fallback: try Transferable (works on iOS).
+            if !exported {
                 let contentType = item.pickerItem.supportedContentTypes.first
                 let ext = contentType?.preferredFilenameExtension ?? "bin"
                 let filename = "media_\(index).\(ext)"
                 let fileURL = postDir.appendingPathComponent(filename)
-                try data.write(to: fileURL)
-                mediaURLs.append(fileURL)
+
+                if let mediaFile = try? await item.pickerItem.loadTransferable(type: MediaFileTransferable.self) {
+                    try FileManager.default.copyItem(at: mediaFile.url, to: fileURL)
+                    mediaURLs.append(fileURL)
+                } else if let data = try? await item.pickerItem.loadTransferable(type: Data.self) {
+                    try data.write(to: fileURL)
+                    mediaURLs.append(fileURL)
+                }
             }
         }
 

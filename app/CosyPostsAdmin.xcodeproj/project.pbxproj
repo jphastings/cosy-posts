@@ -12,6 +12,7 @@
 		11C8B8C8320C7A01BC5CC9B6 /* CoSyPostsAdminApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AE81AC66489681EC0E3F962 /* CoSyPostsAdminApp.swift */; };
 		1ABD1BF415D2529EC66EC05C /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF04570B5354F76CD638FF0 /* AuthManager.swift */; };
 		2BA08007FCFE2D385C42670B /* Nanoid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 855B800C08EC98A09C2863D7 /* Nanoid.swift */; };
+		401A129E7FCFBD40B3876303 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 48AABA60A43570FEA606EBED /* Assets.xcassets */; };
 		40FF0BBF9D17BA0F768D9241 /* PendingPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FD06520F3EC55D98A561ADE /* PendingPost.swift */; };
 		50FB10DFDE4DAF739445ADA2 /* ComposeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D11916A795EA78FD27EF01A /* ComposeViewModel.swift */; };
 		64BB90A6705A8A07D57B25C5 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE6FB5291A8FECD68912BBF9 /* ContentView.swift */; };
@@ -51,6 +52,7 @@
 /* Begin PBXFileReference section */
 		3BDA0B069AD89E36F7045EC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3D2F736647B65C861082AE27 /* CoSyPostsAdmin.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CoSyPostsAdmin.entitlements; sourceTree = "<group>"; };
+		48AABA60A43570FEA606EBED /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4AE81AC66489681EC0E3F962 /* CoSyPostsAdminApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoSyPostsAdminApp.swift; sourceTree = "<group>"; };
 		60995587CAD3431837815D6B /* ShareExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		74DF9850A482DA51B71D4AFD /* MediaCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCarouselView.swift; sourceTree = "<group>"; };
@@ -84,6 +86,7 @@
 		2A4EA1A24C761B76FBD8E04F /* CosyPostsAdmin */ = {
 			isa = PBXGroup;
 			children = (
+				48AABA60A43570FEA606EBED /* Assets.xcassets */,
 				AAF04570B5354F76CD638FF0 /* AuthManager.swift */,
 				7D11916A795EA78FD27EF01A /* ComposeViewModel.swift */,
 				DE6FB5291A8FECD68912BBF9 /* ContentView.swift */,
@@ -149,6 +152,7 @@
 			buildConfigurationList = C83F13CBA66B1139D0D9A03E /* Build configuration list for PBXNativeTarget "CosyPostsAdmin" */;
 			buildPhases = (
 				E6D7A193DDAFF7D9C6DABC21 /* Sources */,
+				CCB321D12B431BA4B74A77D1 /* Resources */,
 				0C11FADB9525798197BB1824 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -171,6 +175,16 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 2630;
+				TargetAttributes = {
+					814AFC2A7385498C6E06FC66 = {
+						DevelopmentTeam = 7L3537S658;
+						ProvisioningStyle = Automatic;
+					};
+					A995BF4B5D3020B6F78FFCF4 = {
+						DevelopmentTeam = 7L3537S658;
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = 7D8BE7E7A76DA2635F1D9DF3 /* Build configuration list for PBXProject "CosyPostsAdmin" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -191,6 +205,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CCB321D12B431BA4B74A77D1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				401A129E7FCFBD40B3876303 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5B40921F975428F93C08FA56 /* Sources */ = {
@@ -286,8 +311,10 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 7L3537S658;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -373,8 +400,10 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 7L3537S658;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;

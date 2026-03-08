@@ -20,12 +20,12 @@ go run . --config ~/.cosyposts/config.yaml
 
 ### run-mac-app
 
-Build and run the macOS app for testing purposes.
+Build and run the macOS app for testing purposes. On first run, open the project in Xcode to register the device and create provisioning profiles.
 
 ```sh
 cd app && \
 xcodegen generate && \
-xcodebuild -project CosyPostsAdmin.xcodeproj -scheme CosyPostsAdmin -destination 'platform=macOS' build CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO && \
+xcodebuild -project CosyPostsAdmin.xcodeproj -scheme CosyPostsAdmin -destination 'platform=macOS' -allowProvisioningUpdates build && \
 open ~/Library/Developer/Xcode/DerivedData/CosyPostsAdmin-*/Build/Products/Debug/CosyPostsAdmin.app
 ```
 

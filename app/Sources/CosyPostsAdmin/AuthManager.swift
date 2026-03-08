@@ -43,6 +43,9 @@ final class AuthManager {
     /// Error message to display on the login screen (e.g. expired/used token).
     var loginError: String?
 
+    /// Whether a magic link has been sent and we're waiting for the user to tap it.
+    var awaitingMagicLink: Bool = false
+
     var isAuthenticated: Bool { sessionToken != nil }
     var isServerConfigured: Bool { serverURL != nil }
 
@@ -100,6 +103,39 @@ final class AuthManager {
             self.email = result.email
         } catch {
             self.loginError = "Could not connect to the server. Please try again."
+        }
+    }
+
+    /// Send a magic link email via the server's POST /auth/send endpoint.
+    func sendMagicLink(email: String) async {
+        guard let serverURL else { return }
+        loginError = nil
+
+        let sendURL = serverURL.appendingPathComponent("auth/send")
+        var request = URLRequest(url: sendURL)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        var components = URLComponents()
+        components.queryItems = [URLQueryItem(name: "email", value: email)]
+        request.httpBody = components.percentEncodedQuery?.data(using: .utf8)
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                loginError = "Invalid response from server."
+                return
+            }
+            if httpResponse.statusCode == 200 {
+                awaitingMagicLink = true
+            } else if httpResponse.statusCode == 403 {
+                loginError = "This email is not authorized to post."
+            } else {
+                loginError = "Server error (HTTP \(httpResponse.statusCode))."
+            }
+        } catch {
+            loginError = "Could not connect to the server."
         }
     }
 

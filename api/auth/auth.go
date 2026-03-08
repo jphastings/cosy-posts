@@ -206,13 +206,27 @@ func requestBaseURL(r *http.Request) string {
 // SendLink handles the login form submission.
 func SendLink(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		wantsJSON := strings.Contains(r.Header.Get("Accept"), "application/json")
+
 		if err := r.ParseForm(); err != nil {
-			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+			if wantsJSON {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				fmt.Fprint(w, `{"error":"invalid form data"}`)
+			} else {
+				http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+			}
 			return
 		}
 		email := strings.TrimSpace(strings.ToLower(r.FormValue("email")))
 		if email == "" {
-			http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+			if wantsJSON {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				fmt.Fprint(w, `{"error":"email required"}`)
+			} else {
+				http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
+			}
 			return
 		}
 
@@ -261,7 +275,12 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 			}
 		}
 
-		http.Redirect(w, r, "/auth/login?sent=1", http.StatusSeeOther)
+		if strings.Contains(r.Header.Get("Accept"), "application/json") {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, `{"ok":true}`)
+		} else {
+			http.Redirect(w, r, "/auth/login?sent=1", http.StatusSeeOther)
+		}
 	}
 }
 

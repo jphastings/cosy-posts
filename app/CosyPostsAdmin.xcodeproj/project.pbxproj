@@ -10,7 +10,6 @@
 		0C7C72816C894B8275F611EF /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C846ED64F06861D7F7A32ECA /* NetworkMonitor.swift */; };
 		1083ED115264A0341EE8EC86 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 60995587CAD3431837815D6B /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		11C8B8C8320C7A01BC5CC9B6 /* CoSyPostsAdminApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AE81AC66489681EC0E3F962 /* CoSyPostsAdminApp.swift */; };
-		184A23012C6F4FF371EA8885 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 491CD24E0EC32D908CF8BAC9 /* LoginView.swift */; };
 		1ABD1BF415D2529EC66EC05C /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF04570B5354F76CD638FF0 /* AuthManager.swift */; };
 		2BA08007FCFE2D385C42670B /* Nanoid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 855B800C08EC98A09C2863D7 /* Nanoid.swift */; };
 		40FF0BBF9D17BA0F768D9241 /* PendingPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FD06520F3EC55D98A561ADE /* PendingPost.swift */; };
@@ -52,7 +51,6 @@
 /* Begin PBXFileReference section */
 		3BDA0B069AD89E36F7045EC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3D2F736647B65C861082AE27 /* CoSyPostsAdmin.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CoSyPostsAdmin.entitlements; sourceTree = "<group>"; };
-		491CD24E0EC32D908CF8BAC9 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		4AE81AC66489681EC0E3F962 /* CoSyPostsAdminApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoSyPostsAdminApp.swift; sourceTree = "<group>"; };
 		60995587CAD3431837815D6B /* ShareExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		74DF9850A482DA51B71D4AFD /* MediaCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCarouselView.swift; sourceTree = "<group>"; };
@@ -92,7 +90,6 @@
 				3D2F736647B65C861082AE27 /* CoSyPostsAdmin.entitlements */,
 				4AE81AC66489681EC0E3F962 /* CoSyPostsAdminApp.swift */,
 				3BDA0B069AD89E36F7045EC4 /* Info.plist */,
-				491CD24E0EC32D908CF8BAC9 /* LoginView.swift */,
 				74DF9850A482DA51B71D4AFD /* MediaCarouselView.swift */,
 				F319EE07CCD237F3E2F741AE /* MediaItem.swift */,
 				855B800C08EC98A09C2863D7 /* Nanoid.swift */,
@@ -212,7 +209,6 @@
 				11C8B8C8320C7A01BC5CC9B6 /* CoSyPostsAdminApp.swift in Sources */,
 				50FB10DFDE4DAF739445ADA2 /* ComposeViewModel.swift in Sources */,
 				64BB90A6705A8A07D57B25C5 /* ContentView.swift in Sources */,
-				184A23012C6F4FF371EA8885 /* LoginView.swift in Sources */,
 				EC2937044B8848E8725AB0C4 /* MediaCarouselView.swift in Sources */,
 				96ECEECD3A7DA8DDA3C0389F /* MediaItem.swift in Sources */,
 				2BA08007FCFE2D385C42670B /* Nanoid.swift in Sources */,

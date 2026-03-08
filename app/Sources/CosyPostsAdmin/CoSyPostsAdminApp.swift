@@ -41,10 +41,8 @@ struct RootView: View {
     @Environment(AuthManager.self) private var authManager
 
     var body: some View {
-        if !authManager.isServerConfigured {
+        if !authManager.isAuthenticated {
             ServerSetupView()
-        } else if !authManager.isAuthenticated {
-            LoginView()
         } else {
             ContentView()
         }

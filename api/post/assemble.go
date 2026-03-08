@@ -25,6 +25,7 @@ type Frontmatter struct {
 	Date     string    `yaml:"date"`
 	Location *Location `yaml:"location,omitempty"`
 	Author   string    `yaml:"author,omitempty"`
+	Locale   string    `yaml:"locale,omitempty"`
 	Tags     []string  `yaml:"tags,omitempty"`
 }
 
@@ -147,10 +148,12 @@ func Assemble(cfg *config.Config, event tusd.HookEvent) error {
 	tags := extractTags(string(bodyText))
 
 	// Build frontmatter.
+	locale := info.MetaData["locale"]
 	fm := Frontmatter{
 		Date:     dateStr,
 		Location: location,
 		Author:   info.MetaData["author"],
+		Locale:   locale,
 		Tags:     tags,
 	}
 
@@ -159,6 +162,32 @@ func Assemble(cfg *config.Config, event tusd.HookEvent) error {
 	indexPath := filepath.Join(postDir, indexFilename)
 	if err := writeIndexFile(indexPath, fm, bodyText); err != nil {
 		return fmt.Errorf("writing index file: %w", err)
+	}
+
+	// Write additional locale body files (role=body-locale).
+	for _, u := range uploads {
+		if u.MetaData["role"] != "body-locale" {
+			continue
+		}
+		uLocale := u.MetaData["locale"]
+		uExt := u.MetaData["content-ext"]
+		if uLocale == "" {
+			continue
+		}
+		if uExt == "" {
+			uExt = "md"
+		}
+		localeBodyPath := uploadDataPath(cfg, u.ID)
+		localeBody, err := os.ReadFile(localeBodyPath)
+		if err != nil {
+			log.Printf("Warning: could not read locale body %s: %v", u.ID, err)
+			continue
+		}
+		localeFilename := fmt.Sprintf("index.%s.%s", uLocale, uExt)
+		localePath := filepath.Join(postDir, localeFilename)
+		if err := os.WriteFile(localePath, localeBody, 0o644); err != nil {
+			log.Printf("Warning: could not write locale file %s: %v", localeFilename, err)
+		}
 	}
 
 	// Clean up tus upload files for this post.

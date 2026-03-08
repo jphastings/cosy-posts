@@ -2,22 +2,61 @@ import SwiftUI
 import PhotosUI
 import AVFoundation
 
+/// A single locale entry with its body text.
+struct LocaleEntry: Identifiable {
+    let id = UUID()
+    var locale: Locale.Language
+    var text: String = ""
+}
+
 /// View model for the compose/post creation screen.
 @Observable
 @MainActor
 final class ComposeViewModel {
     var mediaItems: [MediaItem] = []
-    var bodyText: String = ""
+    var localeEntries: [LocaleEntry] = [
+        LocaleEntry(locale: Locale.current.language)
+    ]
     var selectedPhotos: [PhotosPickerItem] = [] {
         didSet {
             handlePickerSelection()
         }
     }
     var isUploading: Bool = false
+    var showingLocalePicker: Bool = false
+
+    /// The primary body text (first locale entry).
+    var bodyText: String {
+        get { localeEntries.first?.text ?? "" }
+        set {
+            if localeEntries.isEmpty {
+                localeEntries.append(LocaleEntry(locale: Locale.current.language))
+            }
+            localeEntries[0].text = newValue
+        }
+    }
 
     /// Whether the post has any content worth uploading.
     var canUpload: Bool {
-        !mediaItems.isEmpty || !bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !mediaItems.isEmpty || localeEntries.contains { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    /// The primary locale code (e.g. "en").
+    var primaryLocaleCode: String {
+        localeEntries.first?.locale.languageCode?.identifier ?? "en"
+    }
+
+    /// Add a new locale for translation.
+    func addLocale(_ language: Locale.Language) {
+        guard !localeEntries.contains(where: { $0.locale == language }) else { return }
+        localeEntries.append(LocaleEntry(locale: language))
+    }
+
+    /// Remove a locale entry by ID (cannot remove the primary).
+    func removeLocale(id: UUID) {
+        guard localeEntries.count > 1 else { return }
+        guard localeEntries.first?.id != id else { return }
+        localeEntries.removeAll { $0.id == id }
     }
 
     /// Handle new selections from PHPicker, adding items that aren't already present.
@@ -103,11 +142,11 @@ final class ComposeViewModel {
         errorMessage = nil
 
         let items = mediaItems
-        let text = bodyText
+        let entries = localeEntries
 
         Task {
             do {
-                try await uploadManager.enqueuePost(bodyText: text, mediaItems: items)
+                try await uploadManager.enqueuePost(localeEntries: entries, mediaItems: items)
                 reset()
             } catch {
                 errorMessage = error.localizedDescription
@@ -120,7 +159,7 @@ final class ComposeViewModel {
     func reset() {
         mediaItems.removeAll()
         selectedPhotos.removeAll()
-        bodyText = ""
+        localeEntries = [LocaleEntry(locale: Locale.current.language)]
         isUploading = false
     }
 }

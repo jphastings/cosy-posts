@@ -10,11 +10,17 @@ final class PendingPost {
     /// ISO 8601 date declared by the uploader.
     var date: Date
 
-    /// Post body text.
+    /// Post body text (primary locale).
     var bodyText: String
 
     /// Content type for the body: "md" or "djot".
     var contentExt: String
+
+    /// Primary locale code (e.g. "en").
+    var locale: String
+
+    /// Additional locale body texts as JSON: {"es": "Hola...", "fr": "Bonjour..."}
+    var localeTextsJSON: String
 
     /// Current upload status.
     var status: String
@@ -24,6 +30,9 @@ final class PendingPost {
 
     /// Number of media items that have been uploaded successfully.
     var mediaUploaded: Int
+
+    /// Number of locale bodies that have been uploaded (0 = none, up to localeTexts.count).
+    var localeBodyUploaded: Int
 
     /// The TUS upload URL for the body text, if creation has started.
     var bodyUploadURL: String?
@@ -42,15 +51,20 @@ final class PendingPost {
         date: Date = Date(),
         bodyText: String = "",
         contentExt: String = "md",
+        locale: String = "en",
+        localeTexts: [String: String] = [:],
         mediaURLs: [URL] = []
     ) {
         self.postID = postID
         self.date = date
         self.bodyText = bodyText
         self.contentExt = contentExt
+        self.locale = locale
+        self.localeTextsJSON = Self.encodeLocaleTexts(localeTexts)
         self.status = PostStatus.pending.rawValue
         self.mediaURLsJSON = Self.encodeURLs(mediaURLs)
         self.mediaUploaded = 0
+        self.localeBodyUploaded = 0
         self.createdAt = Date()
         self.updatedAt = Date()
     }
@@ -68,6 +82,19 @@ final class PendingPost {
         }
     }
 
+    /// Decoded additional locale texts.
+    var localeTexts: [String: String] {
+        get {
+            guard let data = localeTextsJSON.data(using: .utf8),
+                  let dict = try? JSONDecoder().decode([String: String].self, from: data)
+            else { return [:] }
+            return dict
+        }
+        set {
+            localeTextsJSON = Self.encodeLocaleTexts(newValue)
+        }
+    }
+
     /// Current status as a typed enum.
     var postStatus: PostStatus {
         get { PostStatus(rawValue: status) ?? .pending }
@@ -82,6 +109,13 @@ final class PendingPost {
         guard let data = try? JSONEncoder().encode(strings),
               let json = String(data: data, encoding: .utf8)
         else { return "[]" }
+        return json
+    }
+
+    private static func encodeLocaleTexts(_ texts: [String: String]) -> String {
+        guard let data = try? JSONEncoder().encode(texts),
+              let json = String(data: data, encoding: .utf8)
+        else { return "{}" }
         return json
     }
 }

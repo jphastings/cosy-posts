@@ -62,23 +62,22 @@ struct ContentView: View {
 
                 Divider()
 
-                // Text input — compact area at the bottom
-                ZStack(alignment: .topLeading) {
-                    TextEditor(text: $viewModel.bodyText)
-                        .font(.body)
-                        .scrollContentBackground(.hidden)
-                        .padding(.horizontal, 4)
-                        .frame(minHeight: 60, maxHeight: 100)
-
-                    if viewModel.bodyText.isEmpty {
-                        Text("What's on your mind?")
-                            .font(.body)
-                            .foregroundStyle(.tertiary)
-                            .padding(.top, 8)
-                            .padding(.leading, 9)
-                            .allowsHitTesting(false)
+                // Text input area — one per locale
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach($viewModel.localeEntries) { $entry in
+                            LocaleTextArea(
+                                entry: $entry,
+                                isPrimary: entry.id == viewModel.localeEntries.first?.id,
+                                onRemove: { viewModel.removeLocale(id: entry.id) }
+                            )
+                            if entry.id != viewModel.localeEntries.last?.id {
+                                Divider().padding(.horizontal)
+                            }
+                        }
                     }
                 }
+                .frame(minHeight: 60, maxHeight: viewModel.localeEntries.count > 1 ? 180 : 100)
 
                 // Error message
                 if let error = viewModel.errorMessage {
@@ -115,6 +114,13 @@ struct ContentView: View {
                             photoLibrary: .shared()
                         ) {
                             Label("Add Media", systemImage: "photo.on.rectangle.angled")
+                                .font(.body)
+                        }
+
+                        Button {
+                            viewModel.showingLocalePicker = true
+                        } label: {
+                            Label(viewModel.primaryLocaleCode.uppercased(), systemImage: "globe")
                                 .font(.body)
                         }
 
@@ -155,6 +161,20 @@ struct ContentView: View {
                     .frame(minWidth: 340, minHeight: 400)
                     #endif
             }
+            .sheet(isPresented: $viewModel.showingLocalePicker) {
+                LocalePickerSheet(
+                    existingLocales: viewModel.localeEntries.compactMap { $0.locale.languageCode?.identifier },
+                    siteLocales: siteInfoLoader.info?.locales ?? [],
+                    onSelect: { language in
+                        viewModel.addLocale(language)
+                    }
+                )
+                #if !os(macOS)
+                .presentationDetents([.medium])
+                #else
+                .frame(minWidth: 300, minHeight: 300)
+                #endif
+            }
             .task(id: authManager.serverURL) {
                 guard let serverURL = authManager.serverURL else { return }
                 await siteInfoLoader.load(serverURL: serverURL, token: authManager.sessionToken)
@@ -168,11 +188,12 @@ struct SiteInfo: Decodable {
     let version: String
     let gitSHA: String
     let stats: SiteStats
+    let locales: [String]
 
     enum CodingKeys: String, CodingKey {
         case name, version
         case gitSHA = "git_sha"
-        case stats
+        case stats, locales
     }
 }
 
@@ -341,6 +362,147 @@ struct SiteInfoSheet: View {
             .task {
                 guard loader.info == nil, let serverURL = authManager.serverURL else { return }
                 await loader.load(serverURL: serverURL, token: authManager.sessionToken)
+            }
+        }
+    }
+}
+
+/// A text area for a single locale, with a flag label and optional remove button.
+struct LocaleTextArea: View {
+    @Binding var entry: LocaleEntry
+    let isPrimary: Bool
+    let onRemove: () -> Void
+
+    private var languageName: String {
+        let code = entry.locale.languageCode?.identifier ?? "en"
+        return Locale.current.localizedString(forLanguageCode: code) ?? code
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(languageName)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+                if !isPrimary {
+                    Spacer()
+                    Button(role: .destructive) {
+                        onRemove()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 4)
+
+            TextEditor(text: $entry.text)
+                .font(.body)
+                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 4)
+                .frame(minHeight: 44)
+        }
+    }
+}
+
+/// Sheet for picking a locale to add for translation.
+struct LocalePickerSheet: View {
+    let existingLocales: [String]
+    let siteLocales: [String]
+    let onSelect: (Locale.Language) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+
+    /// Common language codes to show as suggestions.
+    private static let commonLanguages = [
+        "en", "es", "fr", "de", "it", "pt", "zh", "ja", "ko", "ar",
+        "ru", "hi", "nl", "sv", "da", "no", "fi", "pl", "tr", "th",
+    ]
+
+    private var allLanguages: [(code: String, name: String)] {
+        // Site locales first, then common, then all available.
+        var seen = Set(existingLocales)
+        var result: [(String, String)] = []
+
+        // Site locales that aren't already added.
+        for code in siteLocales where !seen.contains(code) {
+            if let name = Locale.current.localizedString(forLanguageCode: code) {
+                result.append((code, name))
+                seen.insert(code)
+            }
+        }
+
+        // Common languages.
+        for code in Self.commonLanguages where !seen.contains(code) {
+            if let name = Locale.current.localizedString(forLanguageCode: code) {
+                result.append((code, name))
+                seen.insert(code)
+            }
+        }
+
+        return result
+    }
+
+    private var filteredLanguages: [(code: String, name: String)] {
+        if searchText.isEmpty { return allLanguages }
+        let query = searchText.lowercased()
+        return allLanguages.filter {
+            $0.code.lowercased().contains(query) || $0.name.lowercased().contains(query)
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if !siteLocales.isEmpty {
+                    let siteFiltered = filteredLanguages.filter { siteLocales.contains($0.code) }
+                    if !siteFiltered.isEmpty {
+                        Section("Used on this site") {
+                            ForEach(siteFiltered, id: \.code) { lang in
+                                languageButton(code: lang.code, name: lang.name)
+                            }
+                        }
+                    }
+                }
+
+                let otherFiltered = filteredLanguages.filter { !siteLocales.contains($0.code) }
+                if !otherFiltered.isEmpty {
+                    Section("Other languages") {
+                        ForEach(otherFiltered, id: \.code) { lang in
+                            languageButton(code: lang.code, name: lang.name)
+                        }
+                    }
+                }
+            }
+            .searchable(text: $searchText, prompt: "Search languages")
+            .navigationTitle("Add Translation")
+            #if !os(macOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func languageButton(code: String, name: String) -> some View {
+        Button {
+            let language = Locale.Language(identifier: code)
+            onSelect(language)
+            dismiss()
+        } label: {
+            HStack {
+                Text(name)
+                Spacer()
+                Text(code.uppercased())
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }

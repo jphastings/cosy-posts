@@ -40,9 +40,9 @@ final class UploadManager {
 
     /// Enqueue a new post from the compose view.
     /// - Parameters:
-    ///   - bodyText: The post body text.
+    ///   - localeEntries: Body text per locale (first entry is primary).
     ///   - mediaItems: Selected media items from PHPicker.
-    func enqueuePost(bodyText: String, mediaItems: [MediaItem]) async throws {
+    func enqueuePost(localeEntries: [LocaleEntry], mediaItems: [MediaItem]) async throws {
         let postID = Nanoid.generate()
         let context = ModelContext(modelContainer)
 
@@ -63,10 +63,24 @@ final class UploadManager {
             }
         }
 
+        let primaryLocale = localeEntries.first?.locale.languageCode?.identifier ?? "en"
+        let primaryText = localeEntries.first?.text ?? ""
+
+        // Build locale texts dict for additional locales (skip primary, skip empty).
+        var localeTexts: [String: String] = [:]
+        for entry in localeEntries.dropFirst() {
+            let text = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !text.isEmpty, let code = entry.locale.languageCode?.identifier {
+                localeTexts[code] = entry.text
+            }
+        }
+
         let post = PendingPost(
             postID: postID,
             date: Date(),
-            bodyText: bodyText,
+            bodyText: primaryText,
+            locale: primaryLocale,
+            localeTexts: localeTexts,
             mediaURLs: mediaURLs
         )
 
@@ -133,7 +147,32 @@ final class UploadManager {
                 try? context.save()
             }
 
-            // Upload body text last (this triggers post assembly on the server)
+            // Upload additional locale bodies first (role=body-locale, does NOT trigger assembly).
+            let localeTexts = post.localeTexts
+            let sortedLocales = localeTexts.keys.sorted()
+            for (index, localeCode) in sortedLocales.enumerated() {
+                guard index >= post.localeBodyUploaded else { continue }
+                guard networkMonitor.isConnected else { return }
+
+                let text = localeTexts[localeCode] ?? ""
+                let localeData = Data(text.utf8)
+                var localeMetadata: [String: String] = [
+                    "post-id": post.postID,
+                    "filename": "body-\(localeCode)",
+                    "content-type": "text/plain",
+                    "role": "body-locale",
+                    "locale": localeCode,
+                    "content-ext": post.contentExt,
+                ]
+                if let author = authorEmail { localeMetadata["author"] = author }
+
+                _ = try await tusClient.uploadFile(data: localeData, metadata: localeMetadata)
+
+                post.localeBodyUploaded = index + 1
+                try? context.save()
+            }
+
+            // Upload primary body text last (this triggers post assembly on the server).
             let bodyData = Data(post.bodyText.utf8)
             var bodyMetadata: [String: String] = [
                 "post-id": post.postID,
@@ -141,6 +180,7 @@ final class UploadManager {
                 "content-type": "text/plain",
                 "role": "body",
                 "date": dateString,
+                "locale": post.locale,
                 "content-ext": post.contentExt,
             ]
             if let author = authorEmail { bodyMetadata["author"] = author }

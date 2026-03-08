@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/jphastings/cosy-posts/api/config"
 	"github.com/yuin/goldmark"
+	"gopkg.in/yaml.v3"
 )
 
 // Version and GitSHA are set at build time via ldflags.
@@ -21,10 +23,11 @@ var (
 )
 
 type Response struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
-	GitSHA  string `json:"git_sha"`
-	Stats   Stats  `json:"stats"`
+	Name    string   `json:"name"`
+	Version string   `json:"version"`
+	GitSHA  string   `json:"git_sha"`
+	Stats   Stats    `json:"stats"`
+	Locales []string `json:"locales"`
 }
 
 type Stats struct {
@@ -37,7 +40,7 @@ type Stats struct {
 
 func Handler(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		stats := countContent(cfg.ContentDir)
+		stats, locales := countContent(cfg.ContentDir)
 		stats.Members = countMembers(cfg.AuthDir)
 
 		resp := Response{
@@ -45,6 +48,7 @@ func Handler(cfg *config.Config) http.HandlerFunc {
 			Version: Version,
 			GitSHA:  GitSHA,
 			Stats:   stats,
+			Locales: locales,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -125,23 +129,45 @@ func extractBody(raw []byte) string {
 	return strings.TrimSpace(content[4+end+5:])
 }
 
-func countContent(contentDir string) Stats {
+func countContent(contentDir string) (Stats, []string) {
 	var stats Stats
+	localeSet := make(map[string]bool)
+
+	absContentDir, _ := filepath.Abs(contentDir)
 
 	filepath.WalkDir(contentDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return nil
 		}
 
-		name := strings.ToLower(d.Name())
+		name := d.Name()
+		nameLower := strings.ToLower(name)
 
 		// A post directory contains an index file
-		if name == "index.md" || name == "index.djot" {
+		if nameLower == "index.md" || nameLower == "index.djot" {
+			// Skip site-level index in the content root.
+			absPath, _ := filepath.Abs(filepath.Dir(path))
+			if absPath == absContentDir {
+				return nil
+			}
 			stats.Posts++
+			// Extract locale from frontmatter.
+			if raw, err := os.ReadFile(path); err == nil {
+				locale := extractLocaleFromFrontmatter(raw)
+				if locale != "" {
+					localeSet[locale] = true
+				}
+			}
 			return nil
 		}
 
-		ext := strings.ToLower(filepath.Ext(name))
+		// Check for translation files like index.es.md
+		if locale, ok := parseTranslationFilename(name); ok {
+			localeSet[locale] = true
+			return nil
+		}
+
+		ext := strings.ToLower(filepath.Ext(nameLower))
 		switch ext {
 		case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic":
 			stats.Photos++
@@ -154,7 +180,14 @@ func countContent(contentDir string) Stats {
 		return nil
 	})
 
-	return stats
+	// Sort locales for stable output.
+	locales := make([]string, 0, len(localeSet))
+	for l := range localeSet {
+		locales = append(locales, l)
+	}
+	sort.Strings(locales)
+
+	return stats, locales
 }
 
 func countMembers(authDir string) int {
@@ -173,4 +206,34 @@ func countMembers(authDir string) int {
 		f.Close()
 	}
 	return count
+}
+
+func extractLocaleFromFrontmatter(raw []byte) string {
+	content := string(raw)
+	if !strings.HasPrefix(content, "---\n") {
+		return ""
+	}
+	end := strings.Index(content[4:], "\n---\n")
+	if end == -1 {
+		return ""
+	}
+	var fm struct {
+		Locale string `yaml:"locale"`
+	}
+	yaml.Unmarshal([]byte(content[4:4+end]), &fm)
+	return fm.Locale
+}
+
+func parseTranslationFilename(name string) (string, bool) {
+	for _, ext := range []string{".md", ".djot"} {
+		prefix := "index."
+		if strings.HasPrefix(name, prefix) && strings.HasSuffix(name, ext) {
+			lang := strings.TrimPrefix(name, prefix)
+			lang = strings.TrimSuffix(lang, ext)
+			if lang != "" && !strings.Contains(lang, ".") {
+				return lang, true
+			}
+		}
+	}
+	return "", false
 }

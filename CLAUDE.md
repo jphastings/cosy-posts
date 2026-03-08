@@ -70,9 +70,13 @@ Monorepo with two main components:
 
 ## Commands
 
+Tasks defined in `README.md` can be run with `xc <task>` (see [xcfile.dev](https://xcfile.dev)).
+
 ```bash
-# Run API server
-cd api && go run . -config config.yaml
+# Run apps (via xc tasks defined in README.md)
+xc run-api               # Run Go API server
+xc run-mac-app            # Build and run macOS app
+xc run-ios-app            # Build and run iOS app in simulator
 
 # Beans
 beans list --ready          # See what to work on

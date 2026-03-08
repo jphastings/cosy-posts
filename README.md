@@ -14,6 +14,7 @@ Private community platform for sharing videos, photos, audio, and text.
 Build and run the API service for testing purposes.
 
 ```sh
+cd api && \
 go run . --config ~/.cosyposts/config.yaml
 ```
 
@@ -24,7 +25,7 @@ Build and run the macOS app for testing purposes.
 ```sh
 cd app && \
 xcodegen generate && \
-xcodebuild -project CosyPostsAdmin.xcodeproj -scheme CosyPostsAdmin -destination 'platform=macOS' build && \
+xcodebuild -project CosyPostsAdmin.xcodeproj -scheme CosyPostsAdmin -destination 'platform=macOS' build CODE_SIGN_IDENTITY="-" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO && \
 open ~/Library/Developer/Xcode/DerivedData/CosyPostsAdmin-*/Build/Products/Debug/CosyPostsAdmin.app
 ```
 

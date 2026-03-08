@@ -4,6 +4,7 @@ api/tmp/
 
 # iOS
 app/build/
+app/*.xcodeproj/
 xcuserdata/
 *.xcuserstate
 app/DerivedData/

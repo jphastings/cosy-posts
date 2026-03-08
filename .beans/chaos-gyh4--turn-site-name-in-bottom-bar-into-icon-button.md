@@ -18,6 +18,7 @@ The site name text in the bottom bar of the iOS app should become a button with 
 
 ## Tasks
 
+- [ ] Remove the locale name from the right of the locale button (currently it has EN or ES there, we can just have the icon, it'll make more space)
 - [ ] Replace site name text with a labelled icon button
 - [ ] Match the style of existing bottom bar buttons
 - [ ] Centre the button when space allows

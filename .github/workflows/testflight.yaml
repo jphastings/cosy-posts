@@ -18,6 +18,19 @@ jobs:
       - name: Install xcodegen
         run: brew install xcodegen
 
+      - name: Derive version from git tag
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/app/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/app/v}"
+          else
+            VERSION="0.0.0"
+          fi
+          echo "marketing_version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build_number=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION (build ${{ github.run_number }})"
+        working-directory: .
+
       - name: Generate Xcode project
         run: xcodegen generate
 
@@ -37,7 +50,9 @@ jobs:
             -destination 'generic/platform=iOS' \
             -archivePath build/CosyPostsAdmin.xcarchive \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            MARKETING_VERSION=${{ steps.version.outputs.marketing_version }} \
+            CURRENT_PROJECT_VERSION=${{ steps.version.outputs.build_number }}
 
       - name: Export & upload to TestFlight
         run: |

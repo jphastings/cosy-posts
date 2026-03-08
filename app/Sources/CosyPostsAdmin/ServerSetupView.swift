@@ -6,6 +6,7 @@ struct ServerSetupView: View {
     @State private var urlText = ""
     @State private var emailText = ""
     @State private var isSending = false
+    @State private var showingTokenEntry = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -34,6 +35,11 @@ struct ServerSetupView: View {
                     }
                 }
                 .disabled(isSending)
+
+                Button("Enter token") {
+                    showingTokenEntry = true
+                }
+                .font(.caption)
 
                 Button("Use a different email") {
                     authManager.awaitingMagicLink = false
@@ -99,6 +105,9 @@ struct ServerSetupView: View {
             Spacer()
         }
         .padding()
+        .sheet(isPresented: $showingTokenEntry) {
+            TokenEntrySheet(authManager: authManager)
+        }
         .onAppear {
             // Pre-fill from saved values.
             if let url = authManager.serverURL {
@@ -108,5 +117,88 @@ struct ServerSetupView: View {
                 emailText = email
             }
         }
+    }
+}
+
+/// Sheet for manually entering a magic link token.
+struct TokenEntrySheet: View {
+    var authManager: AuthManager
+    @Environment(\.dismiss) private var dismiss
+    @State private var tokenText = ""
+    @State private var shakeCount = 0
+    @State private var isVerifying = false
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                Text("Paste the token from your login email.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                TextField("Token", text: $tokenText)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                    #if !os(macOS)
+                    .textInputAutocapitalization(.never)
+                    #endif
+                    .modifier(ShakeModifier(shakeCount: shakeCount))
+
+                Button("Save") {
+                    let token = tokenText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !token.isEmpty else { return }
+                    isVerifying = true
+                    Task {
+                        let success = await authManager.verifyToken(token)
+                        isVerifying = false
+                        if success {
+                            dismiss()
+                        } else {
+                            tokenText = ""
+                            withAnimation(.default) {
+                                shakeCount += 1
+                            }
+                        }
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(tokenText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isVerifying)
+
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Enter Token")
+            #if !os(macOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+/// Applies a horizontal shake animation, driven by incrementing `shakeCount`.
+struct ShakeEffect: GeometryEffect {
+    var shakeCount: CGFloat
+
+    var animatableData: CGFloat {
+        get { shakeCount }
+        set { shakeCount = newValue }
+    }
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        ProjectionTransform(CGAffineTransform(translationX: sin(shakeCount * .pi * 4) * 8, y: 0))
+    }
+}
+
+struct ShakeModifier: ViewModifier {
+    var shakeCount: Int
+
+    func body(content: Content) -> some View {
+        content.modifier(ShakeEffect(shakeCount: CGFloat(shakeCount)))
     }
 }

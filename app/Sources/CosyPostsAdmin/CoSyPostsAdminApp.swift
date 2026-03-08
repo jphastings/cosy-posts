@@ -15,10 +15,12 @@ struct CosyPostsAdminApp: App {
                     await appState.syncAuth()
                     await appState.uploadManager.importSharedPosts()
                 }
+                .onChange(of: appState.authManager.sessionToken) {
+                    Task { await appState.syncAuth() }
+                }
                 .onOpenURL { url in
                     Task {
                         await appState.authManager.handleDeepLink(url)
-                        await appState.syncAuth()
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .authSessionExpired)) { _ in

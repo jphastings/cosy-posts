@@ -73,9 +73,15 @@ final class AuthManager {
             self.serverURL = url
         }
 
-        guard let serverURL else { return }
+        guard serverURL != nil else { return }
+        _ = await verifyToken(token)
+    }
 
-        // Exchange the token for a session by calling /auth/verify on the server.
+    /// Exchange a magic link token for a session. Returns true on success.
+    @discardableResult
+    func verifyToken(_ token: String) async -> Bool {
+        guard let serverURL else { return false }
+
         let verifyURL = serverURL.appendingPathComponent("auth/verify")
         var urlComponents = URLComponents(url: verifyURL, resolvingAgainstBaseURL: false)!
         urlComponents.queryItems = [URLQueryItem(name: "token", value: token)]
@@ -87,8 +93,7 @@ final class AuthManager {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else {
-                self.loginError = "This login link has already been used. Please request a new one."
-                return
+                return false
             }
 
             struct VerifyResponse: Decodable {
@@ -101,8 +106,9 @@ final class AuthManager {
             self.loginError = nil
             self.sessionToken = result.session
             self.email = result.email
+            return true
         } catch {
-            self.loginError = "Could not connect to the server. Please try again."
+            return false
         }
     }
 

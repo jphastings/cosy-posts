@@ -110,6 +110,7 @@ func NewHandler(contentDir, csvPath, siteName string) (*Handler, error) {
 		"email":      template.HTML(emailSVG),
 		"muted":      template.HTML(mutedSVG),
 		"unmuted":    template.HTML(unmutedSVG),
+		"pause":      template.HTML(pauseSVG),
 	}
 	funcMap := template.FuncMap{
 		"icon": func(name string) template.HTML {

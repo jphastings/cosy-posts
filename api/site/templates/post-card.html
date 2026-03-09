@@ -8,6 +8,7 @@
             {{if .IsVideo}}
               <div class="video-wrap">
                 <video src="{{.URL}}" loop playsinline muted preload="metadata"></video>
+                <span class="video-paused-icon">{{icon "pause"}}</span>
                 <button class="video-mute-btn" aria-label="Toggle mute">
                   <span class="icon-muted">{{icon "muted"}}</span>
                   <span class="icon-unmuted">{{icon "unmuted"}}</span>

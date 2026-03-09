@@ -368,6 +368,14 @@
             v.muted = muted;
           });
         }
+        // Sync paused class with video state
+        document.querySelectorAll('.video-wrap').forEach(function (wrap) {
+          var v = wrap.querySelector('video');
+          if (!v) return;
+          wrap.classList.add('paused');
+          v.addEventListener('play', function () { wrap.classList.remove('paused'); });
+          v.addEventListener('pause', function () { wrap.classList.add('paused'); });
+        });
         // Tap mute button toggles global mute
         document.querySelectorAll('.video-mute-btn').forEach(function (btn) {
           btn.addEventListener('click', function (e) {

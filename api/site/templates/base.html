@@ -368,13 +368,29 @@
             v.muted = muted;
           });
         }
-        // Sync paused class with video state
+        // Detect if video has audio and sync paused class
+        function hasAudio(v) {
+          if (typeof v.mozHasAudio !== 'undefined') return v.mozHasAudio;
+          if (typeof v.webkitAudioDecodedByteCount !== 'undefined') return v.webkitAudioDecodedByteCount > 0;
+          if (v.audioTracks) return v.audioTracks.length > 0;
+          return true; // assume audio if we can't detect
+        }
         document.querySelectorAll('.video-wrap').forEach(function (wrap) {
           var v = wrap.querySelector('video');
           if (!v) return;
           wrap.classList.add('paused');
           v.addEventListener('play', function () { wrap.classList.remove('paused'); });
           v.addEventListener('pause', function () { wrap.classList.add('paused'); });
+          // Check for audio after brief playback
+          var checked = false;
+          v.addEventListener('timeupdate', function () {
+            if (checked) return;
+            if (v.currentTime < 0.1) return;
+            checked = true;
+            if (!hasAudio(v)) {
+              wrap.classList.add('no-audio');
+            }
+          });
         });
         // Tap mute button toggles global mute
         document.querySelectorAll('.video-mute-btn').forEach(function (btn) {

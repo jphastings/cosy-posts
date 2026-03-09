@@ -426,6 +426,9 @@ body {
   opacity: 0.8;
 }
 
+/* Hide mute button for videos with no audio track */
+.video-wrap.no-audio .video-mute-btn { display: none; }
+
 /* Toggle muted/unmuted icons — default state is muted */
 .video-mute-btn .icon-unmuted { display: none; }
 body.video-unmuted .video-mute-btn .icon-muted { display: none; }

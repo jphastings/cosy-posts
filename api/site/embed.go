@@ -26,5 +26,11 @@ var whatsappSVG []byte
 //go:embed static/img/trash.svg
 var trashSVG []byte
 
+//go:embed static/img/muted.svg
+var mutedSVG []byte
+
+//go:embed static/img/unmuted.svg
+var unmutedSVG []byte
+
 //go:embed templates/*
 var templateFS embed.FS

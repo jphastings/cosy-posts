@@ -359,6 +359,78 @@
           });
           update();
         });
+        // --- Video player ---
+        var globalMuted = true;
+        function setGlobalMute(muted) {
+          globalMuted = muted;
+          document.body.classList.toggle('video-unmuted', !muted);
+          document.querySelectorAll('.video-wrap video').forEach(function (v) {
+            v.muted = muted;
+          });
+        }
+        // Tap mute button toggles global mute
+        document.querySelectorAll('.video-mute-btn').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            setGlobalMute(!globalMuted);
+          });
+        });
+        // Tap video to play/pause
+        document.querySelectorAll('.video-wrap').forEach(function (wrap) {
+          wrap.addEventListener('click', function (e) {
+            if (e.target.closest('.video-mute-btn')) return;
+            var v = wrap.querySelector('video');
+            if (!v) return;
+            if (v.paused) {
+              v.play().catch(function () {});
+            } else {
+              v.pause();
+            }
+          });
+        });
+        // Fit carousel aspect ratio to video content
+        document.querySelectorAll('.carousel').forEach(function (c) {
+          var slides = c.querySelectorAll('.carousel-slide');
+          var allVideo = true;
+          slides.forEach(function (s) {
+            if (!s.querySelector('video')) allVideo = false;
+          });
+          if (!allVideo) return;
+          // Use first video's natural aspect ratio once metadata loads
+          var firstVideo = c.querySelector('video');
+          if (!firstVideo) return;
+          function fitAspect() {
+            if (firstVideo.videoWidth && firstVideo.videoHeight) {
+              var ratio = firstVideo.videoWidth / firstVideo.videoHeight;
+              // Clamp: no taller than 4/5, no wider than 16/9
+              var min = 4 / 5;
+              var max = 16 / 9;
+              ratio = Math.max(min, Math.min(max, ratio));
+              c.style.aspectRatio = ratio;
+            }
+          }
+          if (firstVideo.readyState >= 1) fitAspect();
+          else firstVideo.addEventListener('loadedmetadata', fitAspect);
+        });
+        // IntersectionObserver: autoplay when >50% visible, pause when off
+        if ('IntersectionObserver' in window) {
+          var videoObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              var v = entry.target.querySelector('video');
+              if (!v) return;
+              if (entry.isIntersecting) {
+                v.play().catch(function () {
+                  // Autoplay blocked — video stays paused until user taps
+                });
+              } else {
+                v.pause();
+              }
+            });
+          }, { threshold: 0.5 });
+          document.querySelectorAll('.video-wrap').forEach(function (wrap) {
+            videoObserver.observe(wrap);
+          });
+        }
       })();
     </script>
   </body>

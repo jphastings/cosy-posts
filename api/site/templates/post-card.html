@@ -6,7 +6,13 @@
         {{range .Media}}
           <div class="carousel-slide">
             {{if .IsVideo}}
-              <video src="{{.URL}}" controls playsinline preload="metadata"></video>
+              <div class="video-wrap">
+                <video src="{{.URL}}" loop playsinline muted preload="metadata"></video>
+                <button class="video-mute-btn" aria-label="Toggle mute">
+                  <span class="icon-muted">{{icon "muted"}}</span>
+                  <span class="icon-unmuted">{{icon "unmuted"}}</span>
+                </button>
+              </div>
             {{else}}
               <img src="{{.URL}}" alt="" loading="lazy">
             {{end}}

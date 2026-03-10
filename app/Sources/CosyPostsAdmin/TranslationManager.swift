@@ -46,16 +46,16 @@ final class TranslationManager {
     /// The caller must set this on their @State translationConfig to trigger .translationTask.
     func prepareTranslation(text: String, to targetCode: String, completion: @escaping @MainActor (String) -> Void) -> TranslationSession.Configuration? {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            translationLog.error("translate(): empty text, skipping")
+            translationLog.info("translate(): empty text, skipping")
             return nil
         }
         guard let source = sourceLanguage else {
-            translationLog.error("translate(): no sourceLanguage set")
+            translationLog.info("translate(): no sourceLanguage set")
             return nil
         }
 
         let target = Locale.Language(identifier: targetCode)
-        translationLog.error("translate(): \(source.languageCode?.identifier ?? "?") → \(targetCode), text=\(text.prefix(40))…")
+        translationLog.info("translate(): \(source.languageCode?.identifier ?? "?") → \(targetCode), text=\(text.prefix(40))…")
         pendingTranslation = (text: text, targetCode: targetCode, completion: completion)
         return TranslationSession.Configuration(source: source, target: target)
     }

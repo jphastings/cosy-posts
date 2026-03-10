@@ -173,18 +173,13 @@ struct ContentView: View {
                 _ = await (siteInfo, accessRequests)
             }
             .translationTask(translationConfig) { session in
-                translationLog.error(".translationTask fired! pending=\(translationManager.pendingTranslation != nil)")
-                guard let pending = translationManager.pendingTranslation else {
-                    translationLog.error(".translationTask: no pending translation, returning")
-                    return
-                }
+                guard let pending = translationManager.pendingTranslation else { return }
                 translationManager.pendingTranslation = nil
                 // NOTE: do NOT set translationConfig = nil here — that cancels this task!
 
                 do {
-                    translationLog.error("Translating '\(pending.text.prefix(40))…' → \(pending.targetCode)")
                     let response = try await session.translate(pending.text)
-                    translationLog.error("Translation result: '\(response.targetText.prefix(40))…'")
+                    translationLog.info("Translated to \(pending.targetCode): \(response.targetText.prefix(40))…")
                     pending.completion(response.targetText)
                 } catch {
                     translationLog.error("Translation failed: \(error.localizedDescription)")

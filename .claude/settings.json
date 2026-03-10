@@ -18,7 +18,9 @@
       "Bash(xc *)",
       "WebSearch",
       "WebFetch(domain:forums.developer.apple.com)",
-      "Bash(log show --predicate 'subsystem == \"\"com.cosyposts\"\" *)"
+      "Bash(log show --predicate 'subsystem == \"\"com.cosyposts\"\" *)",
+      "Bash(gh api *)",
+      "Bash(beans create:*)"
     ]
   },
   "hooks": {

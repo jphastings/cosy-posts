@@ -2,6 +2,7 @@ import SwiftUI
 import PhotosUI
 import Photos
 import AVFoundation
+import UniformTypeIdentifiers
 import os
 
 private let mediaLog = Logger(subsystem: "com.cosyposts", category: "Media")
@@ -28,6 +29,7 @@ final class ComposeViewModel {
     }
     var isUploading: Bool = false
     var showingLocalePicker: Bool = false
+    var isDropTargeted: Bool = false
 
     /// The primary body text (first locale entry).
     var bodyText: String {
@@ -66,8 +68,11 @@ final class ComposeViewModel {
 
     /// Handle new selections from PHPicker, adding items that aren't already present.
     private func handlePickerSelection() {
-        let existingIDs = Set(mediaItems.map { $0.pickerItem.itemIdentifier })
-        let newItems = selectedPhotos.filter { !existingIDs.contains($0.itemIdentifier) }
+        let existingIDs = Set(mediaItems.compactMap { $0.pickerItem?.itemIdentifier })
+        let newItems = selectedPhotos.filter { item in
+            guard let id = item.itemIdentifier else { return true }
+            return !existingIDs.contains(id)
+        }
 
         var newItemIDs: [UUID] = []
         for item in newItems {
@@ -76,9 +81,12 @@ final class ComposeViewModel {
             newItemIDs.append(mediaItem.id)
         }
 
-        // Remove items that were deselected in the picker
+        // Remove picker items that were deselected (keep dropped items)
         let selectedIDs = Set(selectedPhotos.map { $0.itemIdentifier })
-        mediaItems.removeAll { !selectedIDs.contains($0.pickerItem.itemIdentifier) }
+        mediaItems.removeAll { item in
+            guard let pickerItem = item.pickerItem else { return false }
+            return !selectedIDs.contains(pickerItem.itemIdentifier)
+        }
 
         // Request Photos authorization once, then load all thumbnails.
         if !newItemIDs.isEmpty {
@@ -98,8 +106,8 @@ final class ComposeViewModel {
 
     /// Load a thumbnail progressively: show degraded first, then update with full quality.
     private func loadThumbnail(for id: UUID) async {
-        guard let index = mediaItems.firstIndex(where: { $0.id == id }) else { return }
-        let pickerItem = mediaItems[index].pickerItem
+        guard let index = mediaItems.firstIndex(where: { $0.id == id }),
+              let pickerItem = mediaItems[index].pickerItem else { return }
 
         // Try PHAsset path first (works reliably on macOS sandbox).
         if let identifier = pickerItem.itemIdentifier {
@@ -158,11 +166,159 @@ final class ComposeViewModel {
         }
     }
 
+    /// Handle dropped NSItemProviders from .onDrop.
+    func handleDrop(providers: [NSItemProvider]) {
+        for provider in providers {
+            // Try loading as a file URL first
+            if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { data, error in
+                    guard let data = data as? Data,
+                          let url = URL(dataRepresentation: data, relativeTo: nil) else {
+                        if let error { mediaLog.error("Drop URL load failed: \(error.localizedDescription)") }
+                        return
+                    }
+                    Task { @MainActor in
+                        self.addDroppedFile(url)
+                    }
+                }
+            } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
+                // Image data directly (e.g. dragged from a browser)
+                provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, error in
+                    guard let data else {
+                        if let error { mediaLog.error("Drop image load failed: \(error.localizedDescription)") }
+                        return
+                    }
+                    Task { @MainActor in
+                        self.addDroppedImageData(data)
+                    }
+                }
+            } else if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
+                provider.loadFileRepresentation(forTypeIdentifier: UTType.movie.identifier) { url, error in
+                    guard let url else {
+                        if let error { mediaLog.error("Drop video load failed: \(error.localizedDescription)") }
+                        return
+                    }
+                    Task { @MainActor in
+                        self.addDroppedFile(url)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Add a dropped file URL, copying it to a temp directory.
+    private func addDroppedFile(_ url: URL) {
+        let type = UTType(filenameExtension: url.pathExtension)
+        let isMedia = type.map { t in t.conforms(to: .image) || t.conforms(to: .movie) || t.conforms(to: .audio) } ?? false
+        guard isMedia else { return }
+
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dropped-media", isDirectory: true)
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        let dest = tempDir.appendingPathComponent(UUID().uuidString + "." + url.pathExtension)
+
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+
+        do {
+            try FileManager.default.copyItem(at: url, to: dest)
+        } catch {
+            mediaLog.error("Failed to copy dropped file \(url.lastPathComponent): \(error.localizedDescription)")
+            return
+        }
+
+        let item = MediaItem(fileURL: dest)
+        mediaItems.append(item)
+        Task { await loadDroppedThumbnail(for: item.id) }
+    }
+
+    /// Add dropped image data (not a file URL) by writing to temp.
+    private func addDroppedImageData(_ data: Data) {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dropped-media", isDirectory: true)
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+        // Detect format from data
+        let ext: String
+        if data.count >= 8 {
+            let header = [UInt8](data.prefix(8))
+            if header.starts(with: [0x89, 0x50, 0x4E, 0x47]) { ext = "png" }
+            else if header.starts(with: [0xFF, 0xD8]) { ext = "jpg" }
+            else if header.starts(with: [0x47, 0x49, 0x46]) { ext = "gif" }
+            else { ext = "jpg" }
+        } else {
+            ext = "jpg"
+        }
+
+        let dest = tempDir.appendingPathComponent(UUID().uuidString + "." + ext)
+        do {
+            try data.write(to: dest)
+        } catch {
+            mediaLog.error("Failed to write dropped image data: \(error.localizedDescription)")
+            return
+        }
+
+        let item = MediaItem(fileURL: dest)
+        mediaItems.append(item)
+        Task { await loadDroppedThumbnail(for: item.id) }
+    }
+
+    /// Generate a thumbnail for a dropped file.
+    private func loadDroppedThumbnail(for id: UUID) async {
+        guard let index = mediaItems.firstIndex(where: { $0.id == id }),
+              let fileURL = mediaItems[index].fileURL else { return }
+
+        let type = UTType(filenameExtension: fileURL.pathExtension)
+
+        if let type, type.conforms(to: .image) {
+            // Load image thumbnail
+            #if canImport(UIKit)
+            if let data = try? Data(contentsOf: fileURL),
+               let uiImage = UIImage(data: data) {
+                if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
+                    mediaItems[idx].thumbnail = Image(uiImage: uiImage)
+                    mediaItems[idx].loadingThumbnail = false
+                }
+                return
+            }
+            #elseif canImport(AppKit)
+            if let nsImage = NSImage(contentsOf: fileURL) {
+                if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
+                    mediaItems[idx].thumbnail = Image(nsImage: nsImage)
+                    mediaItems[idx].loadingThumbnail = false
+                }
+                return
+            }
+            #endif
+        } else if let type, type.conforms(to: .movie) {
+            // Generate video thumbnail from first frame
+            let asset = AVAsset(url: fileURL)
+            let generator = AVAssetImageGenerator(asset: asset)
+            generator.appliesPreferredTrackTransform = true
+            generator.maximumSize = CGSize(width: 512, height: 512)
+            if let cgImage = try? await generator.image(at: .zero).image {
+                let platformImage = PlatformImage(cgImage: cgImage)
+                if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
+                    mediaItems[idx].thumbnail = Image(platformImage: platformImage)
+                    mediaItems[idx].loadingThumbnail = false
+                }
+                return
+            }
+        }
+
+        mediaLog.warning("Could not generate thumbnail for dropped file \(fileURL.lastPathComponent)")
+        if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
+            mediaItems[idx].loadingThumbnail = false
+        }
+    }
+
     /// Remove a media item at the given index.
     func removeMedia(at index: Int) {
         guard mediaItems.indices.contains(index) else { return }
         let removed = mediaItems.remove(at: index)
-        selectedPhotos.removeAll { $0.itemIdentifier == removed.pickerItem.itemIdentifier }
+        if let pickerItem = removed.pickerItem {
+            selectedPhotos.removeAll { $0.itemIdentifier == pickerItem.itemIdentifier }
+        }
     }
 
     /// Remove a media item by its ID.

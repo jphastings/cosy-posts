@@ -113,7 +113,24 @@ final class UploadManager {
     /// Export a single media item to a local file, trying multiple strategies.
     /// Returns the file URL on success, nil on failure.
     private func exportMedia(item: MediaItem, index: Int, postDir: URL, hasPhotoAccess: Bool) async -> URL? {
-        let pickerItem = item.pickerItem
+        // Dropped files: just copy to the post directory
+        if let fileURL = item.fileURL {
+            let dest = postDir.appendingPathComponent("media_\(index).\(fileURL.pathExtension)")
+            do {
+                try FileManager.default.copyItem(at: fileURL, to: dest)
+                uploadLog.info("Media \(index): copied dropped file")
+                return dest
+            } catch {
+                uploadLog.error("Media \(index): failed to copy dropped file: \(error.localizedDescription)")
+                return nil
+            }
+        }
+
+        guard let pickerItem = item.pickerItem else {
+            uploadLog.error("Media \(index): no picker item or file URL")
+            return nil
+        }
+
         let isVideo = pickerItem.supportedContentTypes.contains(where: { $0.conforms(to: .movie) })
 
         uploadLog.info("Exporting media \(index): isVideo=\(isVideo) types=\(pickerItem.supportedContentTypes.map(\.identifier))")

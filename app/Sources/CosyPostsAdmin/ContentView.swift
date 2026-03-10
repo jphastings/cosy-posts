@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import PhotosUI
+import UniformTypeIdentifiers
 import os
 
 private let infoLog = Logger(subsystem: "com.cosyposts", category: "SiteInfo")
@@ -31,35 +32,41 @@ struct ContentView: View {
                 }
 
                 // Media area — takes up most of the space
-                PhotosPicker(
-                    selection: $viewModel.selectedPhotos,
-                    maxSelectionCount: 20,
-                    matching: .any(of: [.images, .videos]),
-                    photoLibrary: .shared()
-                ) {
-                    Group {
-                        if viewModel.mediaItems.isEmpty {
-                            // Empty state — tap to add media
-                            VStack(spacing: 12) {
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .font(.system(size: 40))
-                                Text("Tap to select photos or videos")
-                                    .font(.subheadline)
+                ZStack {
+                    PhotosPicker(
+                        selection: $viewModel.selectedPhotos,
+                        maxSelectionCount: 20,
+                        matching: .any(of: [.images, .videos]),
+                        photoLibrary: .shared()
+                    ) {
+                        Group {
+                            if viewModel.mediaItems.isEmpty {
+                                // Empty state — tap to add media
+                                VStack(spacing: 12) {
+                                    Image(systemName: "photo.on.rectangle.angled")
+                                        .font(.system(size: 40))
+                                    Text("Tap to select photos or videos")
+                                        .font(.subheadline)
+                                }
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .background(Color.secondary.opacity(0.08))
+                            } else {
+                                // Media carousel
+                                MediaCarouselView(
+                                    items: viewModel.mediaItems,
+                                    onRemove: { id in viewModel.removeMedia(id: id) }
+                                )
                             }
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(Color.secondary.opacity(0.08))
-                        } else {
-                            // Media carousel
-                            MediaCarouselView(
-                                items: viewModel.mediaItems,
-                                onRemove: { id in viewModel.removeMedia(id: id) }
-                            )
                         }
                     }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
                 .frame(maxHeight: .infinity)
+                .onDrop(of: [.image, .movie, .audio, .fileURL], isTargeted: $viewModel.isDropTargeted) { providers in
+                    viewModel.handleDrop(providers: providers)
+                    return true
+                }
 
                 Divider()
 

@@ -24,14 +24,26 @@ extension NSImage {
 }
 #endif
 
-/// Represents a single media item selected from the photo picker.
+/// Represents a single media item — either from the photo picker or a dropped file.
 struct MediaItem: Identifiable {
     let id = UUID()
-    let pickerItem: PhotosPickerItem
+    /// Set when the item came from PhotosPicker.
+    var pickerItem: PhotosPickerItem?
+    /// Set when the item came from drag-and-drop (a local file URL).
+    var fileURL: URL?
     var thumbnail: Image?
     var loadingThumbnail: Bool = true
     /// True while a high-quality version is being downloaded from iCloud.
     var isDownloading: Bool = false
+
+    init(pickerItem: PhotosPickerItem) {
+        self.pickerItem = pickerItem
+    }
+
+    init(fileURL: URL) {
+        self.fileURL = fileURL
+        self.loadingThumbnail = true
+    }
 }
 
 /// A transferable type that receives a file URL from the photo picker (any media type).

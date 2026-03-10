@@ -170,11 +170,19 @@ final class ComposeViewModel {
     /// Handle dropped NSItemProviders from .onDrop.
     func handleDrop(providers: [NSItemProvider]) {
         for provider in providers {
-            // Try loading as a file URL first
+            // Try loading as a file URL first (covers all Finder drops).
             if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
                 provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { data, error in
-                    guard let data = data as? Data,
-                          let url = URL(dataRepresentation: data, relativeTo: nil) else {
+                    // loadItem may return Data (URL bytes) or NSURL directly.
+                    let url: URL?
+                    if let urlData = data as? Data {
+                        url = URL(dataRepresentation: urlData, relativeTo: nil)
+                    } else if let fileURL = data as? URL {
+                        url = fileURL
+                    } else {
+                        url = nil
+                    }
+                    guard let url else {
                         if let error { mediaLog.error("Drop URL load failed: \(error.localizedDescription)") }
                         return
                     }
@@ -183,7 +191,7 @@ final class ComposeViewModel {
                     }
                 }
             } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                // Image data directly (e.g. dragged from a browser)
+                // Image data directly (e.g. dragged from a browser).
                 provider.loadDataRepresentation(forTypeIdentifier: UTType.image.identifier) { data, error in
                     guard let data else {
                         if let error { mediaLog.error("Drop image load failed: \(error.localizedDescription)") }
@@ -194,13 +202,27 @@ final class ComposeViewModel {
                     }
                 }
             } else if provider.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
+                // Video from another app (not Finder). Copy synchronously since
+                // loadFileRepresentation's temp file is deleted after the callback.
                 provider.loadFileRepresentation(forTypeIdentifier: UTType.movie.identifier) { url, error in
                     guard let url else {
                         if let error { mediaLog.error("Drop video load failed: \(error.localizedDescription)") }
                         return
                     }
+                    let tempDir = FileManager.default.temporaryDirectory
+                        .appendingPathComponent("dropped-media", isDirectory: true)
+                    try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+                    let dest = tempDir.appendingPathComponent(UUID().uuidString + "." + url.pathExtension)
+                    do {
+                        try FileManager.default.copyItem(at: url, to: dest)
+                    } catch {
+                        mediaLog.error("Failed to copy dropped video: \(error.localizedDescription)")
+                        return
+                    }
                     Task { @MainActor in
-                        self.addDroppedFile(url)
+                        let item = MediaItem(fileURL: dest)
+                        self.mediaItems.append(item)
+                        Task { await self.loadDroppedThumbnail(for: item.id) }
                     }
                 }
             }

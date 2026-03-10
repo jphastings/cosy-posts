@@ -22,5 +22,3 @@ CI/CD improvements identified by bar-raiser review of GitHub Actions workflows a
 - [ ] Pin xcodegen to a specific version in `testflight.yaml`
 - [ ] Add `if: always()` cleanup step to delete API key from `~/private_keys/`
 - [ ] Update stale "11ty-compatible" reference in README
-- [ ] Remove boilerplate comments from `.goreleaser.yaml`
-- [ ] Rename `GH_TOKEN` secret to `HOMEBREW_TAP_TOKEN` for clarity

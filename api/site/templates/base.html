@@ -412,30 +412,6 @@
             }
           });
         });
-        // Fit carousel aspect ratio to video content
-        document.querySelectorAll('.carousel').forEach(function (c) {
-          var slides = c.querySelectorAll('.carousel-slide');
-          var allVideo = true;
-          slides.forEach(function (s) {
-            if (!s.querySelector('video')) allVideo = false;
-          });
-          if (!allVideo) return;
-          // Use first video's natural aspect ratio once metadata loads
-          var firstVideo = c.querySelector('video');
-          if (!firstVideo) return;
-          function fitAspect() {
-            if (firstVideo.videoWidth && firstVideo.videoHeight) {
-              var ratio = firstVideo.videoWidth / firstVideo.videoHeight;
-              // Clamp: no taller than 4/5, no wider than 16/9
-              var min = 4 / 5;
-              var max = 16 / 9;
-              ratio = Math.max(min, Math.min(max, ratio));
-              c.style.aspectRatio = ratio;
-            }
-          }
-          if (firstVideo.readyState >= 1) fitAspect();
-          else firstVideo.addEventListener('loadedmetadata', fitAspect);
-        });
         // IntersectionObserver: autoplay when >50% visible, pause when off
         if ('IntersectionObserver' in window) {
           var videoObserver = new IntersectionObserver(function (entries) {

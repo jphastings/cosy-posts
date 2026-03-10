@@ -1,7 +1,7 @@
 {{define "post-card"}}
 <article class="post" data-post-id="{{.ID}}" data-post-date="{{.ReadableDate}}">
   {{if .Media}}
-    <div class="carousel" data-count="{{len .Media}}">
+    <div class="carousel" data-count="{{len .Media}}"{{if .MediaAspectRatio}} style="--media-aspect-ratio: {{printf "%.4f" .MediaAspectRatio}}"{{end}}>
       <div class="carousel-track">
         {{range .Media}}
           <div class="carousel-slide">

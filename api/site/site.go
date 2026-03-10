@@ -6,7 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,6 +19,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jphastings/cosy-posts/api/video"
+	_ "golang.org/x/image/webp"
 	"github.com/yuin/goldmark"
 	"gopkg.in/yaml.v3"
 )
@@ -44,17 +51,18 @@ type Method struct {
 
 // Post holds all data needed to render a single post card.
 type Post struct {
-	ID           string
-	Date         time.Time
-	Author       string
-	AuthorName   string
-	Body         string
-	BodyHTML     template.HTML
-	Locale       string
-	Media        []MediaFile
-	URL          string
-	ISODate      string
-	ReadableDate string
+	ID                string
+	Date              time.Time
+	Author            string
+	AuthorName        string
+	Body              string
+	BodyHTML          template.HTML
+	Locale            string
+	Media             []MediaFile
+	URL               string
+	ISODate           string
+	ReadableDate      string
+	MediaAspectRatio  float64 // from frontmatter or computed from image dimensions
 }
 
 // MediaFile represents a single media item in a post.
@@ -62,13 +70,16 @@ type MediaFile struct {
 	Filename string
 	URL      string
 	IsVideo  bool
+	Width    int // 0 if unknown (e.g. video)
+	Height   int // 0 if unknown (e.g. video)
 }
 
 // frontmatter mirrors the YAML frontmatter in post index files.
 type frontmatter struct {
-	Date   string `yaml:"date"`
-	Author string `yaml:"author"`
-	Locale string `yaml:"locale"`
+	Date             string  `yaml:"date"`
+	Author           string  `yaml:"author"`
+	Locale           string  `yaml:"locale"`
+	MediaAspectRatio float64 `yaml:"media_aspect_ratio"`
 }
 
 // Handler serves the embedded site, reading content from the filesystem.
@@ -371,11 +382,27 @@ func (h *Handler) parsePost(indexPath string, members map[string]Member) (Post, 
 		if !mediaExts[ext] {
 			continue
 		}
-		media = append(media, MediaFile{
+		mf := MediaFile{
 			Filename: e.Name(),
 			URL:      contentURL + e.Name(),
 			IsVideo:  videoExts[ext],
-		})
+		}
+		// Detect media dimensions for aspect ratio calculation.
+		if mf.IsVideo {
+			if vi, err := video.Probe(filepath.Join(postDir, e.Name())); err == nil && vi != nil {
+				mf.Width = vi.Width
+				mf.Height = vi.Height
+			}
+		} else {
+			if f, err := os.Open(filepath.Join(postDir, e.Name())); err == nil {
+				if cfg, _, err := image.DecodeConfig(f); err == nil {
+					mf.Width = cfg.Width
+					mf.Height = cfg.Height
+				}
+				f.Close()
+			}
+		}
+		media = append(media, mf)
 	}
 	sort.Slice(media, func(i, j int) bool {
 		return media[i].Filename < media[j].Filename
@@ -402,18 +429,36 @@ func (h *Handler) parsePost(indexPath string, members map[string]Member) (Post, 
 		locale = "en"
 	}
 
+	// Use frontmatter aspect ratio if available, otherwise compute from image dimensions.
+	aspectRatio := fm.MediaAspectRatio
+	if aspectRatio == 0 {
+		var ratioSum float64
+		var ratioCount int
+		for _, m := range media {
+			if m.Width > 0 && m.Height > 0 {
+				ratioSum += float64(m.Width) / float64(m.Height)
+				ratioCount++
+			}
+		}
+		if ratioCount > 0 {
+			aspectRatio = ratioSum / float64(ratioCount)
+			aspectRatio = math.Max(4.0/5.0, math.Min(1.91, aspectRatio))
+		}
+	}
+
 	return Post{
-		ID:           postID,
-		Date:         postDate,
-		Author:       fm.Author,
-		AuthorName:   authorName,
-		Body:         body,
-		BodyHTML:     template.HTML(bodyHTML.String()),
-		Locale:       locale,
-		Media:        media,
-		URL:          contentURL,
-		ISODate:      postDate.Format(time.RFC3339),
-		ReadableDate: postDate.Format("2 Jan 2006"),
+		ID:               postID,
+		Date:             postDate,
+		Author:           fm.Author,
+		AuthorName:       authorName,
+		Body:             body,
+		BodyHTML:         template.HTML(bodyHTML.String()),
+		Locale:           locale,
+		Media:            media,
+		URL:              contentURL,
+		ISODate:          postDate.Format(time.RFC3339),
+		ReadableDate:     postDate.Format("2 Jan 2006"),
+		MediaAspectRatio: aspectRatio,
 	}, nil
 }
 

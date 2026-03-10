@@ -4,8 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -14,19 +19,22 @@ import (
 
 	"github.com/jphastings/cosy-posts/api/config"
 	"github.com/jphastings/cosy-posts/api/photo"
+	"github.com/jphastings/cosy-posts/api/video"
 
 	goexif "github.com/rwcarlsen/goexif/exif"
 	tusd "github.com/tus/tusd/v2/pkg/handler"
+	_ "golang.org/x/image/webp"
 	"gopkg.in/yaml.v3"
 )
 
 // Frontmatter holds the YAML frontmatter for a post's index file.
 type Frontmatter struct {
-	Date     string    `yaml:"date"`
-	Location *Location `yaml:"location,omitempty"`
-	Author   string    `yaml:"author,omitempty"`
-	Locale   string    `yaml:"locale,omitempty"`
-	Tags     []string  `yaml:"tags,omitempty"`
+	Date             string    `yaml:"date"`
+	Location         *Location `yaml:"location,omitempty"`
+	Author           string    `yaml:"author,omitempty"`
+	Locale           string    `yaml:"locale,omitempty"`
+	Tags             []string  `yaml:"tags,omitempty"`
+	MediaAspectRatio float64   `yaml:"media_aspect_ratio,omitempty"`
 }
 
 // Location holds GPS coordinates extracted from EXIF data.
@@ -141,8 +149,18 @@ func Assemble(cfg *config.Config, event tusd.HookEvent) error {
 			if err := copyFile(srcPath, dstPath); err != nil {
 				return fmt.Errorf("copying media %s: %w", filename, err)
 			}
+
+			// Probe video files for GPS location.
+			if location == nil {
+				if vi, err := video.Probe(dstPath); err == nil && vi != nil && vi.Lat != nil && vi.Lng != nil {
+					location = &Location{Lat: *vi.Lat, Lng: *vi.Lng}
+				}
+			}
 		}
 	}
+
+	// Compute media aspect ratio from all images in the post directory.
+	mediaAspectRatio := computeMediaAspectRatio(postDir)
 
 	// Extract hashtags from body text.
 	tags := extractTags(string(bodyText))
@@ -150,11 +168,12 @@ func Assemble(cfg *config.Config, event tusd.HookEvent) error {
 	// Build frontmatter.
 	locale := info.MetaData["locale"]
 	fm := Frontmatter{
-		Date:     dateStr,
-		Location: location,
-		Author:   info.MetaData["author"],
-		Locale:   locale,
-		Tags:     tags,
+		Date:             dateStr,
+		Location:         location,
+		Author:           info.MetaData["author"],
+		Locale:           locale,
+		Tags:             tags,
+		MediaAspectRatio: mediaAspectRatio,
 	}
 
 	// Write index file.
@@ -325,6 +344,68 @@ func cleanupUploads(cfg *config.Config, uploads []tusInfoFile, bodyUploadID stri
 		os.Remove(infoPath)
 		os.Remove(lockPath)
 	}
+}
+
+// imageExts lists extensions for which we can decode dimensions.
+var imageExts = map[string]bool{
+	".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true,
+}
+
+// videoExts lists extensions for which we can probe video dimensions.
+var videoExts = map[string]bool{
+	".mp4": true, ".mov": true, ".webm": true,
+}
+
+// computeMediaAspectRatio scans a post directory for media files, computes the
+// average aspect ratio of all media with known dimensions, and clamps it
+// between 4:5 (portrait) and 1.91:1 (landscape). Returns 0 if no dimensions
+// could be determined.
+func computeMediaAspectRatio(postDir string) float64 {
+	entries, err := os.ReadDir(postDir)
+	if err != nil {
+		return 0
+	}
+
+	var sum float64
+	var count int
+	for _, e := range entries {
+		ext := strings.ToLower(filepath.Ext(e.Name()))
+		path := filepath.Join(postDir, e.Name())
+
+		var w, h int
+		if imageExts[ext] {
+			f, err := os.Open(path)
+			if err != nil {
+				continue
+			}
+			cfg, _, err := image.DecodeConfig(f)
+			f.Close()
+			if err != nil {
+				continue
+			}
+			w, h = cfg.Width, cfg.Height
+		} else if videoExts[ext] {
+			vi, err := video.Probe(path)
+			if err != nil || vi == nil {
+				continue
+			}
+			w, h = vi.Width, vi.Height
+		} else {
+			continue
+		}
+
+		if w > 0 && h > 0 {
+			sum += float64(w) / float64(h)
+			count++
+		}
+	}
+
+	if count == 0 {
+		return 0
+	}
+	avg := sum / float64(count)
+	// Clamp: no more portrait than 4:5, no more landscape than 1.91:1
+	return math.Max(4.0/5.0, math.Min(1.91, avg))
 }
 
 // copyFile copies a file from src to dst.

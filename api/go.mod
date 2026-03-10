@@ -3,6 +3,7 @@ module github.com/jphastings/cosy-posts/api
 go 1.25.6
 
 require (
+	github.com/abema/go-mp4 v1.4.1
 	github.com/adrium/goheif v0.0.0-20230113233934-ca402e77a786
 	github.com/gen2brain/heic v0.4.9
 	github.com/gen2brain/jpegli v0.3.4
@@ -20,6 +21,7 @@ require (
 	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect

@@ -15,7 +15,9 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(echo \"exit: $?\")",
       "Bash(pkill -x CosyPostsAdmin)",
-      "Bash(xc *)"
+      "Bash(xc *)",
+      "WebSearch",
+      "WebFetch(domain:forums.developer.apple.com)"
     ]
   },
   "hooks": {

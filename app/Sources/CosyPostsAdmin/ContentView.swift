@@ -2,15 +2,19 @@ import SwiftUI
 import SwiftData
 import PhotosUI
 import UniformTypeIdentifiers
+@preconcurrency import Translation
 import os
 
 private let infoLog = Logger(subsystem: "com.cosyposts", category: "SiteInfo")
+private let translationLog = Logger(subsystem: "com.cosyposts", category: "Translation")
 
 struct ContentView: View {
     @State private var viewModel = ComposeViewModel()
     @State private var showingSiteSheet = false
     @State private var siteInfoLoader = SiteInfoLoader()
     @State private var accessRequestsLoader = AccessRequestsLoader()
+    @State private var translationManager = TranslationManager()
+    @State private var translationConfig: TranslationSession.Configuration?
     @Environment(AuthManager.self) private var authManager
     @Environment(UploadManager.self) private var uploadManager
     @Environment(NetworkMonitor.self) private var networkMonitor
@@ -126,9 +130,35 @@ struct ContentView: View {
                 LocalePickerSheet(
                     existingLocales: viewModel.localeEntries.compactMap { $0.locale.languageCode?.identifier },
                     siteLocales: siteInfoLoader.info?.locales ?? [],
-                    onSelect: { language in
+                    onSelect: { language, autoTranslate in
                         viewModel.addLocale(language)
-                    }
+                        if autoTranslate {
+                            let primaryText = viewModel.bodyText
+                            let targetCode = language.languageCode?.identifier ?? ""
+                            // Mark as translating for skeleton UI
+                            if let idx = viewModel.localeEntries.firstIndex(where: { $0.locale == language }) {
+                                viewModel.localeEntries[idx].isTranslating = true
+                            }
+                            let config = translationManager.prepareTranslation(text: primaryText, to: targetCode) { translated in
+                                if let idx = viewModel.localeEntries.firstIndex(where: { $0.locale == language }) {
+                                    viewModel.localeEntries[idx].text = translated
+                                    viewModel.localeEntries[idx].isTranslating = false
+                                }
+                            }
+                            if let config {
+                                translationConfig = nil
+                                Task { @MainActor in
+                                    translationConfig = config
+                                }
+                            } else {
+                                // Translation not available, clear skeleton
+                                if let idx = viewModel.localeEntries.firstIndex(where: { $0.locale == language }) {
+                                    viewModel.localeEntries[idx].isTranslating = false
+                                }
+                            }
+                        }
+                    },
+                    translationManager: translationManager
                 )
                 #if !os(macOS)
                 .presentationDetents([.medium])
@@ -141,6 +171,32 @@ struct ContentView: View {
                 async let siteInfo: () = siteInfoLoader.load(serverURL: serverURL, token: authManager.sessionToken)
                 async let accessRequests: () = accessRequestsLoader.load(serverURL: serverURL, token: authManager.sessionToken)
                 _ = await (siteInfo, accessRequests)
+            }
+            .translationTask(translationConfig) { session in
+                translationLog.error(".translationTask fired! pending=\(translationManager.pendingTranslation != nil)")
+                guard let pending = translationManager.pendingTranslation else {
+                    translationLog.error(".translationTask: no pending translation, returning")
+                    return
+                }
+                translationManager.pendingTranslation = nil
+                // NOTE: do NOT set translationConfig = nil here — that cancels this task!
+
+                do {
+                    translationLog.error("Translating '\(pending.text.prefix(40))…' → \(pending.targetCode)")
+                    let response = try await session.translate(pending.text)
+                    translationLog.error("Translation result: '\(response.targetText.prefix(40))…'")
+                    pending.completion(response.targetText)
+                } catch {
+                    translationLog.error("Translation failed: \(error.localizedDescription)")
+                }
+                // Reset config after translation completes so next request can trigger nil→non-nil
+                translationConfig = nil
+            }
+            .onChange(of: viewModel.localeEntries.first?.locale) {
+                translationManager.sourceLanguage = viewModel.localeEntries.first?.locale
+            }
+            .onAppear {
+                translationManager.sourceLanguage = viewModel.localeEntries.first?.locale
             }
         }
     }
@@ -505,6 +561,10 @@ struct LocaleTextArea: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)
+                if entry.isTranslating {
+                    ProgressView()
+                        .controlSize(.mini)
+                }
                 if !isPrimary {
                     Spacer()
                     Button(role: .destructive) {
@@ -520,12 +580,57 @@ struct LocaleTextArea: View {
             .padding(.horizontal, 12)
             .padding(.top, 4)
 
-            TextEditor(text: $entry.text)
-                .font(.body)
-                .scrollContentBackground(.hidden)
-                .padding(.horizontal, 4)
-                .frame(minHeight: 44)
+            if entry.isTranslating {
+                SkeletonTextView()
+                    .padding(.horizontal, 8)
+                    .frame(minHeight: 44)
+            } else {
+                TextEditor(text: $entry.text)
+                    .font(.body)
+                    .scrollContentBackground(.hidden)
+                    .padding(.horizontal, 4)
+                    .frame(minHeight: 44)
+            }
         }
+    }
+}
+
+/// Animated skeleton placeholder for text being translated.
+struct SkeletonTextView: View {
+    @State private var shimmer = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SkeletonLine(widthFraction: 0.9)
+            SkeletonLine(widthFraction: 0.75)
+            SkeletonLine(widthFraction: 0.6)
+        }
+        .padding(.vertical, 8)
+        .mask {
+            LinearGradient(
+                colors: [.black.opacity(0.4), .black, .black.opacity(0.4)],
+                startPoint: shimmer ? .leading : .trailing,
+                endPoint: shimmer ? .trailing : .leading
+            )
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                shimmer = true
+            }
+        }
+    }
+}
+
+private struct SkeletonLine: View {
+    let widthFraction: CGFloat
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 3)
+            .fill(.secondary.opacity(0.3))
+            .frame(maxWidth: .infinity)
+            .frame(height: 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .scaleEffect(x: widthFraction, anchor: .leading)
     }
 }
 
@@ -533,7 +638,8 @@ struct LocaleTextArea: View {
 struct LocalePickerSheet: View {
     let existingLocales: [String]
     let siteLocales: [String]
-    let onSelect: (Locale.Language) -> Void
+    let onSelect: (Locale.Language, Bool) -> Void // (language, canAutoTranslate)
+    var translationManager: TranslationManager
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
 
@@ -544,11 +650,19 @@ struct LocalePickerSheet: View {
     ]
 
     private var allLanguages: [(code: String, name: String)] {
-        // Site locales first, then common, then all available.
-        var seen = Set(existingLocales)
+        // Site locales first, then common. Existing locales included but shown as disabled.
+        var seen = Set<String>()
         var result: [(String, String)] = []
 
-        // Site locales that aren't already added.
+        // Existing locales first (shown as already-added).
+        for code in existingLocales where !seen.contains(code) {
+            if let name = Locale.current.localizedString(forLanguageCode: code) {
+                result.append((code, name))
+                seen.insert(code)
+            }
+        }
+
+        // Site locales.
         for code in siteLocales where !seen.contains(code) {
             if let name = Locale.current.localizedString(forLanguageCode: code) {
                 result.append((code, name))
@@ -575,15 +689,55 @@ struct LocalePickerSheet: View {
         }
     }
 
+    /// If the search text looks like a language code not in the list, offer to add it.
+    private var customCodeEntry: (code: String, name: String)? {
+        let trimmed = searchText.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        // Match patterns like "en", "en-GB", "cy-CY", "pt-BR"
+        let pattern = /^[a-zA-Z]{2,3}(-[a-zA-Z]{2,4})?$/
+        guard trimmed.wholeMatch(of: pattern) != nil else { return nil }
+        let code = trimmed.lowercased()
+        // Don't offer if it's already in the filtered results or existing locales
+        guard !existingLocales.contains(code) else { return nil }
+        guard !filteredLanguages.contains(where: { $0.code.lowercased() == code }) else { return nil }
+        let name = Locale.current.localizedString(forLanguageCode: code)
+        return (code: code, name: name ?? code)
+    }
+
     var body: some View {
         NavigationStack {
             List {
+                // Custom code entry row
+                if let custom = customCodeEntry {
+                    Section {
+                        Button {
+                            let language = Locale.Language(identifier: custom.code)
+                            let status = translationManager.statuses[custom.code]
+                            onSelect(language, status == .available)
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Label {
+                                    Text("Add \"\(custom.name)\"")
+                                } icon: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .foregroundStyle(.tint)
+                                }
+                                Spacer()
+                                Text(custom.code.uppercased())
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+
                 if !siteLocales.isEmpty {
                     let siteFiltered = filteredLanguages.filter { siteLocales.contains($0.code) }
                     if !siteFiltered.isEmpty {
                         Section("Used on this site") {
                             ForEach(siteFiltered, id: \.code) { lang in
-                                languageButton(code: lang.code, name: lang.name)
+                                languageRow(code: lang.code, name: lang.name)
                             }
                         }
                     }
@@ -593,12 +747,12 @@ struct LocalePickerSheet: View {
                 if !otherFiltered.isEmpty {
                     Section("Other languages") {
                         ForEach(otherFiltered, id: \.code) { lang in
-                            languageButton(code: lang.code, name: lang.name)
+                            languageRow(code: lang.code, name: lang.name)
                         }
                     }
                 }
             }
-            .searchable(text: $searchText, prompt: "Search languages")
+            .searchable(text: $searchText, prompt: "Search languages or enter code (e.g. cy, en-GB)")
             .navigationTitle("Add Translation")
             #if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -608,23 +762,43 @@ struct LocalePickerSheet: View {
                     Button("Cancel") { dismiss() }
                 }
             }
+            .task {
+                let codes = allLanguages.map(\.code)
+                if let source = translationManager.sourceLanguage {
+                    await translationManager.checkAvailability(for: codes, from: source)
+                }
+            }
         }
     }
 
-    private func languageButton(code: String, name: String) -> some View {
-        Button {
+    private func languageRow(code: String, name: String) -> some View {
+        let isExisting = existingLocales.contains(code)
+        let status = translationManager.statuses[code] ?? .unsupported
+
+        return Button {
             let language = Locale.Language(identifier: code)
-            onSelect(language)
+            onSelect(language, status == .available)
             dismiss()
         } label: {
             HStack {
                 Text(name)
+                    .foregroundStyle(isExisting ? .secondary : .primary)
                 Spacer()
                 Text(code.uppercased())
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if isExisting {
+                    Image(systemName: "checkmark")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if status == .available {
+                    Image(systemName: "bolt.fill")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                }
             }
         }
+        .disabled(isExisting)
     }
 }
 

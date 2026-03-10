@@ -17,7 +17,8 @@
       "Bash(pkill -x CosyPostsAdmin)",
       "Bash(xc *)",
       "WebSearch",
-      "WebFetch(domain:forums.developer.apple.com)"
+      "WebFetch(domain:forums.developer.apple.com)",
+      "Bash(log show --predicate 'subsystem == \"\"com.cosyposts\"\" *)"
     ]
   },
   "hooks": {

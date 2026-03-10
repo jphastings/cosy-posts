@@ -12,6 +12,7 @@ struct LocaleEntry: Identifiable {
     let id = UUID()
     var locale: Locale.Language
     var text: String = ""
+    var isTranslating: Bool = false
 }
 
 /// View model for the compose/post creation screen.

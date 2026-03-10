@@ -85,6 +85,11 @@ func main() {
 	// Delete post endpoint (requires "post" role).
 	mux.HandleFunc("DELETE /api/posts/{id}", post.DeleteHandler(cfg))
 
+	// Access request management (requires "post" role).
+	mux.HandleFunc("GET /api/access-requests", auth.ListAccessRequests(cfg))
+	mux.HandleFunc("POST /api/access-requests/{email}/approve", auth.ApproveAccessRequest(cfg))
+	mux.HandleFunc("DELETE /api/access-requests/{email}", auth.DenyAccessRequest(cfg))
+
 	// Serve the site at the root.
 	if cfg.HasExternalSite() {
 		// External build system: serve pre-built static files.

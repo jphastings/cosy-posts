@@ -9,6 +9,7 @@ struct ContentView: View {
     @State private var viewModel = ComposeViewModel()
     @State private var showingSiteSheet = false
     @State private var siteInfoLoader = SiteInfoLoader()
+    @State private var accessRequestsLoader = AccessRequestsLoader()
     @Environment(AuthManager.self) private var authManager
     @Environment(UploadManager.self) private var uploadManager
     @Environment(NetworkMonitor.self) private var networkMonitor
@@ -98,7 +99,8 @@ struct ContentView: View {
                     viewModel: $viewModel,
                     showingSiteSheet: $showingSiteSheet,
                     siteName: siteInfoLoader.info?.name ?? authManager.serverURL?.host ?? "Not connected",
-                    uploadManager: uploadManager
+                    uploadManager: uploadManager,
+                    accessRequestCount: accessRequestsLoader.emails.count
                 )
             }
             .navigationTitle("New Post")
@@ -106,7 +108,7 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .sheet(isPresented: $showingSiteSheet) {
-                SiteInfoSheet(authManager: authManager, loader: siteInfoLoader)
+                SiteInfoSheet(authManager: authManager, loader: siteInfoLoader, accessRequestsLoader: accessRequestsLoader)
                     #if !os(macOS)
                     .presentationDetents([.medium])
                     #else
@@ -129,7 +131,9 @@ struct ContentView: View {
             }
             .task(id: authManager.serverURL) {
                 guard let serverURL = authManager.serverURL else { return }
-                await siteInfoLoader.load(serverURL: serverURL, token: authManager.sessionToken)
+                async let siteInfo: () = siteInfoLoader.load(serverURL: serverURL, token: authManager.sessionToken)
+                async let accessRequests: () = accessRequestsLoader.load(serverURL: serverURL, token: authManager.sessionToken)
+                _ = await (siteInfo, accessRequests)
             }
         }
     }
@@ -145,6 +149,7 @@ private struct BottomToolbar: View {
     @Binding var showingSiteSheet: Bool
     let siteName: String
     let uploadManager: UploadManager
+    var accessRequestCount: Int = 0
 
     var body: some View {
         HStack(spacing: 0) {
@@ -180,7 +185,7 @@ private struct BottomToolbar: View {
             Button {
                 showingSiteSheet = true
             } label: {
-                SiteNameLabel(name: siteName)
+                SiteNameLabel(name: siteName, badgeCount: accessRequestCount)
             }
             .buttonStyle(.plain)
             .layoutPriority(1)
@@ -225,6 +230,7 @@ private struct BottomToolbar: View {
 /// layout oscillation.
 private struct SiteNameLabel: View {
     let name: String
+    var badgeCount: Int = 0
     @State private var availableWidth: CGFloat = 200
     @State private var minLabelWidth: CGFloat = 0
 
@@ -257,6 +263,14 @@ private struct SiteNameLabel: View {
             }
             .font(.body)
             .foregroundStyle(.secondary)
+            .overlay(alignment: .topTrailing) {
+                if badgeCount > 0 {
+                    Circle()
+                        .fill(.red)
+                        .frame(width: 10, height: 10)
+                        .offset(x: 2, y: -2)
+                }
+            }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
         .background {
@@ -339,6 +353,7 @@ final class SiteInfoLoader {
 struct SiteInfoSheet: View {
     let authManager: AuthManager
     var loader: SiteInfoLoader
+    var accessRequestsLoader: AccessRequestsLoader
     @Environment(\.dismiss) private var dismiss
 
     private var repoURL: URL? {
@@ -406,6 +421,8 @@ struct SiteInfoSheet: View {
                         }
                     }
                 }
+
+                AccessRequestsView(authManager: authManager, loader: accessRequestsLoader)
 
                 // Visit site
                 if let serverURL = authManager.serverURL {

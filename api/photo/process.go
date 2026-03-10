@@ -7,7 +7,6 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -242,7 +241,9 @@ func encodeJPEGWithExif(path string, img image.Image, tiffData []byte) error {
 
 	out.WriteByte(0xFF)
 	out.WriteByte(0xE1)
-	binary.Write(&out, binary.BigEndian, app1Len)
+	if err := binary.Write(&out, binary.BigEndian, app1Len); err != nil {
+		return err
+	}
 	out.Write(app1Payload)
 
 	out.Write(jpegBytes[2:])
@@ -385,7 +386,7 @@ func decodeImage(path string, format imageFormat) (image.Image, error) {
 
 	switch format {
 	case formatHEIC:
-		return decodeHEIC(f)
+		return heic.Decode(f)
 	case formatJPEG:
 		return jpeg.Decode(f)
 	case formatPNG:
@@ -393,14 +394,6 @@ func decodeImage(path string, format imageFormat) (image.Image, error) {
 	default:
 		return nil, fmt.Errorf("unsupported image format for %s", path)
 	}
-}
-
-func decodeHEIC(r io.Reader) (image.Image, error) {
-	img, err := heic.Decode(r)
-	if err != nil {
-		return nil, fmt.Errorf("decoding HEIC: %w", err)
-	}
-	return img, nil
 }
 
 func downscale(img image.Image, maxPx int) image.Image {

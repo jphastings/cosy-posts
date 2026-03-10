@@ -7,10 +7,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -23,6 +25,8 @@ const (
 	sessionExpiry = 180 * 24 * time.Hour
 	cookieName    = "session"
 )
+
+var hexPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 type tokenFile struct {
 	Email  string    `json:"email"`
@@ -74,6 +78,9 @@ func saveToken(authDir, token, email string) error {
 }
 
 func validateToken(authDir, token string) (string, error) {
+	if !hexPattern.MatchString(token) {
+		return "", fmt.Errorf("invalid token")
+	}
 	path := filepath.Join(authDir, "tokens", token)
 	data, err := os.ReadFile(path)
 	os.Remove(path) // single-use: always delete
@@ -107,6 +114,9 @@ func createSession(authDir, email, role string) (string, error) {
 }
 
 func validateSession(authDir, sessionID string) (string, string, error) {
+	if !hexPattern.MatchString(sessionID) {
+		return "", "", fmt.Errorf("invalid session")
+	}
 	path := filepath.Join(authDir, "sessions", sessionID)
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -184,10 +194,11 @@ func LoginPage(cfg *config.Config) http.HandlerFunc {
 		if name == "" {
 			name = r.Host
 		}
+		safeName := html.EscapeString(name)
 		if r.URL.Query().Has("sent") {
-			fmt.Fprint(w, strings.ReplaceAll(loginSentHTML, "{{name}}", name))
+			fmt.Fprint(w, strings.ReplaceAll(loginSentHTML, "{{name}}", safeName))
 		} else {
-			fmt.Fprint(w, strings.ReplaceAll(loginFormHTML, "{{name}}", name))
+			fmt.Fprint(w, strings.ReplaceAll(loginFormHTML, "{{name}}", safeName))
 		}
 	}
 }
@@ -266,10 +277,15 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 				// Still redirect so we don't leak info.
 			}
 		} else {
-			// Not authorized: record request, send polite email.
-			if err := appendToCSV(filepath.Join(cfg.AuthDir, "wants-account.csv"), email); err != nil {
-				log.Printf("auth: append to wants-account: %v", err)
+			// Not authorized: record request (deduplicated), send polite email.
+			wantsPath := filepath.Join(cfg.AuthDir, "wants-account.csv")
+			csvMu.Lock()
+			if !emailInCSV(wantsPath, email) {
+				if err := appendToCSV(wantsPath, email); err != nil {
+					log.Printf("auth: append to wants-account: %v", err)
+				}
 			}
+			csvMu.Unlock()
 			if err := sendRequestRecorded(cfg, email); err != nil {
 				log.Printf("auth: send request-recorded email to %s: %v", email, err)
 			}

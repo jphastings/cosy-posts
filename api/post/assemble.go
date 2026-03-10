@@ -16,8 +16,10 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/jphastings/cosy-posts/api/config"
+	"github.com/jphastings/cosy-posts/api/internal/content"
 	"github.com/jphastings/cosy-posts/api/photo"
 	"github.com/jphastings/cosy-posts/api/video"
 
@@ -64,6 +66,9 @@ func Assemble(cfg *config.Config, event tusd.HookEvent) error {
 	if contentExt == "" {
 		contentExt = "md"
 	}
+	if contentExt != "md" && contentExt != "djot" {
+		return fmt.Errorf("invalid content-ext %q: must be md or djot", contentExt)
+	}
 
 	// Parse the date to determine directory structure.
 	postDate, err := time.Parse(time.RFC3339, dateStr)
@@ -108,8 +113,8 @@ func Assemble(cfg *config.Config, event tusd.HookEvent) error {
 			continue
 		}
 
-		filename := u.MetaData["filename"]
-		if filename == "" {
+		filename := filepath.Base(u.MetaData["filename"])
+		if filename == "" || filename == "." || filename == "/" {
 			log.Printf("Upload %s has no filename, skipping", u.ID)
 			continue
 		}
@@ -193,8 +198,16 @@ func Assemble(cfg *config.Config, event tusd.HookEvent) error {
 		if uLocale == "" {
 			continue
 		}
+		if !isValidLocale(uLocale) {
+			log.Printf("Warning: invalid locale %q in upload %s, skipping", uLocale, u.ID)
+			continue
+		}
 		if uExt == "" {
 			uExt = "md"
+		}
+		if uExt != "md" && uExt != "djot" {
+			log.Printf("Warning: invalid content-ext %q in upload %s, skipping", uExt, u.ID)
+			continue
 		}
 		localeBodyPath := uploadDataPath(cfg, u.ID)
 		localeBody, err := os.ReadFile(localeBodyPath)
@@ -346,16 +359,6 @@ func cleanupUploads(cfg *config.Config, uploads []tusInfoFile, bodyUploadID stri
 	}
 }
 
-// imageExts lists extensions for which we can decode dimensions.
-var imageExts = map[string]bool{
-	".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true,
-}
-
-// videoExts lists extensions for which we can probe video dimensions.
-var videoExts = map[string]bool{
-	".mp4": true, ".mov": true, ".webm": true,
-}
-
 // computeMediaAspectRatio scans a post directory for media files, computes the
 // average aspect ratio of all media with known dimensions, and clamps it
 // between 4:5 (portrait) and 1.91:1 (landscape). Returns 0 if no dimensions
@@ -373,7 +376,7 @@ func computeMediaAspectRatio(postDir string) float64 {
 		path := filepath.Join(postDir, e.Name())
 
 		var w, h int
-		if imageExts[ext] {
+		if content.ImageExts[ext] {
 			f, err := os.Open(path)
 			if err != nil {
 				continue
@@ -384,7 +387,7 @@ func computeMediaAspectRatio(postDir string) float64 {
 				continue
 			}
 			w, h = cfg.Width, cfg.Height
-		} else if videoExts[ext] {
+		} else if content.VideoExts[ext] {
 			vi, err := video.Probe(path)
 			if err != nil || vi == nil {
 				continue
@@ -408,6 +411,19 @@ func computeMediaAspectRatio(postDir string) float64 {
 	return math.Max(4.0/5.0, math.Min(1.91, avg))
 }
 
+// isValidLocale checks that a locale string is a short lowercase alpha tag.
+func isValidLocale(s string) bool {
+	if len(s) < 2 || len(s) > 8 {
+		return false
+	}
+	for _, r := range s {
+		if !unicode.IsLetter(r) {
+			return false
+		}
+	}
+	return true
+}
+
 // copyFile copies a file from src to dst.
 func copyFile(src, dst string) error {
 	in, err := os.Open(src)
@@ -420,9 +436,9 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 
 	if _, err := io.Copy(out, in); err != nil {
+		out.Close()
 		return err
 	}
 	return out.Close()

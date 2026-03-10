@@ -23,7 +23,7 @@ func Trigger(cfg *config.Config) {
 		cmd := exec.Command("sh", "-c", cfg.RebuildCmd())
 		cmd.Dir = cfg.Dir
 		cmd.Env = append(os.Environ(),
-			"CAN_POST_CSV="+filepath.Join(cfg.Dir, "can-post.csv"),
+			"CAN_POST_CSV="+filepath.Join(cfg.AuthDir, "can-post.csv"),
 			"SITE_NAME="+cfg.SiteName(),
 		)
 		cmd.Stdout = os.Stdout

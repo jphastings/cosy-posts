@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/jphastings/cosy-posts/api/auth"
 	"github.com/jphastings/cosy-posts/api/config"
@@ -115,8 +116,15 @@ func main() {
 	// Run an initial site build on startup (no-op if no build command).
 	rebuild.Trigger(cfg)
 
+	srv := &http.Server{
+		Addr:              cfg.Listen,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      5 * time.Minute, // generous for TUS uploads
+	}
 	log.Printf("Listening on %s", cfg.Listen)
-	if err := http.ListenAndServe(cfg.Listen, handler); err != nil {
+	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
 }

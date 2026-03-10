@@ -2,7 +2,6 @@ package info
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"io/fs"
 	"net/http"
@@ -12,8 +11,7 @@ import (
 	"strings"
 
 	"github.com/jphastings/cosy-posts/api/config"
-	"github.com/yuin/goldmark"
-	"gopkg.in/yaml.v3"
+	"github.com/jphastings/cosy-posts/api/internal/content"
 )
 
 // Version and GitSHA are set at build time via ldflags.
@@ -60,7 +58,7 @@ func Handler(cfg *config.Config) http.HandlerFunc {
 // Supports Accept-Language header for locale fallback.
 func SiteInfoHandler(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		prefLang := preferredLang(r)
+		prefLang := content.PreferredLang(r.Header.Get("Accept-Language"))
 		html := loadSiteInfo(cfg.ContentDir, prefLang)
 
 		w.Header().Set("Content-Type", "application/json")
@@ -70,33 +68,15 @@ func SiteInfoHandler(cfg *config.Config) http.HandlerFunc {
 	}
 }
 
-func preferredLang(r *http.Request) string {
-	accept := r.Header.Get("Accept-Language")
-	if accept == "" {
-		return ""
-	}
-	for _, part := range strings.Split(accept, ",") {
-		tag := strings.TrimSpace(strings.SplitN(part, ";", 2)[0])
-		if tag == "" || tag == "*" {
-			continue
-		}
-		lang, _, _ := strings.Cut(tag, "-")
-		return strings.ToLower(lang)
-	}
-	return ""
-}
-
 func loadSiteInfo(contentDir, prefLang string) string {
 	if prefLang != "" {
 		for _, ext := range []string{".md", ".djot"} {
 			path := filepath.Join(contentDir, "index."+prefLang+ext)
 			raw, err := os.ReadFile(path)
 			if err == nil {
-				body := extractBody(raw)
+				body := content.ExtractBody(raw)
 				if body != "" {
-					var buf bytes.Buffer
-					goldmark.Convert([]byte(body), &buf)
-					return buf.String()
+					return content.RenderMarkdown(body)
 				}
 			}
 		}
@@ -107,26 +87,12 @@ func loadSiteInfo(contentDir, prefLang string) string {
 		if err != nil {
 			continue
 		}
-		body := extractBody(raw)
+		body := content.ExtractBody(raw)
 		if body != "" {
-			var buf bytes.Buffer
-			goldmark.Convert([]byte(body), &buf)
-			return buf.String()
+			return content.RenderMarkdown(body)
 		}
 	}
 	return ""
-}
-
-func extractBody(raw []byte) string {
-	content := string(raw)
-	if !strings.HasPrefix(content, "---\n") {
-		return strings.TrimSpace(content)
-	}
-	end := strings.Index(content[4:], "\n---\n")
-	if end == -1 {
-		return strings.TrimSpace(content)
-	}
-	return strings.TrimSpace(content[4+end+5:])
 }
 
 func countContent(contentDir string) (Stats, []string) {
@@ -162,7 +128,7 @@ func countContent(contentDir string) (Stats, []string) {
 		}
 
 		// Check for translation files like index.es.md
-		if locale, ok := parseTranslationFilename(name); ok {
+		if locale, ok := content.ParseTranslationFilename(name); ok {
 			localeSet[locale] = true
 			return nil
 		}
@@ -209,31 +175,9 @@ func countMembers(authDir string) int {
 }
 
 func extractLocaleFromFrontmatter(raw []byte) string {
-	content := string(raw)
-	if !strings.HasPrefix(content, "---\n") {
-		return ""
-	}
-	end := strings.Index(content[4:], "\n---\n")
-	if end == -1 {
-		return ""
-	}
-	var fm struct {
+	type localeFM struct {
 		Locale string `yaml:"locale"`
 	}
-	yaml.Unmarshal([]byte(content[4:4+end]), &fm)
+	fm, _ := content.ParseFrontmatter[localeFM](raw)
 	return fm.Locale
-}
-
-func parseTranslationFilename(name string) (string, bool) {
-	for _, ext := range []string{".md", ".djot"} {
-		prefix := "index."
-		if strings.HasPrefix(name, prefix) && strings.HasSuffix(name, ext) {
-			lang := strings.TrimPrefix(name, prefix)
-			lang = strings.TrimSuffix(lang, ext)
-			if lang != "" && !strings.Contains(lang, ".") {
-				return lang, true
-			}
-		}
-	}
-	return "", false
 }

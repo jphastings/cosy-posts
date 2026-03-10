@@ -19,23 +19,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jphastings/cosy-posts/api/internal/content"
 	"github.com/jphastings/cosy-posts/api/video"
 	_ "golang.org/x/image/webp"
 	"github.com/yuin/goldmark"
-	"gopkg.in/yaml.v3"
 )
 
 const DefaultSiteName = "Cosy Posts"
 
-var videoExts = map[string]bool{
-	".mp4": true, ".mov": true, ".webm": true,
-}
-
-var mediaExts = map[string]bool{
-	".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true,
-	".mp4": true, ".mov": true, ".webm": true,
-	".m4a": true, ".mp3": true,
-}
 
 // Member represents a contact-able person parsed from the can-post CSV.
 type Member struct {
@@ -228,7 +219,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 	members := h.parseMembers()
-	prefLang := preferredLocale(r)
+	prefLang := content.PreferredLang(r.Header.Get("Accept-Language"))
 	posts := h.loadPosts(members, prefLang)
 
 	membersJSON, _ := json.Marshal(members)
@@ -251,30 +242,11 @@ func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "public, max-age=21600")
+	w.Header().Set("Cache-Control", "private, max-age=21600")
 	w.Header().Set("Vary", "Accept-Language")
 	if err := h.homeTmpl.ExecuteTemplate(w, "base.html", data); err != nil {
 		log.Printf("site: render home: %v", err)
 	}
-}
-
-// preferredLocale extracts the first language code from the Accept-Language header.
-func preferredLocale(r *http.Request) string {
-	accept := r.Header.Get("Accept-Language")
-	if accept == "" {
-		return ""
-	}
-	// Parse first language tag (e.g. "es-MX,es;q=0.9,en;q=0.8" → "es").
-	for _, part := range strings.Split(accept, ",") {
-		tag := strings.TrimSpace(strings.SplitN(part, ";", 2)[0])
-		if tag == "" || tag == "*" {
-			continue
-		}
-		// Return just the primary subtag (e.g. "es" from "es-MX").
-		lang, _, _ := strings.Cut(tag, "-")
-		return strings.ToLower(lang)
-	}
-	return ""
 }
 
 func (h *Handler) loadPosts(members map[string]Member, prefLang string) []Post {
@@ -310,7 +282,7 @@ func (h *Handler) loadPosts(members map[string]Member, prefLang string) []Post {
 				if err != nil {
 					continue
 				}
-				_, tbody := parseFrontmatter(raw)
+				_, tbody := content.ParseFrontmatter[frontmatter](raw)
 				if tbody != "" {
 					var bodyHTML bytes.Buffer
 					goldmark.Convert([]byte(tbody), &bodyHTML)
@@ -334,29 +306,13 @@ func (h *Handler) loadPosts(members map[string]Member, prefLang string) []Post {
 	return posts
 }
 
-// parseTranslationFilename checks if a filename matches index.{lang}.md or
-// index.{lang}.djot and returns the language code.
-func parseTranslationFilename(name string) (string, bool) {
-	for _, ext := range []string{".md", ".djot"} {
-		prefix := "index."
-		if strings.HasPrefix(name, prefix) && strings.HasSuffix(name, ext) {
-			lang := strings.TrimPrefix(name, prefix)
-			lang = strings.TrimSuffix(lang, ext)
-			if lang != "" && !strings.Contains(lang, ".") {
-				return lang, true
-			}
-		}
-	}
-	return "", false
-}
-
 func (h *Handler) parsePost(indexPath string, members map[string]Member) (Post, error) {
 	raw, err := os.ReadFile(indexPath)
 	if err != nil {
 		return Post{}, err
 	}
 
-	fm, body := parseFrontmatter(raw)
+	fm, body := content.ParseFrontmatter[frontmatter](raw)
 
 	postDir := filepath.Dir(indexPath)
 	postID := filepath.Base(postDir)
@@ -379,13 +335,13 @@ func (h *Handler) parsePost(indexPath string, members map[string]Member) (Post, 
 	entries, _ := os.ReadDir(postDir)
 	for _, e := range entries {
 		ext := strings.ToLower(filepath.Ext(e.Name()))
-		if !mediaExts[ext] {
+		if !content.MediaExts[ext] {
 			continue
 		}
 		mf := MediaFile{
 			Filename: e.Name(),
 			URL:      contentURL + e.Name(),
-			IsVideo:  videoExts[ext],
+			IsVideo:  content.VideoExts[ext],
 		}
 		// Detect media dimensions for aspect ratio calculation.
 		if mf.IsVideo {
@@ -462,26 +418,6 @@ func (h *Handler) parsePost(indexPath string, members map[string]Member) (Post, 
 	}, nil
 }
 
-func parseFrontmatter(raw []byte) (frontmatter, string) {
-	content := string(raw)
-	var fm frontmatter
-
-	if !strings.HasPrefix(content, "---\n") {
-		return fm, strings.TrimSpace(content)
-	}
-
-	end := strings.Index(content[4:], "\n---\n")
-	if end == -1 {
-		return fm, strings.TrimSpace(content)
-	}
-
-	fmStr := content[4 : 4+end]
-	body := content[4+end+5:]
-
-	yaml.Unmarshal([]byte(fmStr), &fm)
-	return fm, strings.TrimSpace(body)
-}
-
 // loadSiteInfo reads the site-level index.md (or locale variant) from the
 // content directory root and returns rendered HTML. Returns empty if no file exists.
 func (h *Handler) loadSiteInfo(prefLang string) template.HTML {
@@ -491,7 +427,7 @@ func (h *Handler) loadSiteInfo(prefLang string) template.HTML {
 			path := filepath.Join(h.contentDir, "index."+prefLang+ext)
 			raw, err := os.ReadFile(path)
 			if err == nil {
-				_, body := parseFrontmatter(raw)
+				_, body := content.ParseFrontmatter[frontmatter](raw)
 				if body != "" {
 					var buf bytes.Buffer
 					goldmark.Convert([]byte(body), &buf)
@@ -508,7 +444,7 @@ func (h *Handler) loadSiteInfo(prefLang string) template.HTML {
 		if err != nil {
 			continue
 		}
-		_, body := parseFrontmatter(raw)
+		_, body := content.ParseFrontmatter[frontmatter](raw)
 		if body != "" {
 			var buf bytes.Buffer
 			goldmark.Convert([]byte(body), &buf)

@@ -94,60 +94,12 @@ struct ContentView: View {
                 Divider()
 
                 // Bottom toolbar
-                ZStack {
-                    // Center: site name button
-                    Button {
-                        showingSiteSheet = true
-                    } label: {
-                        Text(siteInfoLoader.info?.name ?? authManager.serverURL?.host ?? "Not connected")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-
-                    // Left and right edges
-                    HStack {
-                        PhotosPicker(
-                            selection: $viewModel.selectedPhotos,
-                            maxSelectionCount: 20,
-                            matching: .any(of: [.images, .videos]),
-                            photoLibrary: .shared()
-                        ) {
-                            Label("Add Media", systemImage: "photo.on.rectangle.angled")
-                                .font(.body)
-                        }
-
-                        Button {
-                            viewModel.showingLocalePicker = true
-                        } label: {
-                            Label(viewModel.primaryLocaleCode.uppercased(), systemImage: "globe")
-                                .font(.body)
-                        }
-
-                        Spacer()
-
-                        if uploadManager.isProcessing {
-                            Label("Uploading...", systemImage: "arrow.up.circle")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Button(action: { viewModel.upload(using: uploadManager) }) {
-                            if viewModel.isUploading {
-                                ProgressView()
-                                    .controlSize(.small)
-                                    .padding(.horizontal, 12)
-                            } else {
-                                Text("Post")
-                                    .fontWeight(.semibold)
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(!viewModel.canUpload || viewModel.isUploading)
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 10)
+                BottomToolbar(
+                    viewModel: $viewModel,
+                    showingSiteSheet: $showingSiteSheet,
+                    siteName: siteInfoLoader.info?.name ?? authManager.serverURL?.host ?? "Not connected",
+                    uploadManager: uploadManager
+                )
             }
             .navigationTitle("New Post")
             #if !os(macOS)
@@ -182,6 +134,150 @@ struct ContentView: View {
         }
     }
 }
+
+// MARK: - Bottom Toolbar
+
+/// Spacing unit for the bottom toolbar, equal to the vertical padding.
+private let toolbarUnit: CGFloat = 10
+
+private struct BottomToolbar: View {
+    @Binding var viewModel: ComposeViewModel
+    @Binding var showingSiteSheet: Bool
+    let siteName: String
+    let uploadManager: UploadManager
+
+    var body: some View {
+        HStack(spacing: 0) {
+            // Add Media — collapses to icon-only first
+            PhotosPicker(
+                selection: $viewModel.selectedPhotos,
+                maxSelectionCount: 20,
+                matching: .any(of: [.images, .videos]),
+                photoLibrary: .shared()
+            ) {
+                ViewThatFits(in: .horizontal) {
+                    Label("Add Media", systemImage: "photo.on.rectangle.angled")
+                    Image(systemName: "photo.on.rectangle.angled")
+                }
+                .font(.body)
+            }
+
+            Spacer()
+                .frame(width: toolbarUnit)
+
+            // Locale picker
+            Button {
+                viewModel.showingLocalePicker = true
+            } label: {
+                Image(systemName: "globe")
+                    .font(.body)
+            }
+            .fixedSize()
+
+            Spacer(minLength: toolbarUnit * 2)
+
+            // Site name — truncates last, falls back to icon-only
+            Button {
+                showingSiteSheet = true
+            } label: {
+                SiteNameLabel(name: siteName)
+            }
+            .buttonStyle(.plain)
+            .layoutPriority(1)
+
+            Spacer(minLength: toolbarUnit * 2)
+
+            if uploadManager.isProcessing {
+                Label("Uploading...", systemImage: "arrow.up.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
+
+                Spacer()
+                    .frame(width: toolbarUnit)
+            }
+
+            // Post
+            Button(action: { viewModel.upload(using: uploadManager) }) {
+                if viewModel.isUploading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .padding(.horizontal, 12)
+                } else {
+                    Text("Post")
+                        .fontWeight(.semibold)
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!viewModel.canUpload || viewModel.isUploading)
+            .fixedSize()
+        }
+        .padding(.horizontal, toolbarUnit)
+        .padding(.vertical, toolbarUnit)
+    }
+}
+
+/// Shows house icon + site name in a capsule, truncating at the letter boundary.
+/// Falls back to icon-only (in a circle) when fewer than 3 characters would be visible.
+/// A hidden copy of the full-length label anchors the ideal width so the HStack
+/// always proposes the same space regardless of which mode is active, preventing
+/// layout oscillation.
+private struct SiteNameLabel: View {
+    let name: String
+    @State private var availableWidth: CGFloat = 200
+    @State private var minLabelWidth: CGFloat = 0
+
+    private var showText: Bool { availableWidth >= minLabelWidth }
+
+    var body: some View {
+        ZStack {
+            // Hidden label that anchors the ideal width to the full site name.
+            // Without this, switching to icon-only would shrink the ideal size,
+            // causing the HStack to reclaim space and never offer enough to switch back.
+            Label(name, systemImage: "house")
+                .font(.body)
+                .lineLimit(1)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .hidden()
+
+            Group {
+                if showText {
+                    Label(name, systemImage: "house")
+                        .lineLimit(1)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.fill.tertiary, in: .capsule)
+                } else {
+                    Image(systemName: "house")
+                        .padding(8)
+                        .background(.fill.tertiary, in: .circle)
+                }
+            }
+            .font(.body)
+            .foregroundStyle(.secondary)
+        }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
+        .background {
+            // Measure the minimum width needed to show at least 3 characters
+            Label(minimumText, systemImage: "house")
+                .font(.body)
+                .fixedSize()
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .hidden()
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { minLabelWidth = $0 }
+        }
+    }
+
+    private var minimumText: String {
+        if name.count <= 3 { return name }
+        return String(name.prefix(3)) + "…"
+    }
+}
+
+// MARK: - Models
 
 struct SiteInfo: Decodable {
     let name: String
@@ -507,6 +603,7 @@ struct LocalePickerSheet: View {
         }
     }
 }
+
 
 #Preview {
     ContentView()

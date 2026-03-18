@@ -1,107 +1,163 @@
-import Foundation
-import Testing
+import XCTest
+import PactSwift
 
-/// Contract tests verifying the app constructs auth requests exactly as the
-/// server expects (contracts/auth_send.json, contracts/auth_verify.json).
-struct AuthContractTests {
+/// Consumer contract tests for authentication features.
+///
+/// These tests define how the app interacts with the server's auth endpoints.
+/// Running these tests generates a pact file in contracts/pacts/ that the
+/// Go provider tests verify against.
+final class AuthContractTests: XCTestCase {
+    static var mockService = MockService(
+        consumer: "CosyPostsApp",
+        provider: "CosyPostsAPI"
+    )
 
-    // MARK: - Auth Send (contracts/auth_send.json)
+    // MARK: - Signing in with a magic link
 
-    @Test func authSendRequestFormat() throws {
-        let contract = try ContractLoader.load("auth_send")
-        let request = contract["request"] as! [String: Any]
-        let headers = request["headers"] as! [String: String]
+    func testUserSignsInWithMagicLink() {
+        Self.mockService
+            .uponReceiving("a user signs in with a magic link")
+            .given("a valid magic link token exists for test@example.com")
+            .withRequest(
+                method: .GET,
+                path: "/auth/verify",
+                query: ["token": ["deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"]],
+                headers: ["Accept": "application/json"]
+            )
+            .willRespondWith(
+                status: 200,
+                headers: ["Content-Type": "application/json"],
+                body: [
+                    "session": Matcher.RegexLike(
+                        value: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+                        pattern: "^[0-9a-f]{64}$"
+                    ),
+                    "role": Matcher.SomethingLike("post"),
+                    "email": Matcher.SomethingLike("test@example.com"),
+                ]
+            )
+            .run { mockServiceURL, done in
+                // Reproduce how AuthManager.verifyToken() works.
+                let verifyURL = mockServiceURL.appendingPathComponent("auth/verify")
+                var components = URLComponents(url: verifyURL, resolvingAgainstBaseURL: false)!
+                components.queryItems = [URLQueryItem(name: "token", value: "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")]
 
-        // App must send POST with form-encoded body.
-        #expect(request["method"] as? String == "POST")
-        #expect(request["path"] as? String == "/auth/send")
-        #expect(headers["Content-Type"] == "application/x-www-form-urlencoded")
-        #expect(headers["Accept"] == "application/json")
+                var request = URLRequest(url: components.url!)
+                request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+                URLSession.shared.dataTask(with: request) { data, response, error in
+                    let http = response as! HTTPURLResponse
+                    XCTAssertEqual(http.statusCode, 200)
+
+                    struct VerifyResponse: Decodable {
+                        let session: String
+                        let role: String
+                        let email: String
+                    }
+
+                    let result = try! JSONDecoder().decode(VerifyResponse.self, from: data!)
+                    XCTAssertEqual(result.session.count, 64)
+                    XCTAssertFalse(result.role.isEmpty)
+                    XCTAssertFalse(result.email.isEmpty)
+                    done()
+                }.resume()
+            }
     }
 
-    /// Verify the app constructs the auth/send request body correctly.
-    @Test func authSendBodyEncoding() throws {
-        // Reproduce exactly how AuthManager.sendMagicLink() builds the body.
-        var components = URLComponents()
-        components.queryItems = [URLQueryItem(name: "email", value: "test@example.com")]
-        let body = components.percentEncodedQuery
+    func testUserSignsInWithExpiredToken() {
+        Self.mockService
+            .uponReceiving("a user tries to sign in with an expired magic link")
+            .given("no valid token exists")
+            .withRequest(
+                method: .GET,
+                path: "/auth/verify",
+                query: ["token": ["0000000000000000000000000000000000000000000000000000000000000000"]],
+                headers: ["Accept": "application/json"]
+            )
+            .willRespondWith(
+                status: 401,
+                headers: ["Content-Type": "application/json"],
+                body: ["error": Matcher.SomethingLike("invalid or expired token")]
+            )
+            .run { mockServiceURL, done in
+                let verifyURL = mockServiceURL.appendingPathComponent("auth/verify")
+                var components = URLComponents(url: verifyURL, resolvingAgainstBaseURL: false)!
+                components.queryItems = [URLQueryItem(name: "token", value: "0000000000000000000000000000000000000000000000000000000000000000")]
 
-        #expect(body != nil, "Body must not be nil")
-        #expect(body!.contains("email="), "Body must contain email= parameter")
-        #expect(body!.contains("test"), "Body must contain the email value")
+                var request = URLRequest(url: components.url!)
+                request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+                URLSession.shared.dataTask(with: request) { data, response, error in
+                    let http = response as! HTTPURLResponse
+                    XCTAssertEqual(http.statusCode, 401)
+                    done()
+                }.resume()
+            }
     }
 
-    // MARK: - Auth Verify (contracts/auth_verify.json)
+    // MARK: - Requesting a sign-in link
 
-    @Test func authVerifyRequestFormat() throws {
-        let contract = try ContractLoader.load("auth_verify")
-        let request = contract["request"] as! [String: Any]
-        let headers = request["headers"] as! [String: String]
-        let query = request["query"] as! [String: String]
+    func testUserRequestsSignInLink() {
+        Self.mockService
+            .uponReceiving("a user requests a sign-in link")
+            .given("test@example.com is an authorized user")
+            .withRequest(
+                method: .POST,
+                path: "/auth/send",
+                headers: [
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Accept": "application/json",
+                ],
+                body: "email=test%40example.com"
+            )
+            .willRespondWith(
+                status: 200,
+                headers: ["Content-Type": "application/json"],
+                body: ["ok": Matcher.EqualTo(true)]
+            )
+            .run { mockServiceURL, done in
+                // Reproduce how AuthManager.sendMagicLink() works.
+                let sendURL = mockServiceURL.appendingPathComponent("auth/send")
+                var request = URLRequest(url: sendURL)
+                request.httpMethod = "POST"
+                request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+                request.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        #expect(request["method"] as? String == "GET")
-        #expect(request["path"] as? String == "/auth/verify")
-        #expect(query["token"] != nil, "Must send token as query parameter")
-        #expect(headers["Accept"] == "application/json", "App must request JSON response")
+                var components = URLComponents()
+                components.queryItems = [URLQueryItem(name: "email", value: "test@example.com")]
+                request.httpBody = components.percentEncodedQuery?.data(using: .utf8)
+
+                URLSession.shared.dataTask(with: request) { data, response, error in
+                    let http = response as! HTTPURLResponse
+                    XCTAssertEqual(http.statusCode, 200)
+                    done()
+                }.resume()
+            }
     }
 
-    /// Verify the app constructs the verify URL correctly.
-    @Test func authVerifyURLConstruction() throws {
-        // Reproduce how AuthManager.verifyToken() builds the URL.
-        let serverURL = URL(string: "https://example.com")!
-        let verifyURL = serverURL.appendingPathComponent("auth/verify")
-        var urlComponents = URLComponents(url: verifyURL, resolvingAgainstBaseURL: false)!
-        urlComponents.queryItems = [URLQueryItem(name: "token", value: "deadbeef")]
+    // MARK: - Accessing a protected resource without signing in
 
-        let finalURL = urlComponents.url!
-        #expect(finalURL.path.hasSuffix("/auth/verify"), "Path must be /auth/verify")
-        #expect(finalURL.query == "token=deadbeef", "Query must contain token parameter")
-    }
-
-    /// Verify the app can decode the verify response format.
-    @Test func authVerifyResponseDecoding() throws {
-        // This is the exact JSON shape the server returns (from contract).
-        let serverJSON = """
-        {"session":"a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2","role":"post","email":"test@example.com"}
-        """.data(using: .utf8)!
-
-        // This is the struct the app uses to decode.
-        struct VerifyResponse: Decodable {
-            let session: String
-            let role: String
-            let email: String
-        }
-
-        let result = try JSONDecoder().decode(VerifyResponse.self, from: serverJSON)
-        #expect(result.session.count == 64, "Session must be 64-char hex")
-        #expect(!result.role.isEmpty, "Role must not be empty")
-        #expect(!result.email.isEmpty, "Email must not be empty")
-    }
-
-    // MARK: - Auth Middleware (contracts/auth_middleware.json)
-
-    @Test func bearerTokenFormat() throws {
-        let contract = try ContractLoader.load("auth_middleware")
-        let authMethods = contract["auth_methods"] as! [String: Any]
-        let bearer = authMethods["bearer_token"] as! [String: String]
-
-        #expect(bearer["header"] == "Authorization")
-        #expect(bearer["format"] == "Bearer {session_id}")
-
-        // Verify the app sets the header correctly.
-        let sessionID = "a1b2c3d4"
-        let headerValue = "Bearer \(sessionID)"
-        #expect(headerValue == "Bearer a1b2c3d4")
-        #expect(headerValue.hasPrefix("Bearer "))
-    }
-
-    @Test func unauthorizedResponseDecoding() throws {
-        let contract = try ContractLoader.load("auth_middleware")
-        let unauth = contract["unauthorized_response"] as! [String: Any]
-
-        #expect(unauth["status"] as? Int == 401)
-
-        let body = unauth["body"] as! [String: String]
-        #expect(body["error"] == "unauthorized")
+    func testUnauthenticatedAccessIsRejected() {
+        Self.mockService
+            .uponReceiving("an unauthenticated user tries to access protected content")
+            .given("no session exists")
+            .withRequest(
+                method: .GET,
+                path: "/api/info"
+            )
+            .willRespondWith(
+                status: 401,
+                headers: ["Content-Type": "application/json"],
+                body: ["error": Matcher.EqualTo("unauthorized")]
+            )
+            .run { mockServiceURL, done in
+                let url = mockServiceURL.appendingPathComponent("api/info")
+                // No Authorization header — just like an expired/missing session.
+                URLSession.shared.dataTask(with: url) { data, response, error in
+                    let http = response as! HTTPURLResponse
+                    XCTAssertEqual(http.statusCode, 401)
+                    done()
+                }.resume()
+            }
     }
 }

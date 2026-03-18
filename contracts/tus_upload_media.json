@@ -1,0 +1,42 @@
+{
+  "name": "TUS Create Upload — Media File",
+  "description": "Client creates a TUS upload for a media file (photo/video). Server must accept these metadata keys and return a Location header.",
+  "request": {
+    "method": "POST",
+    "path": "/files/",
+    "headers": {
+      "Tus-Resumable": "1.0.0",
+      "Upload-Length": "{file_size_bytes}"
+    },
+    "tus_metadata": {
+      "required": ["post-id", "filename", "content-type"],
+      "optional": ["author"],
+      "examples": {
+        "post-id": "abc123def456ghi789jkl",
+        "filename": "media_0.jpg",
+        "content-type": "image/jpeg",
+        "author": "user@example.com"
+      }
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "Location": "{upload_url}"
+    }
+  },
+  "notes": {
+    "metadata_encoding": "Each key-value pair is encoded as 'key base64(value)', pairs joined by commas",
+    "post_id_format": "nanoid: 21 chars, alphabet 0-9a-z",
+    "content_type_values": [
+      "image/jpeg",
+      "image/png",
+      "image/heic",
+      "image/gif",
+      "image/webp",
+      "video/mp4",
+      "video/quicktime",
+      "application/octet-stream"
+    ]
+  }
+}

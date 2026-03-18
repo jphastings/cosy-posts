@@ -1,0 +1,32 @@
+{
+  "name": "Authentication Middleware",
+  "description": "All non-public routes require authentication. The app uses Bearer token auth.",
+  "auth_methods": {
+    "bearer_token": {
+      "header": "Authorization",
+      "format": "Bearer {session_id}",
+      "notes": "Session ID is a 64-character hex string"
+    },
+    "cookie": {
+      "name": "session",
+      "notes": "Used by browsers, not the app"
+    }
+  },
+  "public_routes": [
+    "GET /health",
+    "GET /auth/login",
+    "POST /auth/send",
+    "GET /auth/verify"
+  ],
+  "role_requirements": {
+    "/files/*": "post",
+    "/api/posts/{id}": "post",
+    "/api/access-requests*": "post",
+    "/api/info": "any_authenticated"
+  },
+  "unauthorized_response": {
+    "status": 401,
+    "body": {"error": "unauthorized"},
+    "notes": "App should watch for 401 and trigger re-authentication"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Delete Post",
+  "description": "Client deletes a post by its nanoid. Requires 'post' role.",
+  "request": {
+    "method": "DELETE",
+    "path": "/api/posts/{post_id}",
+    "headers": {
+      "Authorization": "Bearer {session_token}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {"ok": true}
+  },
+  "error_responses": {
+    "400": {"error": "invalid post id"},
+    "403": {"error": "forbidden"},
+    "404": {"error": "post not found"}
+  }
+}

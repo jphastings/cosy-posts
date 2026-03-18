@@ -1,0 +1,39 @@
+{
+  "name": "TUS Create Upload — Locale Body",
+  "description": "Client creates a TUS upload for an alternative-language body text. Must be uploaded BEFORE the primary body.",
+  "request": {
+    "method": "POST",
+    "path": "/files/",
+    "headers": {
+      "Tus-Resumable": "1.0.0",
+      "Upload-Length": "{body_size_bytes}"
+    },
+    "tus_metadata": {
+      "required": ["post-id", "role", "locale"],
+      "optional": ["filename", "content-type", "content-ext", "author"],
+      "fixed_values": {
+        "role": "body-locale",
+        "content-type": "text/plain"
+      },
+      "examples": {
+        "post-id": "abc123def456ghi789jkl",
+        "filename": "body-es",
+        "content-type": "text/plain",
+        "role": "body-locale",
+        "locale": "es",
+        "content-ext": "md",
+        "author": "user@example.com"
+      }
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "Location": "{upload_url}"
+    }
+  },
+  "notes": {
+    "locale_format": "2-8 lowercase alpha characters (e.g. 'en', 'es', 'fr')",
+    "upload_order": "Locale bodies must be uploaded BEFORE the primary body"
+  }
+}

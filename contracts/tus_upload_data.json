@@ -1,0 +1,20 @@
+{
+  "name": "TUS Upload Data (PATCH)",
+  "description": "Client sends file data to an existing upload resource using PATCH.",
+  "request": {
+    "method": "PATCH",
+    "path": "/files/{upload_id}",
+    "headers": {
+      "Tus-Resumable": "1.0.0",
+      "Upload-Offset": "{current_byte_offset}",
+      "Content-Type": "application/offset+octet-stream"
+    },
+    "body": "{raw_file_bytes_from_offset}"
+  },
+  "response": {
+    "status": 204,
+    "headers": {
+      "Upload-Offset": "{new_byte_offset}"
+    }
+  }
+}

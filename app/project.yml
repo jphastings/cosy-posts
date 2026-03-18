@@ -41,6 +41,18 @@ targets:
       - target: ShareExtension
         embed: true
 
+  ContractTests:
+    type: bundle.unit-test
+    supportedDestinations: [macOS]
+    sources:
+      - Tests/ContractTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.byjp.cosyposts.contracttests
+    dependencies:
+      - target: CosyPostsAdmin
+        embed: false
+
   ShareExtension:
     type: app-extension
     supportedDestinations: [iOS, macOS]

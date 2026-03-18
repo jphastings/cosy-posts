@@ -1,0 +1,29 @@
+{
+  "name": "Auth Verify — Exchange Token for Session",
+  "description": "Client exchanges a magic-link token for a session. App sends Accept: application/json to get JSON (not redirect).",
+  "request": {
+    "method": "GET",
+    "path": "/auth/verify",
+    "query": {
+      "token": "{64_char_hex_token}"
+    },
+    "headers": {
+      "Accept": "application/json"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "session": "{64_char_hex_session_id}",
+      "role": "{post|view}",
+      "email": "{user_email}"
+    }
+  },
+  "error_responses": {
+    "401": {"error": "invalid or expired token"},
+    "403": {"error": "not authorized"}
+  }
+}

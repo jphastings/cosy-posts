@@ -1,0 +1,34 @@
+{
+  "name": "Site Info",
+  "description": "Client fetches site metadata. Requires authentication via Bearer token.",
+  "request": {
+    "method": "GET",
+    "path": "/api/info",
+    "headers": {
+      "Authorization": "Bearer {session_token}"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "name": "{site_name}",
+      "version": "{version_string}",
+      "git_sha": "{git_sha}",
+      "stats": {
+        "posts": "{int}",
+        "photos": "{int}",
+        "videos": "{int}",
+        "audio": "{int}",
+        "members": "{int}"
+      },
+      "locales": ["{locale_code}"]
+    }
+  },
+  "notes": {
+    "stats_fields_always_present": true,
+    "locales_may_be_empty_array": true
+  }
+}

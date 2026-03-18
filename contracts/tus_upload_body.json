@@ -1,0 +1,43 @@
+{
+  "name": "TUS Create Upload — Post Body",
+  "description": "Client creates a TUS upload for the post body text. Must be uploaded LAST (after all media). Body completion triggers server-side post assembly.",
+  "request": {
+    "method": "POST",
+    "path": "/files/",
+    "headers": {
+      "Tus-Resumable": "1.0.0",
+      "Upload-Length": "{body_size_bytes}"
+    },
+    "tus_metadata": {
+      "required": ["post-id", "role", "date", "content-ext"],
+      "optional": ["filename", "content-type", "locale", "author"],
+      "fixed_values": {
+        "role": "body",
+        "content-type": "text/plain",
+        "filename": "body"
+      },
+      "examples": {
+        "post-id": "abc123def456ghi789jkl",
+        "filename": "body",
+        "content-type": "text/plain",
+        "role": "body",
+        "date": "2026-03-18T12:34:56Z",
+        "locale": "en",
+        "content-ext": "md",
+        "author": "user@example.com"
+      }
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "Location": "{upload_url}"
+    }
+  },
+  "notes": {
+    "date_formats": ["RFC3339 (2026-03-18T12:34:56Z)", "date-only (2026-03-18)"],
+    "content_ext_values": ["md", "djot"],
+    "triggers_assembly": true,
+    "upload_order": "Body MUST be uploaded after all media files for the same post-id"
+  }
+}

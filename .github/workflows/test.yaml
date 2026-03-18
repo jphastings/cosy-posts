@@ -36,6 +36,9 @@ jobs:
         with:
           go-version-file: api/go.mod
 
+      - name: Install pact FFI library
+        run: go install github.com/pact-foundation/pact-go/v2@v2.4.2 && sudo pact-go -l DEBUG install
+
       - name: Contract tests
         run: go test -run TestPact -count=1 -v ./...
         working-directory: api

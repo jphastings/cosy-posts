@@ -62,10 +62,15 @@ final class ComposeViewModel {
         }
     }
 
-    /// Whether the post has any content worth uploading (and no items are still downloading).
+    /// Whether any locale entries are currently being translated.
+    var isTranslating: Bool {
+        localeEntries.contains { $0.isTranslating }
+    }
+
+    /// Whether the post has any content worth uploading (and no items are still downloading or translating).
     var canUpload: Bool {
         let hasContent = !mediaItems.isEmpty || localeEntries.contains { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        return hasContent && !hasDownloadingItems
+        return hasContent && !hasDownloadingItems && !isTranslating
     }
 
     /// The primary locale code (e.g. "en").

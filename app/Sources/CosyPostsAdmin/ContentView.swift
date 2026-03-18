@@ -136,6 +136,15 @@ struct ContentView: View {
                                 Task { @MainActor in
                                     translationConfig = config
                                 }
+                                // Timeout: if translation hasn't completed after 10s, clear skeleton so user can type
+                                Task { @MainActor in
+                                    try? await Task.sleep(for: .seconds(10))
+                                    if let idx = viewModel.localeEntries.firstIndex(where: { $0.locale == language }),
+                                       viewModel.localeEntries[idx].isTranslating {
+                                        translationLog.warning("Translation to \(targetCode) timed out after 10s")
+                                        viewModel.localeEntries[idx].isTranslating = false
+                                    }
+                                }
                             } else {
                                 // Translation not available, clear skeleton
                                 if let idx = viewModel.localeEntries.firstIndex(where: { $0.locale == language }) {
@@ -169,6 +178,12 @@ struct ContentView: View {
                     pending.completion(response.targetText)
                 } catch {
                     translationLog.error("Translation failed: \(error.localizedDescription)")
+                    // Clear the translating state so the user can type manually
+                    if let idx = viewModel.localeEntries.firstIndex(where: {
+                        $0.locale.languageCode?.identifier == pending.targetCode
+                    }) {
+                        viewModel.localeEntries[idx].isTranslating = false
+                    }
                 }
                 // Reset config after translation completes so next request can trigger nil→non-nil
                 translationConfig = nil
@@ -577,26 +592,20 @@ struct LocaleTextArea: View {
 }
 
 /// Animated skeleton placeholder for text being translated.
+/// Uses a standard iOS-style sliding shimmer highlight.
 struct SkeletonTextView: View {
-    @State private var shimmer = false
+    @State private var phase: CGFloat = -1
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            SkeletonLine(widthFraction: 0.9)
-            SkeletonLine(widthFraction: 0.75)
-            SkeletonLine(widthFraction: 0.6)
+            SkeletonLine(widthFraction: 0.9, phase: phase)
+            SkeletonLine(widthFraction: 0.75, phase: phase)
+            SkeletonLine(widthFraction: 0.6, phase: phase)
         }
         .padding(.vertical, 8)
-        .mask {
-            LinearGradient(
-                colors: [.black.opacity(0.4), .black, .black.opacity(0.4)],
-                startPoint: shimmer ? .leading : .trailing,
-                endPoint: shimmer ? .trailing : .leading
-            )
-        }
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                shimmer = true
+            withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                phase = 2
             }
         }
     }
@@ -604,14 +613,30 @@ struct SkeletonTextView: View {
 
 private struct SkeletonLine: View {
     let widthFraction: CGFloat
+    var phase: CGFloat
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 3)
-            .fill(.secondary.opacity(0.3))
-            .frame(maxWidth: .infinity)
-            .frame(height: 12)
+        RoundedRectangle(cornerRadius: 4)
+            .fill(.secondary.opacity(0.12))
             .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: 12)
             .scaleEffect(x: widthFraction, anchor: .leading)
+            .overlay(alignment: .leading) {
+                GeometryReader { geo in
+                    let w = geo.size.width * widthFraction
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(
+                            LinearGradient(
+                                colors: [.clear, .secondary.opacity(0.15), .clear],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: w * 0.4)
+                        .offset(x: phase * w)
+                }
+                .clipped()
+            }
     }
 }
 

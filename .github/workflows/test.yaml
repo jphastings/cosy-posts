@@ -26,6 +26,7 @@ jobs:
           -scheme ContractTests
           -destination 'platform=macOS'
           -only-testing:ContractTests
+          -disable-concurrent-testing
           CODE_SIGNING_ALLOWED=NO
           COMPILER_INDEX_STORE_ENABLE=NO
           test

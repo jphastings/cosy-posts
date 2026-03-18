@@ -23,14 +23,24 @@ jobs:
         run: xcodebuild -project CosyPostsAdmin.xcodeproj -scheme ContractTests -destination 'platform=macOS' test
         working-directory: app
 
-      - name: Check pact file is up to date
-        run: git diff --exit-code contracts/
+      - name: Upload pact file
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pact-file
+          path: contracts/CosyPostsApp-CosyPostsAPI.json
 
   contract-provider:
     name: Contract tests (provider)
+    needs: contract-consumer
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Download pact file
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: pact-file
+          path: contracts
 
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:

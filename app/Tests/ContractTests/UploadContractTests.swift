@@ -285,7 +285,7 @@ final class UploadContractTests: XCTestCase {
     // MARK: - Helpers
 
     /// Encode TUS metadata exactly as TUSClient does: "key base64(value)" pairs joined by commas.
-    /// Keys are sorted to ensure deterministic pact file output.
+    /// Keys are sorted for reproducible output (Swift dictionaries have non-deterministic ordering).
     private func encodeTUSMetadata(_ metadata: [String: String]) -> String {
         metadata.sorted { $0.key < $1.key }.map { key, value in
             let base64Value = Data(value.utf8).base64EncodedString()

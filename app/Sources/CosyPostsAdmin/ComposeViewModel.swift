@@ -32,6 +32,25 @@ final class ComposeViewModel {
     var showingLocalePicker: Bool = false
     var isDropTargeted: Bool = false
 
+    /// ID of the currently visible locale entry in the rotating text panel.
+    var activeLocaleID: UUID?
+
+    /// Index of the currently visible locale entry.
+    var activeLocaleIndex: Int {
+        if let id = activeLocaleID,
+           let idx = localeEntries.firstIndex(where: { $0.id == id }) {
+            return idx
+        }
+        return 0
+    }
+
+    /// Cycle to the next locale entry in the text panel.
+    func cycleLocale() {
+        guard localeEntries.count > 1 else { return }
+        let nextIndex = (activeLocaleIndex + 1) % localeEntries.count
+        activeLocaleID = localeEntries[nextIndex].id
+    }
+
     /// The primary body text (first locale entry).
     var bodyText: String {
         get { localeEntries.first?.text ?? "" }
@@ -54,16 +73,26 @@ final class ComposeViewModel {
         localeEntries.first?.locale.languageCode?.identifier ?? "en"
     }
 
-    /// Add a new locale for translation.
+    /// Add a new locale for translation and switch to it.
     func addLocale(_ language: Locale.Language) {
         guard !localeEntries.contains(where: { $0.locale == language }) else { return }
-        localeEntries.append(LocaleEntry(locale: language))
+        let entry = LocaleEntry(locale: language)
+        localeEntries.append(entry)
+        activeLocaleID = entry.id
     }
 
     /// Remove a locale entry by ID (cannot remove the primary).
     func removeLocale(id: UUID) {
         guard localeEntries.count > 1 else { return }
         guard localeEntries.first?.id != id else { return }
+
+        // If removing the active locale, switch to the previous entry or first
+        if activeLocaleID == id {
+            let idx = localeEntries.firstIndex(where: { $0.id == id }) ?? 0
+            let newIdx = idx > 0 ? idx - 1 : 0
+            activeLocaleID = localeEntries[newIdx].id
+        }
+
         localeEntries.removeAll { $0.id == id }
     }
 
@@ -379,6 +408,7 @@ final class ComposeViewModel {
         mediaItems.removeAll()
         selectedPhotos.removeAll()
         localeEntries = [LocaleEntry(locale: Locale.current.language)]
+        activeLocaleID = nil
         isUploading = false
     }
 }

@@ -35,61 +35,47 @@ struct ContentView: View {
                     .background(.orange)
                 }
 
-                // Media area — takes up most of the space
-                ZStack {
-                    PhotosPicker(
-                        selection: $viewModel.selectedPhotos,
-                        maxSelectionCount: 20,
-                        matching: .any(of: [.images, .videos]),
-                        photoLibrary: .shared()
-                    ) {
-                        Group {
-                            if viewModel.mediaItems.isEmpty {
-                                // Empty state — tap to add media
-                                VStack(spacing: 12) {
-                                    Image(systemName: "photo.on.rectangle.angled")
-                                        .font(.system(size: 40))
-                                    Text("Tap to select photos or videos")
-                                        .font(.subheadline)
-                                }
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .background(Color.secondary.opacity(0.08))
-                            } else {
-                                // Media carousel
+                // Main content: media (if any) + text panel
+                GeometryReader { geo in
+                    VStack(spacing: 0) {
+                        if !viewModel.mediaItems.isEmpty {
+                            PhotosPicker(
+                                selection: $viewModel.selectedPhotos,
+                                maxSelectionCount: 20,
+                                matching: .any(of: [.images, .videos]),
+                                photoLibrary: .shared()
+                            ) {
                                 MediaCarouselView(
                                     items: viewModel.mediaItems,
                                     onRemove: { id in viewModel.removeMedia(id: id) }
                                 )
                             }
+                            .buttonStyle(.plain)
+                            .frame(maxHeight: .infinity)
+
+                            Divider()
+
+                            // Text: ~3 lines minimum, 25% maximum when media is present
+                            LocaleTextArea(
+                                entry: $viewModel.localeEntries[viewModel.activeLocaleIndex],
+                                localeCount: viewModel.localeEntries.count,
+                                onCycleLocale: { viewModel.cycleLocale() }
+                            )
+                            .frame(minHeight: 80, maxHeight: geo.size.height * 0.25)
+                        } else {
+                            // No media — text fills everything
+                            LocaleTextArea(
+                                entry: $viewModel.localeEntries[viewModel.activeLocaleIndex],
+                                localeCount: viewModel.localeEntries.count,
+                                onCycleLocale: { viewModel.cycleLocale() }
+                            )
                         }
                     }
-                    .buttonStyle(.plain)
                 }
-                .frame(maxHeight: .infinity)
                 .onDrop(of: [.image, .movie, .audio, .fileURL], isTargeted: $viewModel.isDropTargeted) { providers in
                     viewModel.handleDrop(providers: providers)
                     return true
                 }
-
-                Divider()
-
-                // Text input area — one per locale
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach($viewModel.localeEntries) { $entry in
-                            LocaleTextArea(
-                                entry: $entry,
-                                isPrimary: entry.id == viewModel.localeEntries.first?.id,
-                                onRemove: { viewModel.removeLocale(id: entry.id) }
-                            )
-                            if entry.id != viewModel.localeEntries.last?.id {
-                                Divider().padding(.horizontal)
-                            }
-                        }
-                    }
-                }
-                .frame(minHeight: 60, maxHeight: viewModel.localeEntries.count > 1 ? 180 : 100)
 
                 // Error message
                 if let error = viewModel.errorMessage {
@@ -128,9 +114,9 @@ struct ContentView: View {
             }
             .sheet(isPresented: $viewModel.showingLocalePicker) {
                 LocalePickerSheet(
-                    existingLocales: viewModel.localeEntries.compactMap { $0.locale.languageCode?.identifier },
+                    viewModel: $viewModel,
                     siteLocales: siteInfoLoader.info?.locales ?? [],
-                    onSelect: { language, autoTranslate in
+                    onAdd: { language, autoTranslate in
                         viewModel.addLocale(language)
                         if autoTranslate {
                             let primaryText = viewModel.bodyText
@@ -538,11 +524,11 @@ struct SiteInfoSheet: View {
     }
 }
 
-/// A text area for a single locale, with a flag label and optional remove button.
+/// A text area for a single locale, with a tappable language label that cycles between locales.
 struct LocaleTextArea: View {
     @Binding var entry: LocaleEntry
-    let isPrimary: Bool
-    let onRemove: () -> Void
+    let localeCount: Int
+    let onCycleLocale: () -> Void
 
     private var languageName: String {
         let code = entry.locale.languageCode?.identifier ?? "en"
@@ -552,25 +538,25 @@ struct LocaleTextArea: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text(languageName)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
+                Spacer()
                 if entry.isTranslating {
                     ProgressView()
                         .controlSize(.mini)
                 }
-                if !isPrimary {
-                    Spacer()
-                    Button(role: .destructive) {
-                        onRemove()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                Button(action: onCycleLocale) {
+                    HStack(spacing: 4) {
+                        Text(languageName)
+                            .font(.caption2)
+                            .textCase(.uppercase)
+                        if localeCount > 1 {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 8, weight: .bold))
+                        }
                     }
-                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
                 }
+                .buttonStyle(.plain)
+                .disabled(localeCount <= 1)
             }
             .padding(.horizontal, 12)
             .padding(.top, 4)
@@ -578,13 +564,13 @@ struct LocaleTextArea: View {
             if entry.isTranslating {
                 SkeletonTextView()
                     .padding(.horizontal, 8)
-                    .frame(minHeight: 44)
+                    .frame(maxHeight: .infinity)
             } else {
                 TextEditor(text: $entry.text)
                     .font(.body)
                     .scrollContentBackground(.hidden)
                     .padding(.horizontal, 4)
-                    .frame(minHeight: 44)
+                    .frame(maxHeight: .infinity)
             }
         }
     }
@@ -629,14 +615,23 @@ private struct SkeletonLine: View {
     }
 }
 
-/// Sheet for picking a locale to add for translation.
+/// Sheet for toggling locale entries on/off with checkmarks.
 struct LocalePickerSheet: View {
-    let existingLocales: [String]
+    @Binding var viewModel: ComposeViewModel
     let siteLocales: [String]
-    let onSelect: (Locale.Language, Bool) -> Void // (language, canAutoTranslate)
+    let onAdd: (Locale.Language, Bool) -> Void // (language, canAutoTranslate)
     var translationManager: TranslationManager
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
+    @State private var entryToRemove: LocaleEntry?
+
+    private var enabledCodes: Set<String> {
+        Set(viewModel.localeEntries.compactMap { $0.locale.languageCode?.identifier })
+    }
+
+    private var primaryCode: String? {
+        viewModel.localeEntries.first?.locale.languageCode?.identifier
+    }
 
     /// Common language codes to show as suggestions.
     private static let commonLanguages = [
@@ -645,13 +640,13 @@ struct LocalePickerSheet: View {
     ]
 
     private var allLanguages: [(code: String, name: String)] {
-        // Site locales first, then common. Existing locales included but shown as disabled.
         var seen = Set<String>()
         var result: [(String, String)] = []
 
-        // Existing locales first (shown as already-added).
-        for code in existingLocales where !seen.contains(code) {
-            if let name = Locale.current.localizedString(forLanguageCode: code) {
+        // Enabled locales first.
+        for entry in viewModel.localeEntries {
+            let code = entry.locale.languageCode?.identifier ?? "en"
+            if !seen.contains(code), let name = Locale.current.localizedString(forLanguageCode: code) {
                 result.append((code, name))
                 seen.insert(code)
             }
@@ -688,12 +683,10 @@ struct LocalePickerSheet: View {
     private var customCodeEntry: (code: String, name: String)? {
         let trimmed = searchText.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return nil }
-        // Match patterns like "en", "en-GB", "cy-CY", "pt-BR"
         let pattern = /^[a-zA-Z]{2,3}(-[a-zA-Z]{2,4})?$/
         guard trimmed.wholeMatch(of: pattern) != nil else { return nil }
         let code = trimmed.lowercased()
-        // Don't offer if it's already in the filtered results or existing locales
-        guard !existingLocales.contains(code) else { return nil }
+        guard !enabledCodes.contains(code) else { return nil }
         guard !filteredLanguages.contains(where: { $0.code.lowercased() == code }) else { return nil }
         let name = Locale.current.localizedString(forLanguageCode: code)
         return (code: code, name: name ?? code)
@@ -708,8 +701,7 @@ struct LocalePickerSheet: View {
                         Button {
                             let language = Locale.Language(identifier: custom.code)
                             let status = translationManager.statuses[custom.code]
-                            onSelect(language, status == .available)
-                            dismiss()
+                            onAdd(language, status == .available)
                         } label: {
                             HStack {
                                 Label {
@@ -748,14 +740,29 @@ struct LocalePickerSheet: View {
                 }
             }
             .searchable(text: $searchText, prompt: "Search languages or enter code (e.g. cy, en-GB)")
-            .navigationTitle("Add Translation")
+            .navigationTitle("Languages")
             #if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
                 }
+            }
+            .alert(
+                "Remove translation?",
+                isPresented: Binding(
+                    get: { entryToRemove != nil },
+                    set: { if !$0 { entryToRemove = nil } }
+                ),
+                presenting: entryToRemove
+            ) { entry in
+                Button("Keep \(localeName(for: entry))") { }
+                Button("Discard translation", role: .destructive) {
+                    viewModel.removeLocale(id: entry.id)
+                }
+            } message: { entry in
+                Text(entry.text)
             }
             .task {
                 let codes = allLanguages.map(\.code)
@@ -767,25 +774,42 @@ struct LocalePickerSheet: View {
     }
 
     private func languageRow(code: String, name: String) -> some View {
-        let isExisting = existingLocales.contains(code)
+        let isEnabled = enabledCodes.contains(code)
+        let isPrimary = code == primaryCode
         let status = translationManager.statuses[code] ?? .unsupported
 
         return Button {
-            let language = Locale.Language(identifier: code)
-            onSelect(language, status == .available)
-            dismiss()
+            if isEnabled {
+                guard !isPrimary else { return }
+                if let entry = viewModel.localeEntries.first(where: {
+                    $0.locale.languageCode?.identifier == code
+                }) {
+                    if entry.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        viewModel.removeLocale(id: entry.id)
+                    } else {
+                        entryToRemove = entry
+                    }
+                }
+            } else {
+                let language = Locale.Language(identifier: code)
+                onAdd(language, status == .available)
+            }
         } label: {
             HStack {
                 Text(name)
-                    .foregroundStyle(isExisting ? .secondary : .primary)
                 Spacer()
+                if isEnabled && isPrimary {
+                    Text("Primary")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Text(code.uppercased())
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                if isExisting {
+                if isEnabled {
                     Image(systemName: "checkmark")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.caption.bold())
+                        .foregroundStyle(.tint)
                 } else if status == .available {
                     Image(systemName: "bolt.fill")
                         .font(.caption)
@@ -793,7 +817,12 @@ struct LocalePickerSheet: View {
                 }
             }
         }
-        .disabled(isExisting)
+        .disabled(isPrimary && isEnabled)
+    }
+
+    private func localeName(for entry: LocaleEntry) -> String {
+        let code = entry.locale.languageCode?.identifier ?? "en"
+        return Locale.current.localizedString(forLanguageCode: code) ?? code
     }
 }
 

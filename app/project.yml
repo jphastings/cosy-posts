@@ -60,7 +60,7 @@ targets:
       testTargets:
         - ContractTests
       environmentVariables:
-        PACT_OUTPUT_DIR: $(SRCROOT)/../contracts/pacts
+        PACT_OUTPUT_DIR: $(SRCROOT)/../contracts
 
   ShareExtension:
     type: app-extension

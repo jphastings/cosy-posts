@@ -7,6 +7,16 @@ Private community platform for sharing videos, photos, audio, and text.
 - **`api/`** — Go API server with TUS resumable uploads, photo processing (jpegli), and 11ty-compatible post generation
 - **`app/`** — SwiftUI iOS app with offline-first upload queue and share sheet extension
 
+## Setup
+
+After cloning, enable the repo's git hooks:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+This sets up a pre-push hook that runs contract tests before each push.
+
 ## Tasks
 
 ### run-api

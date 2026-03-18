@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+
+echo "Running contract tests..."
+cd api && go test -run TestPact -count=1 ./...
+echo "Contract tests passed."

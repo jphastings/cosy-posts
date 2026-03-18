@@ -59,7 +59,7 @@ jobs:
           cache-dependency-path: api/go.sum
 
       - name: Install pact FFI library
-        run: go install github.com/pact-foundation/pact-go/v2@v2.4.2 && sudo pact-go -l DEBUG install
+        run: go install github.com/pact-foundation/pact-go/v2@v2.4.2 && sudo "$(go env GOPATH)/bin/pact-go" -l DEBUG install
 
       - name: Contract tests
         run: go test -tags pact -run TestPact -count=1 -v ./...

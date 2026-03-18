@@ -68,12 +68,26 @@ struct ContentView: View {
                             )
                             .frame(maxHeight: .infinity)
                         } else {
-                            // No media — text fills everything
+                            // No media — tappable placeholder + text area
+                            PhotosPicker(
+                                selection: $viewModel.selectedPhotos,
+                                maxSelectionCount: 20,
+                                matching: .any(of: [.images, .videos]),
+                                photoLibrary: .shared()
+                            ) {
+                                MediaPlaceholderView()
+                            }
+                            .buttonStyle(.plain)
+                            .frame(height: geo.size.height * 0.25)
+
+                            Divider()
+
                             LocaleTextArea(
                                 entry: $viewModel.localeEntries[viewModel.activeLocaleIndex],
                                 localeCount: viewModel.localeEntries.count,
                                 onCycleLocale: { viewModel.cycleLocale() }
                             )
+                            .frame(maxHeight: .infinity)
                         }
                     }
                 }
@@ -642,6 +656,22 @@ private struct SkeletonLine: View {
                 }
                 .clipped()
             }
+    }
+}
+
+/// Tappable placeholder shown when no media is selected.
+private struct MediaPlaceholderView: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "photo.on.rectangle.angled")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+            Text("Add Photos or Videos")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.secondary.opacity(0.08))
     }
 }
 

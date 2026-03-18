@@ -33,7 +33,9 @@ final class AuthContractTests: XCTestCase {
                     "email": Matcher.SomethingLike("test@example.com"),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 // Reproduce how AuthManager.verifyToken() works.
                 let verifyURL = mockServiceURL.appendingPathComponent("auth/verify")
                 var components = URLComponents(url: verifyURL, resolvingAgainstBaseURL: false)!
@@ -76,7 +78,9 @@ final class AuthContractTests: XCTestCase {
                 headers: ["Content-Type": "application/json"],
                 body: ["error": Matcher.SomethingLike("invalid or expired token")]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let verifyURL = mockServiceURL.appendingPathComponent("auth/verify")
                 var components = URLComponents(url: verifyURL, resolvingAgainstBaseURL: false)!
                 components.queryItems = [URLQueryItem(name: "token", value: "0000000000000000000000000000000000000000000000000000000000000000")]
@@ -112,7 +116,9 @@ final class AuthContractTests: XCTestCase {
                 headers: ["Content-Type": "application/json"],
                 body: ["ok": Matcher.EqualTo(true)]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 // Reproduce how AuthManager.sendMagicLink() works.
                 let sendURL = mockServiceURL.appendingPathComponent("auth/send")
                 var request = URLRequest(url: sendURL)
@@ -147,7 +153,9 @@ final class AuthContractTests: XCTestCase {
                 headers: ["Content-Type": "application/json"],
                 body: ["error": Matcher.EqualTo("unauthorized")]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("api/info")
                 // No Authorization header — just like an expired/missing session.
                 URLSession.shared.dataTask(with: url) { data, response, error in

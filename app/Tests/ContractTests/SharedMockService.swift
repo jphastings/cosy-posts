@@ -1,4 +1,4 @@
-import PactSwift
+@preconcurrency import PactSwift
 
 /// Single shared MockService instance used by all contract test classes.
 ///
@@ -7,7 +7,7 @@ import PactSwift
 /// same pair can cause race conditions during pact file finalization.
 /// Sharing one instance eliminates that risk.
 enum SharedPact {
-    static let mockService = MockService(
+    nonisolated(unsafe) static let mockService = MockService(
         consumer: "CosyPostsApp",
         provider: "CosyPostsAPI"
     )

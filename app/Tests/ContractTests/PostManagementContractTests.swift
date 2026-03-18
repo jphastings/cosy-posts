@@ -21,7 +21,9 @@ final class PostManagementContractTests: XCTestCase {
                 headers: ["Content-Type": "application/json"],
                 body: ["ok": Matcher.EqualTo(true)]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("api/posts/abc123def456ghi789jkl")
                 var request = URLRequest(url: url)
                 request.httpMethod = "DELETE"
@@ -45,7 +47,9 @@ final class PostManagementContractTests: XCTestCase {
                 headers: ["Authorization": "Bearer aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"]
             )
             .willRespondWith(status: 404)
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("api/posts/nonexistentpost00000")
                 var request = URLRequest(url: url)
                 request.httpMethod = "DELETE"
@@ -75,7 +79,9 @@ final class PostManagementContractTests: XCTestCase {
                 headers: ["Content-Type": "application/json"],
                 body: Matcher.EachLike("user@example.com", min: 1)
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("api/access-requests")
                 var request = URLRequest(url: url)
                 request.setValue("Bearer aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", forHTTPHeaderField: "Authorization")
@@ -105,7 +111,9 @@ final class PostManagementContractTests: XCTestCase {
                 headers: ["Content-Type": "application/json"],
                 body: ["ok": Matcher.EqualTo(true)]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let email = "newuser@example.com"
                 let encodedEmail = email.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? email
                 let url = mockServiceURL.appendingPathComponent("api/access-requests/\(encodedEmail)/approve")
@@ -135,7 +143,9 @@ final class PostManagementContractTests: XCTestCase {
                 headers: ["Content-Type": "application/json"],
                 body: ["ok": Matcher.EqualTo(true)]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let email = "reject@example.com"
                 let encodedEmail = email.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? email
                 let url = mockServiceURL.appendingPathComponent("api/access-requests/\(encodedEmail)")

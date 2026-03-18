@@ -44,7 +44,9 @@ final class UploadContractTests: XCTestCase {
                     ),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/")
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
@@ -84,7 +86,9 @@ final class UploadContractTests: XCTestCase {
                     "Upload-Offset": Matcher.SomethingLike("1024"),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/upload123")
                 var request = URLRequest(url: url)
                 request.httpMethod = "PATCH"
@@ -139,7 +143,9 @@ final class UploadContractTests: XCTestCase {
                     ),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/")
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
@@ -191,7 +197,9 @@ final class UploadContractTests: XCTestCase {
                     ),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/")
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
@@ -228,7 +236,9 @@ final class UploadContractTests: XCTestCase {
                     "Upload-Offset": Matcher.SomethingLike("512"),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/upload123")
                 var request = URLRequest(url: url)
                 request.httpMethod = "HEAD"
@@ -263,7 +273,9 @@ final class UploadContractTests: XCTestCase {
                 ]
             )
             .willRespondWith(status: 403)
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/")
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"

@@ -33,7 +33,9 @@ final class SiteInfoContractTests: XCTestCase {
                     "locales": Matcher.EachLike("en", min: 0),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 // Reproduce how SiteInfoLoader.load() works.
                 let url = mockServiceURL.appendingPathComponent("api/info")
                 var request = URLRequest(url: url)

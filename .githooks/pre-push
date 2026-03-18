@@ -2,5 +2,5 @@
 set -e
 
 echo "Running contract tests..."
-cd api && go test -run TestPact -count=1 ./...
+xc test-contracts
 echo "Contract tests passed."

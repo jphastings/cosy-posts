@@ -9,10 +9,7 @@ import Foundation
 /// 2. Send file data (PATCH /files/{id})
 /// 3. Upload body text last to trigger post assembly
 final class UploadContractTests: XCTestCase {
-    static var mockService = MockService(
-        consumer: "CosyPostsApp",
-        provider: "CosyPostsAPI"
-    )
+    static var mockService: MockService { SharedPact.mockService }
 
     // MARK: - Uploading a photo
 
@@ -47,7 +44,9 @@ final class UploadContractTests: XCTestCase {
                     ),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/")
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
@@ -87,7 +86,9 @@ final class UploadContractTests: XCTestCase {
                     "Upload-Offset": Matcher.SomethingLike("1024"),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/upload123")
                 var request = URLRequest(url: url)
                 request.httpMethod = "PATCH"
@@ -142,7 +143,9 @@ final class UploadContractTests: XCTestCase {
                     ),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/")
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
@@ -194,7 +197,9 @@ final class UploadContractTests: XCTestCase {
                     ),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/")
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
@@ -231,7 +236,9 @@ final class UploadContractTests: XCTestCase {
                     "Upload-Offset": Matcher.SomethingLike("512"),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/upload123")
                 var request = URLRequest(url: url)
                 request.httpMethod = "HEAD"
@@ -266,7 +273,9 @@ final class UploadContractTests: XCTestCase {
                 ]
             )
             .willRespondWith(status: 403)
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 let url = mockServiceURL.appendingPathComponent("files/")
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
@@ -285,8 +294,9 @@ final class UploadContractTests: XCTestCase {
     // MARK: - Helpers
 
     /// Encode TUS metadata exactly as TUSClient does: "key base64(value)" pairs joined by commas.
+    /// Keys are sorted for reproducible output (Swift dictionaries have non-deterministic ordering).
     private func encodeTUSMetadata(_ metadata: [String: String]) -> String {
-        metadata.map { key, value in
+        metadata.sorted { $0.key < $1.key }.map { key, value in
             let base64Value = Data(value.utf8).base64EncodedString()
             return "\(key) \(base64Value)"
         }.joined(separator: ",")

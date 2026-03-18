@@ -11,7 +11,7 @@ permissions:
 jobs:
   contract-consumer:
     name: Contract tests (consumer)
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -20,24 +20,49 @@ jobs:
         working-directory: app
 
       - name: Run Swift consumer tests
-        run: xcodebuild -project CosyPostsAdmin.xcodeproj -scheme ContractTests -destination 'platform=macOS' test
+        run: >
+          xcodebuild
+          -project CosyPostsAdmin.xcodeproj
+          -scheme ContractTests
+          -destination 'platform=macOS'
+          -only-testing:ContractTests
+          -disable-concurrent-testing
+          CODE_SIGNING_ALLOWED=NO
+          COMPILER_INDEX_STORE_ENABLE=NO
+          test
         working-directory: app
+        env:
+          PACT_OUTPUT_DIR: ${{ github.workspace }}/contracts
 
-      - name: Check pact file is up to date
-        run: git diff --exit-code contracts/
+      - name: Upload pact file
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pact-file
+          path: contracts/CosyPostsApp-CosyPostsAPI.json
 
   contract-provider:
     name: Contract tests (provider)
+    needs: contract-consumer
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Download pact file
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: pact-file
+          path: contracts
+
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+
+      - name: Install pact FFI library
+        run: go install github.com/pact-foundation/pact-go/v2@v2.4.2 && sudo "$(go env GOPATH)/bin/pact-go" -l DEBUG install
 
       - name: Contract tests
-        run: go test -run TestPact -count=1 -v ./...
+        run: go test -tags pact -run TestPact -count=1 -v ./...
         working-directory: api
 
   api:
@@ -49,7 +74,8 @@ jobs:
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
 
       - name: Unit tests
-        run: go test -run '^(?!TestPact)' -count=1 -v ./...
+        run: go test -count=1 -v ./...
         working-directory: api

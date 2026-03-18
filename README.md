@@ -53,3 +53,18 @@ xcrun simctl install booted ~/Library/Developer/Xcode/DerivedData/CosyPostsAdmin
 xcrun simctl launch booted me.byjp.cosyposts.app && \
 open -a Simulator
 ```
+
+### test-contracts
+
+Run consumer (Swift) then provider (Go) contract tests. Requires the pact FFI library (`go install github.com/pact-foundation/pact-go/v2@v2.4.2 && sudo "$(go env GOPATH)/bin/pact-go" install`).
+
+```sh
+cd app && \
+xcodegen generate && \
+PACT_OUTPUT_DIR="$(cd ../contracts && pwd)" \
+xcodebuild -project CosyPostsAdmin.xcodeproj -scheme ContractTests \
+  -destination 'platform=macOS' -only-testing:ContractTests \
+  CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO test && \
+cd ../api && \
+go test -tags pact -run TestPactProvider -count=1 -v ./...
+```

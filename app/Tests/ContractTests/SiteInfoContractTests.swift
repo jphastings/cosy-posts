@@ -3,10 +3,7 @@ import PactSwift
 
 /// Consumer contract tests for viewing site information and stats.
 final class SiteInfoContractTests: XCTestCase {
-    static var mockService = MockService(
-        consumer: "CosyPostsApp",
-        provider: "CosyPostsAPI"
-    )
+    static var mockService: MockService { SharedPact.mockService }
 
     // MARK: - Viewing site stats
 
@@ -36,7 +33,9 @@ final class SiteInfoContractTests: XCTestCase {
                     "locales": Matcher.EachLike("en", min: 0),
                 ]
             )
-            .run { mockServiceURL, done in
+
+        Self.mockService.run { baseURL, done in
+                let mockServiceURL = URL(string: baseURL)!
                 // Reproduce how SiteInfoLoader.load() works.
                 let url = mockServiceURL.appendingPathComponent("api/info")
                 var request = URLRequest(url: url)

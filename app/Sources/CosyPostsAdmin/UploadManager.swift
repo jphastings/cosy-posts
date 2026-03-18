@@ -25,12 +25,14 @@ final class UploadManager {
     private let networkMonitor: NetworkMonitor
     private let modelContainer: ModelContainer
     private var tusClient: TUSClient
+    private let session: URLSession
 
-    init(serverURL: URL, networkMonitor: NetworkMonitor, modelContainer: ModelContainer) {
+    init(serverURL: URL, networkMonitor: NetworkMonitor, modelContainer: ModelContainer, session: URLSession = .shared) {
         self.serverURL = serverURL
         self.networkMonitor = networkMonitor
         self.modelContainer = modelContainer
-        self.tusClient = TUSClient(endpoint: serverURL.appendingPathComponent("files/"))
+        self.session = session
+        self.tusClient = TUSClient(endpoint: serverURL.appendingPathComponent("files/"), session: session)
     }
 
     /// The authenticated user's email, sent as `author` metadata on uploads.
@@ -40,7 +42,7 @@ final class UploadManager {
     func configure(serverURL: URL, authToken: String?, email: String?) async {
         self.serverURL = serverURL
         self.authorEmail = email
-        self.tusClient = TUSClient(endpoint: serverURL.appendingPathComponent("files/"))
+        self.tusClient = TUSClient(endpoint: serverURL.appendingPathComponent("files/"), session: session)
         await tusClient.setAuthToken(authToken)
     }
 

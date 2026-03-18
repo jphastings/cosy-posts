@@ -62,6 +62,21 @@ targets:
       environmentVariables:
         PACT_OUTPUT_DIR: $(SRCROOT)/../contracts
 
+  UploadTests:
+    type: bundle.unit-test
+    supportedDestinations: [macOS]
+    sources:
+      - Tests/UploadTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.byjp.cosyposts.uploadtests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/CosyPostsAdmin.app/Contents/MacOS/CosyPostsAdmin"
+    dependencies:
+      - target: CosyPostsAdmin
+    scheme:
+      testTargets:
+        - UploadTests
+
   ShareExtension:
     type: app-extension
     supportedDestinations: [iOS, macOS]

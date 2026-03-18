@@ -9,7 +9,25 @@ permissions:
   contents: read
 
 jobs:
-  api:
+  contract-consumer:
+    name: Contract tests (consumer)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Generate Xcode project
+        run: brew install xcodegen && xcodegen generate
+        working-directory: app
+
+      - name: Run Swift consumer tests
+        run: xcodebuild -project CosyPostsAdmin.xcodeproj -scheme ContractTests -destination 'platform=macOS' test
+        working-directory: app
+
+      - name: Check pact file is up to date
+        run: git diff --exit-code contracts/
+
+  contract-provider:
+    name: Contract tests (provider)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -21,6 +39,16 @@ jobs:
       - name: Contract tests
         run: go test -run TestPact -count=1 -v ./...
         working-directory: api
+
+  api:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: api/go.mod
 
       - name: Unit tests
         run: go test -run '^(?!TestPact)' -count=1 -v ./...

@@ -3,7 +3,7 @@
     "allow": [
       "Bash(beans *)",
       "Bash(git add *)",
-      "Bash(git commit *)",
+      "Bash(git status *)",
       "Bash(git merge *)",
       "Bash(/opt/homebrew/bin/beans *)",
       "Bash(go *)",
@@ -20,7 +20,7 @@
       "WebFetch(domain:forums.developer.apple.com)",
       "Bash(log show --predicate 'subsystem == \"\"com.cosyposts\"\" *)",
       "Bash(gh api *)",
-      "Bash(beans create:*)"
+      "Bash(xcodegen generate *)"
     ]
   },
   "hooks": {

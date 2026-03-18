@@ -9,10 +9,7 @@ import Foundation
 /// 2. Send file data (PATCH /files/{id})
 /// 3. Upload body text last to trigger post assembly
 final class UploadContractTests: XCTestCase {
-    static var mockService = MockService(
-        consumer: "CosyPostsApp",
-        provider: "CosyPostsAPI"
-    )
+    static var mockService: MockService { SharedPact.mockService }
 
     // MARK: - Uploading a photo
 

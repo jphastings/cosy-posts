@@ -7,10 +7,7 @@ import PactSwift
 /// Running these tests generates a pact file in contracts/pacts/ that the
 /// Go provider tests verify against.
 final class AuthContractTests: XCTestCase {
-    static var mockService = MockService(
-        consumer: "CosyPostsApp",
-        provider: "CosyPostsAPI"
-    )
+    static var mockService: MockService { SharedPact.mockService }
 
     // MARK: - Signing in with a magic link
 

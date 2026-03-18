@@ -3,10 +3,7 @@ import PactSwift
 
 /// Consumer contract tests for post management features.
 final class PostManagementContractTests: XCTestCase {
-    static var mockService = MockService(
-        consumer: "CosyPostsApp",
-        provider: "CosyPostsAPI"
-    )
+    static var mockService: MockService { SharedPact.mockService }
 
     // MARK: - Deleting a post
 

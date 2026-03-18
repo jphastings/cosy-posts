@@ -3,10 +3,7 @@ import PactSwift
 
 /// Consumer contract tests for viewing site information and stats.
 final class SiteInfoContractTests: XCTestCase {
-    static var mockService = MockService(
-        consumer: "CosyPostsApp",
-        provider: "CosyPostsAPI"
-    )
+    static var mockService: MockService { SharedPact.mockService }
 
     // MARK: - Viewing site stats
 

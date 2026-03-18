@@ -39,6 +39,11 @@ struct ContentView: View {
                 GeometryReader { geo in
                     VStack(spacing: 0) {
                         if !viewModel.mediaItems.isEmpty {
+                            let mediaHeight = min(
+                                geo.size.width / viewModel.averageMediaAspectRatio,
+                                geo.size.height * 0.75
+                            )
+
                             PhotosPicker(
                                 selection: $viewModel.selectedPhotos,
                                 maxSelectionCount: 20,
@@ -51,17 +56,17 @@ struct ContentView: View {
                                 )
                             }
                             .buttonStyle(.plain)
-                            .frame(maxHeight: .infinity)
+                            .frame(height: mediaHeight)
 
                             Divider()
 
-                            // Text: ~3 lines minimum, 25% maximum when media is present
+                            // Text fills remaining space (at least 25% of total)
                             LocaleTextArea(
                                 entry: $viewModel.localeEntries[viewModel.activeLocaleIndex],
                                 localeCount: viewModel.localeEntries.count,
                                 onCycleLocale: { viewModel.cycleLocale() }
                             )
-                            .frame(minHeight: 80, maxHeight: geo.size.height * 0.25)
+                            .frame(maxHeight: .infinity)
                         } else {
                             // No media — text fills everything
                             LocaleTextArea(

@@ -35,6 +35,8 @@ struct MediaItem: Identifiable {
     var loadingThumbnail: Bool = true
     /// True while a high-quality version is being downloaded from iCloud.
     var isDownloading: Bool = false
+    /// Width / height ratio, set when thumbnail is loaded.
+    var aspectRatio: CGFloat?
 
     init(pickerItem: PhotosPickerItem) {
         self.pickerItem = pickerItem

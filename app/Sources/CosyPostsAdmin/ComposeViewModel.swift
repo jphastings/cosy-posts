@@ -134,6 +134,14 @@ final class ComposeViewModel {
         }
     }
 
+    /// Average width/height ratio across all media items with known aspect ratios.
+    /// Falls back to 4:3 when no aspect ratios are known yet.
+    var averageMediaAspectRatio: CGFloat {
+        let known = mediaItems.compactMap(\.aspectRatio)
+        guard !known.isEmpty else { return 4.0 / 3.0 }
+        return known.reduce(0, +) / CGFloat(known.count)
+    }
+
     /// Whether any media items are still downloading from iCloud.
     var hasDownloadingItems: Bool {
         mediaItems.contains { $0.isDownloading }
@@ -148,6 +156,13 @@ final class ComposeViewModel {
         if let identifier = pickerItem.itemIdentifier {
             let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
             if let asset = fetchResult.firstObject {
+                // Capture aspect ratio from the asset's actual pixel dimensions
+                if asset.pixelHeight > 0 {
+                    if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
+                        mediaItems[idx].aspectRatio = CGFloat(asset.pixelWidth) / CGFloat(asset.pixelHeight)
+                    }
+                }
+
                 let targetSize = CGSize(width: 512, height: 512)
                 let options = PHImageRequestOptions()
                 options.deliveryMode = .opportunistic
@@ -335,6 +350,9 @@ final class ComposeViewModel {
                 if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
                     mediaItems[idx].thumbnail = Image(uiImage: uiImage)
                     mediaItems[idx].loadingThumbnail = false
+                    if uiImage.size.height > 0 {
+                        mediaItems[idx].aspectRatio = uiImage.size.width / uiImage.size.height
+                    }
                 }
                 return
             }
@@ -343,6 +361,9 @@ final class ComposeViewModel {
                 if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
                     mediaItems[idx].thumbnail = Image(nsImage: nsImage)
                     mediaItems[idx].loadingThumbnail = false
+                    if nsImage.size.height > 0 {
+                        mediaItems[idx].aspectRatio = nsImage.size.width / nsImage.size.height
+                    }
                 }
                 return
             }
@@ -358,6 +379,9 @@ final class ComposeViewModel {
                 if let idx = mediaItems.firstIndex(where: { $0.id == id }) {
                     mediaItems[idx].thumbnail = Image(platformImage: platformImage)
                     mediaItems[idx].loadingThumbnail = false
+                    if cgImage.height > 0 {
+                        mediaItems[idx].aspectRatio = CGFloat(cgImage.width) / CGFloat(cgImage.height)
+                    }
                 }
                 return
             }

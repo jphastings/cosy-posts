@@ -20,7 +20,7 @@ jobs:
         working-directory: app
 
       - name: Run Swift consumer tests
-        run: xcodebuild -project CosyPostsAdmin.xcodeproj -scheme ContractTests -destination 'platform=macOS' test
+        run: xcodebuild -project CosyPostsAdmin.xcodeproj -scheme ContractTests -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO test
         working-directory: app
 
       - name: Upload pact file
@@ -45,6 +45,7 @@ jobs:
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
 
       - name: Install pact FFI library
         run: go install github.com/pact-foundation/pact-go/v2@v2.4.2 && sudo pact-go -l DEBUG install
@@ -62,6 +63,7 @@ jobs:
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
 
       - name: Unit tests
         run: go test -run '^(?!TestPact)' -count=1 -v ./...

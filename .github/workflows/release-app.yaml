@@ -1,10 +1,9 @@
-name: TestFlight
+name: Release App (Testflight)
 
 on:
   push:
     tags:
       - "app/v*"
-  workflow_dispatch:
 
 jobs:
   testflight:

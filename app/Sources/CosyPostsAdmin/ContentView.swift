@@ -11,6 +11,7 @@ private let translationLog = Logger(subsystem: "com.cosyposts", category: "Trans
 struct ContentView: View {
     @State private var viewModel = ComposeViewModel()
     @State private var showingSiteSheet = false
+    @State private var showPostedToast = false
     @State private var siteInfoLoader = SiteInfoLoader()
     @State private var accessRequestsLoader = AccessRequestsLoader()
     @State private var translationManager = TranslationManager()
@@ -213,6 +214,31 @@ struct ContentView: View {
             .onAppear {
                 translationManager.sourceLanguage = viewModel.localeEntries.first?.locale
             }
+            .onChange(of: viewModel.isUploading) { wasUploading, isUploading in
+                if wasUploading && !isUploading && viewModel.errorMessage == nil {
+                    withAnimation(.easeInOut(duration: 0.3)) { showPostedToast = true }
+                    Task {
+                        try? await Task.sleep(for: .seconds(2.5))
+                        withAnimation(.easeInOut(duration: 0.3)) { showPostedToast = false }
+                    }
+                }
+            }
+            .overlay(alignment: .top) {
+                if showPostedToast {
+                    Label("Posted!", systemImage: "checkmark.circle.fill")
+                        .font(.callout.weight(.medium))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.green.gradient, in: .capsule)
+                        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            #if !os(macOS)
+            .sensoryFeedback(.success, trigger: showPostedToast) { $1 }
+            #endif
         }
     }
 }

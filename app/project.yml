@@ -64,13 +64,13 @@ targets:
 
   UploadTests:
     type: bundle.unit-test
-    supportedDestinations: [macOS]
+    supportedDestinations: [iOS, macOS]
     sources:
       - Tests/UploadTests
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: me.byjp.cosyposts.uploadtests
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/CosyPostsAdmin.app/Contents/MacOS/CosyPostsAdmin"
+        "TEST_HOST[sdk=macosx*]": "$(BUILT_PRODUCTS_DIR)/CosyPostsAdmin.app/Contents/MacOS/CosyPostsAdmin"
     dependencies:
       - target: CosyPostsAdmin
     scheme:

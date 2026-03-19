@@ -27,12 +27,21 @@ final class UploadManager {
     private var tusClient: TUSClient
     private let session: URLSession
 
-    init(serverURL: URL, networkMonitor: NetworkMonitor, modelContainer: ModelContainer, session: URLSession = .shared) {
+    init(serverURL: URL, networkMonitor: NetworkMonitor, modelContainer: ModelContainer, session: URLSession? = nil) {
         self.serverURL = serverURL
         self.networkMonitor = networkMonitor
         self.modelContainer = modelContainer
-        self.session = session
-        self.tusClient = TUSClient(endpoint: serverURL.appendingPathComponent("files/"), session: session)
+        let effectiveSession = session ?? Self.makeUploadSession()
+        self.session = effectiveSession
+        self.tusClient = TUSClient(endpoint: serverURL.appendingPathComponent("files/"), session: effectiveSession)
+    }
+
+    /// Create a URLSession with reasonable timeouts for uploads.
+    private static func makeUploadSession() -> URLSession {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30   // 30s for no data received
+        config.timeoutIntervalForResource = 300 // 5 min max per upload
+        return URLSession(configuration: config)
     }
 
     /// The authenticated user's email, sent as `author` metadata on uploads.
@@ -176,22 +185,24 @@ final class UploadManager {
     /// Strategy 1: Use PhotosPicker's Transferable protocol.
     /// The picker runs out-of-process and handles iCloud downloads itself.
     private func exportViaTransferable(pickerItem: PhotosPickerItem, index: Int, postDir: URL, isVideo: Bool) async -> URL? {
+        enum Outcome: Sendable { case value(URL?); case timeout }
+
         do {
-            return try await withThrowingTaskGroup(of: URL?.self) { group in
+            return try await withThrowingTaskGroup(of: Outcome.self) { group in
                 group.addTask {
                     // Try file-based transfer first (preserves original format)
                     if isVideo {
                         if let video = try? await pickerItem.loadTransferable(type: VideoTransferable.self) {
                             let dest = postDir.appendingPathComponent("media_\(index).mov")
                             try FileManager.default.copyItem(at: video.url, to: dest)
-                            return dest
+                            return .value(dest)
                         }
                     }
                     if let file = try? await pickerItem.loadTransferable(type: MediaFileTransferable.self) {
                         let ext = file.url.pathExtension.isEmpty ? "bin" : file.url.pathExtension
                         let dest = postDir.appendingPathComponent("media_\(index).\(ext)")
                         try FileManager.default.copyItem(at: file.url, to: dest)
-                        return dest
+                        return .value(dest)
                     }
                     // Try raw data transfer
                     if let data = try? await pickerItem.loadTransferable(type: Data.self) {
@@ -199,23 +210,21 @@ final class UploadManager {
                         let ext = contentType?.preferredFilenameExtension ?? "bin"
                         let dest = postDir.appendingPathComponent("media_\(index).\(ext)")
                         try data.write(to: dest)
-                        return dest
+                        return .value(dest)
                     }
-                    return nil
+                    return .value(nil)
                 }
                 group.addTask {
                     try await Task.sleep(for: exportTimeout)
-                    return nil
+                    return .timeout
                 }
 
-                for try await result in group {
-                    if let url = result {
-                        group.cancelAll()
-                        return url
-                    }
-                }
+                let first = try await group.next()!
                 group.cancelAll()
-                return nil
+                switch first {
+                case .value(let url): return url
+                case .timeout: return nil
+                }
             }
         } catch {
             uploadLog.warning("Media \(index): Transferable export failed: \(error.localizedDescription)")
@@ -549,23 +558,29 @@ final class UploadManager {
 
 // MARK: - Timeout Helper
 
+/// Distinguishes a completed operation from a timeout in `withTimeout`.
+private enum TimeoutOutcome<T: Sendable>: Sendable {
+    case value(T?)
+    case timeout
+}
+
 /// Run an async operation with a timeout. Returns nil if the timeout fires first.
-private func withTimeout<T: Sendable>(_ duration: Duration, operation: @escaping @Sendable () async -> T?) async -> T? {
-    await withTaskGroup(of: T?.self) { group in
-        group.addTask { await operation() }
+/// Returns immediately when the operation completes (even with nil), and enforces
+/// the timeout by cancelling a hanging operation.
+func withTimeout<T: Sendable>(_ duration: Duration, operation: @escaping @Sendable () async -> T?) async -> T? {
+    await withTaskGroup(of: TimeoutOutcome<T>.self) { group in
+        group.addTask { .value(await operation()) }
         group.addTask {
             try? await Task.sleep(for: duration)
-            return nil
+            return .timeout
         }
 
-        for await result in group {
-            if let value = result {
-                group.cancelAll()
-                return value
-            }
-        }
+        let first = await group.next()!
         group.cancelAll()
-        return nil
+        switch first {
+        case .value(let v): return v
+        case .timeout: return nil
+        }
     }
 }
 

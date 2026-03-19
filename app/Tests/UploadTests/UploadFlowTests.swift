@@ -15,6 +15,8 @@ final class TUSRequestLog: Sendable {
         var uploadCounter = 0
         /// When non-nil, PATCH requests whose URL path contains this string return a 500.
         var failPatchContaining: String?
+        /// When non-nil, requests matching this method will hang (never complete).
+        var hangMethod: String?
     }
 
     func append(_ request: URLRequest) {
@@ -37,12 +39,18 @@ final class TUSRequestLog: Sendable {
             $0.requests = []
             $0.uploadCounter = 0
             $0.failPatchContaining = nil
+            $0.hangMethod = nil
         }
     }
 
     var failPatchContaining: String? {
         get { lock.withLock { $0.failPatchContaining } }
         set { lock.withLock { $0.failPatchContaining = newValue } }
+    }
+
+    var hangMethod: String? {
+        get { lock.withLock { $0.hangMethod } }
+        set { lock.withLock { $0.hangMethod = newValue } }
     }
 }
 
@@ -61,6 +69,12 @@ final class TUSMockProtocol: URLProtocol, @unchecked Sendable {
             recorded.httpBody = Self.readStream(stream)
         }
         tusLog.append(recorded)
+
+        // Hang mode: never complete the request (simulates unresponsive server)
+        if let hangMethod = tusLog.hangMethod, request.httpMethod == hangMethod {
+            // Don't call any client methods — the request hangs until cancelled
+            return
+        }
 
         let response: HTTPURLResponse
 
@@ -445,6 +459,94 @@ final class UploadFlowTests: XCTestCase {
         let fetched = try context.fetch(FetchDescriptor<PendingPost>()).first
         XCTAssertEqual(fetched?.postStatus, .completed)
         XCTAssertEqual(fetched?.mediaUploaded, 2)
+    }
+
+    // MARK: - Server error marks post as failed
+
+    func testUploadFailsOnServerError() async throws {
+        tusLog.failPatchContaining = "upload"
+
+        let context = ModelContext(modelContainer)
+        let post = PendingPost(
+            postID: "fail500123456789abc",
+            date: Date(),
+            bodyText: "This will fail",
+            locale: "en"
+        )
+        context.insert(post)
+        try context.save()
+
+        await uploadManager.processQueue()
+
+        let fetched = try context.fetch(FetchDescriptor<PendingPost>()).first
+        XCTAssertEqual(fetched?.postStatus, .failed, "Post should be marked failed on server error")
+        XCTAssertNotNil(fetched?.errorMessage, "Error message should be stored")
+        XCTAssertFalse(uploadManager.isProcessing, "isProcessing should be false after queue completes")
+    }
+
+    // MARK: - Upload timeout completes instead of hanging
+
+    func testUploadCompletesOnServerTimeout() async throws {
+        // Use a session with a very short timeout
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [TUSMockProtocol.self]
+        config.timeoutIntervalForRequest = 1  // 1 second timeout
+        let shortSession = URLSession(configuration: config)
+
+        let shortUploadManager = UploadManager(
+            serverURL: URL(string: "https://example.com")!,
+            networkMonitor: networkMonitor,
+            modelContainer: modelContainer,
+            session: shortSession
+        )
+
+        // Make POST requests hang (simulates unreachable server)
+        tusLog.hangMethod = "POST"
+
+        let context = ModelContext(modelContainer)
+        let post = PendingPost(
+            postID: "timeout12345678901a",
+            date: Date(),
+            bodyText: "This will timeout",
+            locale: "en"
+        )
+        context.insert(post)
+        try context.save()
+
+        let start = ContinuousClock.now
+        await shortUploadManager.processQueue()
+        let elapsed = ContinuousClock.now - start
+
+        XCTAssertLessThan(elapsed, .seconds(10), "processQueue should complete within the timeout, not hang")
+        XCTAssertFalse(shortUploadManager.isProcessing, "isProcessing should be false after queue completes")
+
+        let fetched = try context.fetch(FetchDescriptor<PendingPost>()).first
+        XCTAssertEqual(fetched?.postStatus, .failed, "Post should be marked failed on timeout")
+    }
+
+    // MARK: - withTimeout helper returns immediately on operation failure
+
+    func testTimeoutReturnsImmediatelyOnOperationFailure() async throws {
+        let start = ContinuousClock.now
+        let result: Int? = await withTimeout(.seconds(60)) { return nil }
+        let elapsed = ContinuousClock.now - start
+
+        XCTAssertNil(result)
+        XCTAssertLessThan(elapsed, .seconds(1), "Should return immediately when operation returns nil, not wait for 60s timeout")
+    }
+
+    // MARK: - withTimeout helper enforces deadline
+
+    func testTimeoutEnforcesDeadline() async throws {
+        let start = ContinuousClock.now
+        let result: Int? = await withTimeout(.milliseconds(100)) {
+            try? await Task.sleep(for: .seconds(60))
+            return 42
+        }
+        let elapsed = ContinuousClock.now - start
+
+        XCTAssertNil(result, "Should return nil when operation exceeds timeout")
+        XCTAssertLessThan(elapsed, .seconds(2), "Should return near the timeout duration, not wait for the operation")
     }
 
     // MARK: - Helpers

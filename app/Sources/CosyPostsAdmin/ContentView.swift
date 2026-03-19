@@ -270,17 +270,6 @@ private struct BottomToolbar: View {
 
             Spacer(minLength: toolbarUnit * 2)
 
-            if uploadManager.isProcessing {
-                Label("Uploading...", systemImage: "arrow.up.circle")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .fixedSize()
-
-                Spacer()
-                    .frame(width: toolbarUnit)
-            }
-
             // Post
             Button(action: { viewModel.upload(using: uploadManager) }) {
                 if viewModel.isUploading {

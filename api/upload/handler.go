@@ -3,6 +3,7 @@ package upload
 import (
 	"log"
 	"net/http"
+	"net/url"
 	"sync"
 
 	"github.com/jphastings/cosy-posts/api/config"
@@ -55,9 +56,26 @@ func NewHandler(cfg *config.Config, onBodyDone CompletionFunc) (*Handler, error)
 	return h, nil
 }
 
-// ServeHTTP delegates to the tusd handler.
+// ServeHTTP delegates to the tusd handler, rewriting any absolute Location
+// header to a relative path so clients behind reverse proxies get the correct URL.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.tusHandler.ServeHTTP(w, r)
+	h.tusHandler.ServeHTTP(&relativeLocationWriter{ResponseWriter: w}, r)
+}
+
+// relativeLocationWriter wraps an http.ResponseWriter to rewrite absolute
+// Location headers to relative paths. tusd generates absolute URLs using
+// the inbound request's scheme/host, which is wrong behind a reverse proxy.
+type relativeLocationWriter struct {
+	http.ResponseWriter
+}
+
+func (w *relativeLocationWriter) WriteHeader(statusCode int) {
+	if loc := w.Header().Get("Location"); loc != "" {
+		if u, err := url.Parse(loc); err == nil && u.IsAbs() {
+			w.Header().Set("Location", u.RequestURI())
+		}
+	}
+	w.ResponseWriter.WriteHeader(statusCode)
 }
 
 // listenForCompleted processes upload completion events from tusd.

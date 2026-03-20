@@ -52,6 +52,7 @@ final class TUSRequestLog: Sendable {
         get { lock.withLock { $0.hangMethod } }
         set { lock.withLock { $0.hangMethod = newValue } }
     }
+
 }
 
 /// Singleton log shared between the test and the URLProtocol subclass.
@@ -80,7 +81,7 @@ final class TUSMockProtocol: URLProtocol, @unchecked Sendable {
 
         switch request.httpMethod {
         case "POST":
-            // TUS creation → 201 with relative Location (exercises TUSClient's URL resolution)
+            // TUS creation → 201 with relative Location
             let uploadID = tusLog.nextUploadID()
             response = HTTPURLResponse(
                 url: request.url!,

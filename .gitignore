@@ -25,3 +25,7 @@ Thumbs.db
 .env.local
 
 *.log
+
+# Coverage
+api/coverage*.out
+app/TestResults.xcresult/

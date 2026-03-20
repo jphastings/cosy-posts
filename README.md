@@ -54,6 +54,47 @@ xcrun simctl launch booted me.byjp.cosyposts.app && \
 open -a Simulator
 ```
 
+### test-api
+
+Run Go unit tests with coverage summary.
+
+```sh
+cd api && \
+go test -count=1 -coverprofile=coverage.out -covermode=atomic ./... && \
+echo && go tool cover -func=coverage.out | tail -1 && \
+rm -f coverage.out
+```
+
+### test-app
+
+Run Swift unit tests with coverage summary.
+
+```sh
+cd app && \
+xcodegen generate && \
+rm -rf TestResults.xcresult && \
+xcodebuild \
+  -project CosyPostsAdmin.xcodeproj \
+  -scheme UploadTests \
+  -destination 'platform=macOS' \
+  -only-testing:UploadTests \
+  -enableCodeCoverage YES \
+  -resultBundlePath TestResults.xcresult \
+  CODE_SIGNING_ALLOWED=NO \
+  COMPILER_INDEX_STORE_ENABLE=NO \
+  test && \
+echo && xcrun xccov view --report --targets-regex 'CosyPostsAdmin' TestResults.xcresult && \
+rm -rf TestResults.xcresult
+```
+
+### test
+
+Run all tests with coverage.
+
+```sh
+xc test-api && xc test-app
+```
+
 ### test-contracts
 
 Run consumer (Swift) then provider (Go) contract tests. Requires the pact FFI library (`go install github.com/pact-foundation/pact-go/v2@v2.4.2 && sudo "$(go env GOPATH)/bin/pact-go" install`).

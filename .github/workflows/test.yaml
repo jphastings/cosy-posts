@@ -62,7 +62,18 @@ jobs:
         run: go install github.com/pact-foundation/pact-go/v2@v2.4.2 && sudo "$(go env GOPATH)/bin/pact-go" -l DEBUG install
 
       - name: Contract tests
-        run: go test -tags pact -run TestPact -count=1 -v ./...
+        run: go test -tags pact -run TestPact -count=1 -v -coverprofile=coverage-pact.out -covermode=atomic -coverpkg=./... ./...
+        working-directory: api
+
+      - name: Coverage summary
+        if: always() && !cancelled()
+        run: |
+          if [ -f coverage-pact.out ]; then
+            echo '## Go Contract Test Coverage' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            go tool cover -func=coverage-pact.out >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
         working-directory: api
 
   api:
@@ -77,5 +88,50 @@ jobs:
           cache-dependency-path: api/go.sum
 
       - name: Unit tests
-        run: go test -count=1 -v ./...
+        run: go test -count=1 -v -coverprofile=coverage.out -covermode=atomic ./...
         working-directory: api
+
+      - name: Coverage summary
+        if: always() && !cancelled()
+        run: |
+          if [ -f coverage.out ]; then
+            echo '## Go Unit Test Coverage' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            go tool cover -func=coverage.out >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+        working-directory: api
+
+  app:
+    name: App unit tests
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Generate Xcode project
+        run: brew install xcodegen && xcodegen generate
+        working-directory: app
+
+      - name: Unit tests with coverage
+        run: >
+          xcodebuild
+          -project CosyPostsAdmin.xcodeproj
+          -scheme UploadTests
+          -destination 'platform=macOS'
+          -only-testing:UploadTests
+          -enableCodeCoverage YES
+          -resultBundlePath TestResults.xcresult
+          CODE_SIGNING_ALLOWED=NO
+          COMPILER_INDEX_STORE_ENABLE=NO
+          test
+        working-directory: app
+
+      - name: Coverage summary
+        if: always() && !cancelled()
+        run: |
+          if [ -d app/TestResults.xcresult ]; then
+            echo '## Swift App Coverage (UploadTests)' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            xcrun xccov view --report --targets-regex 'CosyPostsAdmin' app/TestResults.xcresult >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi

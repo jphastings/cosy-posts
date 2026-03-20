@@ -20,16 +20,16 @@ import (
 // This is the single source of truth for the server's routing — used by both
 // main() and the contract tests.
 func newHandler(cfg *config.Config) (http.Handler, error) {
-	onBodyDone := func(event tusd.HookEvent) {
+	onBodyDone := func(event tusd.HookEvent) error {
 		postID := event.Upload.MetaData["post-id"]
 		log.Printf("Body upload completed for post %s, starting assembly", postID)
 
 		if err := post.Assemble(cfg, event); err != nil {
-			log.Printf("Error assembling post %s: %v", postID, err)
-			return
+			return err
 		}
 
 		rebuild.Trigger(cfg)
+		return nil
 	}
 
 	uploadHandler, err := upload.NewHandler(cfg, onBodyDone)

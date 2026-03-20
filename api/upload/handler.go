@@ -1,10 +1,10 @@
 package upload
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
-	"sync"
 
 	"github.com/jphastings/cosy-posts/api/config"
 
@@ -14,19 +14,19 @@ import (
 )
 
 // CompletionFunc is called when a body upload completes.
-// It receives the post ID, upload info, and path to the uploaded file.
-type CompletionFunc func(event tusd.HookEvent)
+// It receives the hook event and returns an error if post assembly fails.
+type CompletionFunc func(event tusd.HookEvent) error
 
 // Handler wraps the tusd handler and manages upload tracking.
 type Handler struct {
 	tusHandler *tusd.Handler
 	onBodyDone CompletionFunc
-	mu         sync.Mutex
 	cfg        *config.Config
 }
 
 // NewHandler creates a new TUS upload handler.
-// onBodyDone is called when a body upload (role=body) completes.
+// onBodyDone is called synchronously when a body upload completes,
+// before the response is sent to the client.
 func NewHandler(cfg *config.Config, onBodyDone CompletionFunc) (*Handler, error) {
 	store := filestore.New(cfg.TUSUploadDir())
 	locker := filelocker.New(cfg.TUSUploadDir())
@@ -35,24 +35,21 @@ func NewHandler(cfg *config.Config, onBodyDone CompletionFunc) (*Handler, error)
 	store.UseIn(composer)
 	locker.UseIn(composer)
 
+	h := &Handler{
+		onBodyDone: onBodyDone,
+		cfg:        cfg,
+	}
+
 	tusHandler, err := tusd.NewHandler(tusd.Config{
-		BasePath:              "/files/",
-		StoreComposer:         composer,
-		NotifyCompleteUploads: true,
+		BasePath:                  "/files/",
+		StoreComposer:             composer,
+		PreFinishResponseCallback: h.preFinishResponse,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	h := &Handler{
-		tusHandler: tusHandler,
-		onBodyDone: onBodyDone,
-		cfg:        cfg,
-	}
-
-	// Listen for completed uploads in background.
-	go h.listenForCompleted()
-
+	h.tusHandler = tusHandler
 	return h, nil
 }
 
@@ -60,6 +57,32 @@ func NewHandler(cfg *config.Config, onBodyDone CompletionFunc) (*Handler, error)
 // header to a relative path so clients behind reverse proxies get the correct URL.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.tusHandler.ServeHTTP(&relativeLocationWriter{ResponseWriter: w}, r)
+}
+
+// preFinishResponse is called by tusd after an upload completes but before the
+// response is sent. This lets us run post assembly synchronously so failures
+// are reported back to the client.
+func (h *Handler) preFinishResponse(event tusd.HookEvent) (tusd.HTTPResponse, error) {
+	info := event.Upload
+	postID := info.MetaData["post-id"]
+	role := info.MetaData["role"]
+
+	if postID == "" {
+		log.Printf("Upload %s completed without post-id metadata, skipping", info.ID)
+		return tusd.HTTPResponse{}, nil
+	}
+
+	log.Printf("Upload completed: id=%s post-id=%s role=%s filename=%s",
+		info.ID, postID, role, info.MetaData["filename"])
+
+	if role == "body" && h.onBodyDone != nil {
+		if err := h.onBodyDone(event); err != nil {
+			log.Printf("Post assembly failed for %s: %v", postID, err)
+			return tusd.HTTPResponse{}, fmt.Errorf("post assembly failed: %w", err)
+		}
+	}
+
+	return tusd.HTTPResponse{}, nil
 }
 
 // relativeLocationWriter wraps an http.ResponseWriter to rewrite absolute
@@ -78,28 +101,8 @@ func (w *relativeLocationWriter) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
-// listenForCompleted processes upload completion events from tusd.
-func (h *Handler) listenForCompleted() {
-	for {
-		event := <-h.tusHandler.CompleteUploads
-		info := event.Upload
-
-		postID := info.MetaData["post-id"]
-		role := info.MetaData["role"]
-
-		if postID == "" {
-			log.Printf("Upload %s completed without post-id metadata, skipping", info.ID)
-			continue
-		}
-
-		log.Printf("Upload completed: id=%s post-id=%s role=%s filename=%s",
-			info.ID, postID, role, info.MetaData["filename"])
-
-		// When a body upload completes, trigger post assembly.
-		if role == "body" {
-			if h.onBodyDone != nil {
-				h.onBodyDone(event)
-			}
-		}
-	}
+// Unwrap returns the underlying ResponseWriter so http.NewResponseController
+// can access connection-level methods (SetReadDeadline, SetWriteDeadline).
+func (w *relativeLocationWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
 }

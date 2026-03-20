@@ -117,6 +117,17 @@ final class UploadManager {
         if networkMonitor.isConnected {
             await processQueue()
         }
+
+        // Re-fetch the post to check if the upload actually succeeded.
+        // processQueue catches errors internally, so we need to check the status.
+        let checkContext = ModelContext(modelContainer)
+        let checkDescriptor = FetchDescriptor<PendingPost>(
+            predicate: #Predicate { $0.postID == postID }
+        )
+        if let updatedPost = try? checkContext.fetch(checkDescriptor).first,
+           updatedPost.postStatus == .failed {
+            throw UploadError.serverRejected(updatedPost.errorMessage ?? "Upload failed")
+        }
     }
 
     // MARK: - Media Export Pipeline
@@ -601,6 +612,17 @@ enum ExportError: Error, LocalizedError {
         switch self {
         case .allMediaFailed(let errors):
             return "Could not export media: \(errors.joined(separator: "; "))"
+        }
+    }
+}
+
+enum UploadError: Error, LocalizedError {
+    case serverRejected(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .serverRejected(let message):
+            return "Server error: \(message)"
         }
     }
 }

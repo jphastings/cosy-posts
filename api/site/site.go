@@ -75,17 +75,23 @@ type frontmatter struct {
 
 // Handler serves the embedded site, reading content from the filesystem.
 type Handler struct {
-	contentDir string
-	csvPath    string
-	siteName   string
-	homeTmpl   *template.Template
-	singleTmpl *template.Template
-	roleFunc   func(*http.Request) string
+	contentDir  string
+	csvPath     string
+	siteName    string
+	homeTmpl    *template.Template
+	singleTmpl  *template.Template
+	roleFunc    func(*http.Request) string
+	feedURLFunc func(*http.Request) string
 }
 
 // SetRoleFunc sets a function that extracts the user's role from a request.
 func (h *Handler) SetRoleFunc(fn func(*http.Request) string) {
 	h.roleFunc = fn
+}
+
+// SetFeedURLFunc sets a function that returns the authenticated RSS feed URL for the current user.
+func (h *Handler) SetFeedURLFunc(fn func(*http.Request) string) {
+	h.feedURLFunc = fn
 }
 
 // NewHandler creates a site handler. contentDir is the path to the content
@@ -231,6 +237,11 @@ func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 		role = h.roleFunc(r)
 	}
 
+	feedURL := ""
+	if h.feedURLFunc != nil {
+		feedURL = h.feedURLFunc(r)
+	}
+
 	siteInfo := h.loadSiteInfo(prefLang)
 
 	data := map[string]any{
@@ -239,6 +250,7 @@ func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 		"Posts":       posts,
 		"CanDelete":   role == "post",
 		"SiteInfo":    siteInfo,
+		"FeedURL":     feedURL,
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

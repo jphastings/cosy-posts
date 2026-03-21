@@ -74,6 +74,22 @@ func newHandler(cfg *config.Config) (http.Handler, error) {
 		siteHandler.SetRoleFunc(func(r *http.Request) string {
 			return auth.RoleFromContext(r.Context())
 		})
+		siteHandler.SetFeedURLFunc(func(r *http.Request) string {
+			if cfg.RSSSecret == "" {
+				return ""
+			}
+			email := auth.EmailFromContext(r.Context())
+			if email == "" {
+				return ""
+			}
+			scheme := "https"
+			if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
+				scheme = proto
+			} else if r.TLS == nil {
+				scheme = "http"
+			}
+			return feed.SignURL(scheme+"://"+r.Host+"/feed.xml", email, cfg.RSSSecret)
+		})
 		mux.Handle("/", siteHandler)
 		log.Printf("Using built-in site renderer")
 	}

@@ -3,7 +3,9 @@ package auth
 import (
 	"bufio"
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -173,6 +175,13 @@ func ValidateAuthFiles(authDir string) error {
 		}
 	}
 	return nil
+}
+
+// FeedPassword computes the HMAC-SHA256 password for a given email and secret.
+func FeedPassword(email, secret string) string {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(strings.ToLower(strings.TrimSpace(email))))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 // LookupRole returns the role for an email, or "" if not authorized.
@@ -371,7 +380,7 @@ func Middleware(cfg *config.Config, next http.Handler) http.Handler {
 		path := r.URL.Path
 
 		// Public routes.
-		if path == "/health" || path == "/feed.xml" || strings.HasPrefix(path, "/auth/") {
+		if path == "/health" || strings.HasPrefix(path, "/auth/") {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -383,15 +392,34 @@ func Middleware(cfg *config.Config, next http.Handler) http.Handler {
 		} else if cookie, err := r.Cookie(cookieName); err == nil {
 			sessionID = cookie.Value
 		}
-		if sessionID == "" {
-			log.Printf("auth: denied %s %s (no session)", r.Method, path)
-			authDenied(w, r)
-			return
+
+		var email, role string
+
+		if sessionID != "" {
+			var err error
+			email, role, err = validateSession(cfg.AuthDir, sessionID)
+			if err != nil {
+				log.Printf("auth: denied %s %s (%v)", r.Method, path, err)
+				authDenied(w, r)
+				return
+			}
+		} else if cfg.RSSSecret != "" && (path == "/feed.xml" || strings.HasPrefix(path, "/content/")) {
+			// Signed URL auth for RSS feeds and media.
+			q := r.URL.Query()
+			if sigEmail := q.Get("email"); sigEmail != "" {
+				sigEmail = strings.ToLower(strings.TrimSpace(sigEmail))
+				expected := FeedPassword(sigEmail, cfg.RSSSecret)
+				if hmac.Equal([]byte(expected), []byte(q.Get("sig"))) {
+					role = LookupRole(cfg.AuthDir, sigEmail)
+					if role != "" {
+						email = sigEmail
+					}
+				}
+			}
 		}
 
-		email, role, err := validateSession(cfg.AuthDir, sessionID)
-		if err != nil {
-			log.Printf("auth: denied %s %s (%v)", r.Method, path, err)
+		if email == "" {
+			log.Printf("auth: denied %s %s (no session)", r.Method, path)
 			authDenied(w, r)
 			return
 		}

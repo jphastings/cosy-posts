@@ -2,13 +2,11 @@ package feed
 
 import (
 	"bytes"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/xml"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -26,6 +24,7 @@ const maxItems = 50
 type frontmatter struct {
 	Date   string `yaml:"date"`
 	Author string `yaml:"author"`
+	Locale string `yaml:"locale"`
 }
 
 // rss is the top-level RSS 2.0 document.
@@ -52,12 +51,12 @@ type atomLink struct {
 }
 
 type item struct {
-	Title       string    `xml:"title"`
-	Link        string    `xml:"link"`
-	GUID        guidElem  `xml:"guid"`
-	PubDate     string    `xml:"pubDate"`
-	Description cdata     `xml:"description"`
-	Enclosures  []encl    `xml:"enclosure,omitempty"`
+	Title       string   `xml:"title"`
+	Link        string   `xml:"link"`
+	GUID        guidElem `xml:"guid"`
+	PubDate     string   `xml:"pubDate"`
+	Description cdata    `xml:"description"`
+	Enclosures  []encl   `xml:"enclosure,omitempty"`
 }
 
 type guidElem struct {
@@ -76,8 +75,21 @@ type cdata struct {
 	Content string `xml:",cdata"`
 }
 
+// SignURL appends email and sig query parameters to a URL.
+func SignURL(rawURL, email, secret string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	q := u.Query()
+	q.Set("email", email)
+	q.Set("sig", auth.FeedPassword(email, secret))
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
 // Handler returns an HTTP handler that serves an RSS 2.0 feed.
-// It performs Basic Auth using HMAC-SHA256(email, rssSecret) as the password.
+// Authentication is handled by the auth middleware via signed URL params.
 func Handler(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if cfg.RSSSecret == "" {
@@ -85,22 +97,11 @@ func Handler(cfg *config.Config) http.HandlerFunc {
 			return
 		}
 
-		email, password, ok := r.BasicAuth()
-		if !ok {
-			w.Header().Set("WWW-Authenticate", `Basic realm="RSS Feed"`)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		email = strings.ToLower(strings.TrimSpace(email))
-		if !validFeedPassword(email, cfg.RSSSecret, password) || auth.LookupRole(cfg.AuthDir, email) == "" {
-			w.Header().Set("WWW-Authenticate", `Basic realm="RSS Feed"`)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
+		email := auth.EmailFromContext(r.Context())
+		prefLang := content.PreferredLang(r.Header.Get("Accept-Language"))
 
 		baseURL := requestBaseURL(r)
-		feedXML, err := buildFeed(cfg, baseURL)
+		feedXML, err := buildFeed(cfg, baseURL, email, prefLang)
 		if err != nil {
 			log.Printf("feed: build: %v", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -109,20 +110,9 @@ func Handler(cfg *config.Config) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/rss+xml; charset=utf-8")
 		w.Header().Set("Cache-Control", "private, max-age=3600")
+		w.Header().Set("Vary", "Accept-Language")
 		w.Write(feedXML)
 	}
-}
-
-// FeedPassword computes the HMAC-SHA256 password for a given email and secret.
-func FeedPassword(email, secret string) string {
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write([]byte(strings.ToLower(strings.TrimSpace(email))))
-	return hex.EncodeToString(mac.Sum(nil))
-}
-
-func validFeedPassword(email, secret, password string) bool {
-	expected := FeedPassword(email, secret)
-	return hmac.Equal([]byte(expected), []byte(password))
 }
 
 func requestBaseURL(r *http.Request) string {
@@ -148,25 +138,22 @@ type mediaRef struct {
 	isVideo bool
 }
 
-func buildFeed(cfg *config.Config, baseURL string) ([]byte, error) {
-	posts := loadPosts(cfg.ContentDir, baseURL)
+func buildFeed(cfg *config.Config, baseURL, email, prefLang string) ([]byte, error) {
+	posts := loadPosts(cfg.ContentDir, baseURL, prefLang)
 
 	var items []item
 	for _, p := range posts {
-		desc := buildDescription(p)
+		desc := buildDescription(p, email, cfg.RSSSecret)
 
 		var enclosures []encl
 		for _, m := range p.media {
 			enclosures = append(enclosures, encl{
-				URL:  m.url,
+				URL:  SignURL(m.url, email, cfg.RSSSecret),
 				Type: mediaMIME(m),
 			})
 		}
 
 		title := p.date.Format("2 Jan 2006")
-		if p.author != "" {
-			title = p.author + " — " + title
-		}
 
 		items = append(items, item{
 			Title:       title,
@@ -194,10 +181,10 @@ func buildFeed(cfg *config.Config, baseURL string) ([]byte, error) {
 		Channel: channel{
 			Title:         siteName,
 			Link:          baseURL + "/",
-			Description:   siteName + " — recent posts",
+			Description:   siteName,
 			LastBuildDate: lastBuild,
 			AtomLink: atomLink{
-				Href: baseURL + "/feed.xml",
+				Href: SignURL(baseURL+"/feed.xml", email, cfg.RSSSecret),
 				Rel:  "self",
 				Type: "application/rss+xml",
 			},
@@ -215,7 +202,7 @@ func buildFeed(cfg *config.Config, baseURL string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func loadPosts(contentDir, baseURL string) []postEntry {
+func loadPosts(contentDir, baseURL, prefLang string) []postEntry {
 	var posts []postEntry
 
 	filepath.Walk(contentDir, func(path string, info os.FileInfo, err error) error {
@@ -251,7 +238,7 @@ func loadPosts(contentDir, baseURL string) []postEntry {
 			}
 		}
 
-		// Find media files.
+		// Find media files (unsigned — signed at render time per user).
 		var media []mediaRef
 		entries, _ := os.ReadDir(postDir)
 		for _, e := range entries {
@@ -267,6 +254,27 @@ func loadPosts(contentDir, baseURL string) []postEntry {
 		sort.Slice(media, func(i, j int) bool {
 			return media[i].url < media[j].url
 		})
+
+		// If there's a preferred language and it differs from the post's locale,
+		// look for a matching translation file and swap in its body.
+		locale := fm.Locale
+		if locale == "" {
+			locale = "en"
+		}
+		if prefLang != "" && prefLang != locale {
+			for _, ext := range []string{".md", ".djot"} {
+				tp := filepath.Join(postDir, "index."+prefLang+ext)
+				raw, err := os.ReadFile(tp)
+				if err != nil {
+					continue
+				}
+				_, tbody := content.ParseFrontmatter[frontmatter](raw)
+				if tbody != "" {
+					body = tbody
+				}
+				break
+			}
+		}
 
 		posts = append(posts, postEntry{
 			date:    postDate,
@@ -289,7 +297,7 @@ func loadPosts(contentDir, baseURL string) []postEntry {
 	return posts
 }
 
-func buildDescription(p postEntry) string {
+func buildDescription(p postEntry, email, secret string) string {
 	var buf bytes.Buffer
 
 	// Render body markdown to HTML.
@@ -297,12 +305,13 @@ func buildDescription(p postEntry) string {
 		goldmark.Convert([]byte(p.body), &buf)
 	}
 
-	// Append media as HTML.
+	// Append media as HTML with signed URLs.
 	for _, m := range p.media {
+		signed := SignURL(m.url, email, secret)
 		if m.isVideo {
-			fmt.Fprintf(&buf, `<p><video src="%s" controls></video></p>`, m.url)
+			fmt.Fprintf(&buf, `<p><video src="%s" controls></video></p>`, signed)
 		} else {
-			fmt.Fprintf(&buf, `<p><img src="%s" /></p>`, m.url)
+			fmt.Fprintf(&buf, `<p><img src="%s" /></p>`, signed)
 		}
 	}
 

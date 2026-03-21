@@ -175,8 +175,8 @@ func ValidateAuthFiles(authDir string) error {
 	return nil
 }
 
-// lookupRole returns the role for an email, or "" if not authorized.
-func lookupRole(authDir, email string) string {
+// LookupRole returns the role for an email, or "" if not authorized.
+func LookupRole(authDir, email string) string {
 	if emailInCSV(filepath.Join(authDir, "can-post.csv"), email) {
 		return "post"
 	}
@@ -241,7 +241,7 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 			return
 		}
 
-		role := lookupRole(cfg.AuthDir, email)
+		role := LookupRole(cfg.AuthDir, email)
 		if role != "" {
 			// Authorized: send magic link(s).
 			siteToken, err := generateHex(32)
@@ -321,7 +321,7 @@ func Verify(cfg *config.Config) http.HandlerFunc {
 			return
 		}
 
-		role := lookupRole(cfg.AuthDir, email)
+		role := LookupRole(cfg.AuthDir, email)
 		if role == "" {
 			if wantsJSON {
 				w.Header().Set("Content-Type", "application/json")
@@ -371,7 +371,7 @@ func Middleware(cfg *config.Config, next http.Handler) http.Handler {
 		path := r.URL.Path
 
 		// Public routes.
-		if path == "/health" || strings.HasPrefix(path, "/auth/") {
+		if path == "/health" || path == "/feed.xml" || strings.HasPrefix(path, "/auth/") {
 			next.ServeHTTP(w, r)
 			return
 		}

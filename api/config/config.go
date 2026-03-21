@@ -26,6 +26,8 @@ type Config struct {
 		ResendAPIKey string `mapstructure:"resend_api_key"`
 	} `mapstructure:"email"`
 
+	RSSSecret string `mapstructure:"rss_secret"`
+
 	Dir       string `mapstructure:"-"` // resolved directory of the config file itself
 	UploadDir string `mapstructure:"-"` // temporary directory for TUS uploads
 }
@@ -48,7 +50,7 @@ func (c *Config) HasExternalSite() bool {
 //
 //	COSY_LISTEN, COSY_CONTENT_DIR, COSY_AUTH_DIR,
 //	COSY_SITE_NAME, COSY_SITE_BUILD_COMMAND, COSY_SITE_DIRECTORY,
-//	COSY_EMAIL_FROM, COSY_EMAIL_RESEND_API_KEY
+//	COSY_EMAIL_FROM, COSY_EMAIL_RESEND_API_KEY, COSY_RSS_SECRET
 func Load(path string) (*Config, error) {
 	v := viper.New()
 
@@ -70,6 +72,7 @@ func Load(path string) (*Config, error) {
 	v.BindEnv("site.name", "COSY_SITE_NAME")
 	v.BindEnv("site.build_command", "COSY_SITE_BUILD_COMMAND")
 	v.BindEnv("site.directory", "COSY_SITE_DIRECTORY")
+	v.BindEnv("rss_secret", "COSY_RSS_SECRET")
 
 	// Load config file if specified.
 	if path != "" {

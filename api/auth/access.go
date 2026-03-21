@@ -145,7 +145,7 @@ func ApproveAccessRequest(cfg *config.Config) http.HandlerFunc {
 		csvMu.Lock()
 		defer csvMu.Unlock()
 
-		if lookupRole(cfg.AuthDir, email) != "" {
+		if LookupRole(cfg.AuthDir, email) != "" {
 			if _, err := removeFromCSV(filepath.Join(cfg.AuthDir, "wants-account.csv"), email); err != nil {
 				log.Printf("access: remove already-authorized %s from wants-account: %v", email, err)
 			}

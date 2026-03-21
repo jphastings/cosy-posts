@@ -7,6 +7,7 @@ import (
 
 	"github.com/jphastings/cosy-posts/api/auth"
 	"github.com/jphastings/cosy-posts/api/config"
+	"github.com/jphastings/cosy-posts/api/feed"
 	"github.com/jphastings/cosy-posts/api/info"
 	"github.com/jphastings/cosy-posts/api/post"
 	"github.com/jphastings/cosy-posts/api/rebuild"
@@ -46,6 +47,7 @@ func newHandler(cfg *config.Config) (http.Handler, error) {
 
 	mux.HandleFunc("GET /api/info", info.Handler(cfg))
 	mux.HandleFunc("GET /api/info/site", info.SiteInfoHandler(cfg))
+	mux.HandleFunc("GET /feed.xml", feed.Handler(cfg))
 
 	mux.Handle("/files/", http.StripPrefix("/files/", uploadHandler))
 	mux.Handle("/files", http.StripPrefix("/files", uploadHandler))

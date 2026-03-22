@@ -343,6 +343,7 @@ body {
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.75rem;
   margin-bottom: 0.75rem;
+  scroll-margin-top: 4rem;
 }
 
 /* Carousel */
@@ -745,6 +746,10 @@ body[data-can-delete] .delete-btn {
 }
 
 /* Date */
+.post-date-link {
+  text-decoration: none;
+}
+
 .post-date {
   display: block;
   padding: 0 0.75rem;

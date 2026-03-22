@@ -126,6 +126,7 @@ func requestBaseURL(r *http.Request) string {
 }
 
 type postEntry struct {
+	id      string
 	date    time.Time
 	author  string
 	body    string
@@ -155,10 +156,11 @@ func buildFeed(cfg *config.Config, baseURL, email, prefLang string) ([]byte, err
 
 		title := p.date.Format("2 Jan 2006")
 
+		postLink := baseURL + "/#" + p.id
 		items = append(items, item{
 			Title:       title,
-			Link:        baseURL + p.postURL,
-			GUID:        guidElem{IsPermaLink: true, Value: baseURL + p.postURL},
+			Link:        postLink,
+			GUID:        guidElem{IsPermaLink: true, Value: postLink},
 			PubDate:     p.date.Format(time.RFC1123Z),
 			Description: cdata{Content: desc},
 			Enclosures:  enclosures,
@@ -276,7 +278,9 @@ func loadPosts(contentDir, baseURL, prefLang string) []postEntry {
 			}
 		}
 
+		postID := filepath.Base(postDir)
 		posts = append(posts, postEntry{
+			id:      postID,
 			date:    postDate,
 			author:  fm.Author,
 			body:    body,

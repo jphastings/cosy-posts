@@ -1,5 +1,5 @@
 {{define "post-card"}}
-<article class="post" data-post-id="{{.ID}}" data-post-date="{{.ReadableDate}}">
+<article class="post" id="{{.ID}}" data-post-id="{{.ID}}" data-post-date="{{.ReadableDate}}">
   {{if .Media}}
     <div class="carousel" data-count="{{len .Media}}"{{if .MediaAspectRatio}} style="--media-aspect-ratio: {{printf "%.4f" .MediaAspectRatio}}"{{end}}>
       <div class="carousel-track">
@@ -55,8 +55,6 @@
       {{.BodyHTML}}
     </div>
   {{end}}
-  <time class="post-date" datetime="{{.ISODate}}">
-    {{.ReadableDate}}
-  </time>
+  <a href="#{{.ID}}" class="post-date-link"><time class="post-date" datetime="{{.ISODate}}">{{.ReadableDate}}</time></a>
 </article>
 {{end}}

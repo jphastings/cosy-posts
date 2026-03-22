@@ -108,8 +108,8 @@ func Assemble(cfg *config.Config, event tusd.HookEvent) error {
 	// Process media uploads.
 	var location *Location
 	for _, u := range uploads {
-		// Skip the body upload itself.
-		if u.MetaData["role"] == "body" {
+		// Skip body uploads (primary and locale translations).
+		if strings.HasPrefix(u.MetaData["role"], "body") {
 			continue
 		}
 

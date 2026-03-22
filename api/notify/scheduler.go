@@ -27,7 +27,7 @@ type frontmatter struct {
 // StartScheduler begins a background loop that checks for new posts and
 // sends email notifications. It returns a stop function.
 func StartScheduler(cfg *config.Config, list *List) func() {
-	window := time.Duration(cfg.EmailWindowMinutes) * time.Minute
+	window := time.Duration(cfg.NotificationWindowMinutes()) * time.Minute
 	if window <= 0 {
 		window = 10 * time.Minute
 	}

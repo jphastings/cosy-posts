@@ -2,12 +2,17 @@ package config
 
 import (
 	"fmt"
+	"net/mail"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/viper"
 )
+
+var resendKeyPattern = regexp.MustCompile(`^re_[A-Za-z0-9_]{20,}$`)
 
 // Config holds the server configuration loaded from YAML or environment variables.
 type Config struct {
@@ -23,12 +28,12 @@ type Config struct {
 	} `mapstructure:"site"`
 
 	Email struct {
-		From         string `mapstructure:"from"`
-		ResendAPIKey string `mapstructure:"resend_api_key"`
+		From                    string `mapstructure:"from"`
+		ResendAPIKey            string `mapstructure:"resend_api_key"`
+		NotificationWindowMins  int    `mapstructure:"notification_window_minutes"`
 	} `mapstructure:"email"`
 
-	RSSSecret          string `mapstructure:"rss_secret"`
-	EmailWindowMinutes int    `mapstructure:"email_window_minutes"`
+	RSSSecret string `mapstructure:"rss_secret"`
 
 	Dir       string `mapstructure:"-"` // resolved directory of the config file itself
 	UploadDir string `mapstructure:"-"` // temporary directory for TUS uploads
@@ -41,7 +46,13 @@ func (c *Config) SiteName() string     { return c.Site.Name }
 func (c *Config) SiteURL() string      { return c.Site.URL }
 func (c *Config) RebuildCmd() string   { return c.Site.BuildCommand }
 func (c *Config) ResendAPIKey() string { return c.Email.ResendAPIKey }
-func (c *Config) FromEmail() string    { return c.Email.From }
+func (c *Config) FromEmail() string {
+	if c.Site.Name != "" {
+		return c.Site.Name + " <" + c.Email.From + ">"
+	}
+	return c.Email.From
+}
+func (c *Config) NotificationWindowMinutes() int { return c.Email.NotificationWindowMins }
 
 // HasExternalSite returns true when both a build command and site directory are configured.
 func (c *Config) HasExternalSite() bool {
@@ -53,15 +64,15 @@ func (c *Config) HasExternalSite() bool {
 //
 //	COSY_LISTEN, COSY_CONTENT_DIR, COSY_AUTH_DIR,
 //	COSY_SITE_NAME, COSY_SITE_URL, COSY_SITE_BUILD_COMMAND, COSY_SITE_DIRECTORY,
-//	COSY_EMAIL_FROM, COSY_EMAIL_RESEND_API_KEY, COSY_RSS_SECRET,
-//	COSY_EMAIL_WINDOW_MINUTES
+//	COSY_EMAIL_FROM, COSY_EMAIL_RESEND_API_KEY,
+//	COSY_EMAIL_NOTIFICATION_WINDOW_MINUTES, COSY_RSS_SECRET
 func Load(path string) (*Config, error) {
 	v := viper.New()
 
 	// Defaults.
 	v.SetDefault("listen", ":8080")
 	v.SetDefault("content_dir", "./content")
-	v.SetDefault("email_window_minutes", 10)
+	v.SetDefault("email.notification_window_minutes", 10)
 
 	// Environment variable binding.
 	v.SetEnvPrefix("COSY")
@@ -74,12 +85,12 @@ func Load(path string) (*Config, error) {
 	v.BindEnv("auth_dir", "COSY_AUTH_DIR")
 	v.BindEnv("email.from", "COSY_EMAIL_FROM")
 	v.BindEnv("email.resend_api_key", "COSY_EMAIL_RESEND_API_KEY")
+	v.BindEnv("email.notification_window_minutes", "COSY_EMAIL_NOTIFICATION_WINDOW_MINUTES")
 	v.BindEnv("site.name", "COSY_SITE_NAME")
 	v.BindEnv("site.url", "COSY_SITE_URL")
 	v.BindEnv("site.build_command", "COSY_SITE_BUILD_COMMAND")
 	v.BindEnv("site.directory", "COSY_SITE_DIRECTORY")
 	v.BindEnv("rss_secret", "COSY_RSS_SECRET")
-	v.BindEnv("email_window_minutes", "COSY_EMAIL_WINDOW_MINUTES")
 
 	// Load config file if specified.
 	if path != "" {
@@ -94,15 +105,8 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 
-	// Validate required fields.
-	if cfg.Email.From == "" {
-		return nil, fmt.Errorf("email.from (COSY_EMAIL_FROM) is required")
-	}
-	if cfg.Email.ResendAPIKey == "" {
-		return nil, fmt.Errorf("email.resend_api_key (COSY_EMAIL_RESEND_API_KEY) is required")
-	}
-	if cfg.Site.URL == "" {
-		return nil, fmt.Errorf("site.url (COSY_SITE_URL) is required")
+	if err := cfg.validate(); err != nil {
+		return nil, err
 	}
 
 	// Resolve relative paths against the config file's directory (or cwd).
@@ -129,6 +133,35 @@ func Load(path string) (*Config, error) {
 	cfg.UploadDir = uploadDir
 
 	return &cfg, nil
+}
+
+func (cfg *Config) validate() error {
+	if cfg.Site.Name == "" {
+		return fmt.Errorf("site.name (COSY_SITE_NAME) is required")
+	}
+
+	u, err := url.Parse(cfg.Site.URL)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return fmt.Errorf("site.url (COSY_SITE_URL) must be a full URL (e.g. https://example.com)")
+	}
+
+	if _, err := mail.ParseAddress(cfg.Email.From); err != nil {
+		return fmt.Errorf("email.from (COSY_EMAIL_FROM) must be a valid email address: %w", err)
+	}
+
+	if !resendKeyPattern.MatchString(cfg.Email.ResendAPIKey) {
+		return fmt.Errorf("email.resend_api_key (COSY_EMAIL_RESEND_API_KEY) must be a valid Resend API key (re_...)")
+	}
+
+	if cfg.RSSSecret != "" && len(cfg.RSSSecret) < 16 {
+		return fmt.Errorf("rss_secret (COSY_RSS_SECRET) must be at least 16 characters long")
+	}
+
+	if cfg.Email.NotificationWindowMins < 1 {
+		return fmt.Errorf("email.notification_window_minutes (COSY_EMAIL_NOTIFICATION_WINDOW_MINUTES) must be a positive number")
+	}
+
+	return nil
 }
 
 // resolve makes a relative path absolute against base. Absolute paths pass through.

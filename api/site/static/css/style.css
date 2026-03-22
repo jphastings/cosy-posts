@@ -626,16 +626,9 @@ body.video-unmuted .video-mute-btn .icon-unmuted { display: flex; }
   background: var(--action-hover);
 }
 
-.email-notify-btn:has(:checked) {
-  color: var(--text);
-}
 
 .email-notify-btn:has(:checked)::after {
   display: none;
-}
-
-.email-notify-btn:has(:checked):hover {
-  background: var(--action-hover);
 }
 
 .bookmark-btn,

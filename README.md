@@ -83,7 +83,7 @@ xcodebuild \
   CODE_SIGNING_ALLOWED=NO \
   COMPILER_INDEX_STORE_ENABLE=NO \
   test && \
-echo && xcrun xccov view --report --targets-regex 'CosyPostsAdmin' TestResults.xcresult && \
+echo && xcrun xccov view --report --only-targets TestResults.xcresult && \
 rm -rf TestResults.xcresult
 ```
 

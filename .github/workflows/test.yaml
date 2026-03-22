@@ -132,6 +132,6 @@ jobs:
           if [ -d app/TestResults.xcresult ]; then
             echo '## Swift App Coverage (UploadTests)' >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
-            xcrun xccov view --report --targets-regex 'CosyPostsAdmin' app/TestResults.xcresult >> "$GITHUB_STEP_SUMMARY"
+            xcrun xccov view --report --only-targets app/TestResults.xcresult >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
           fi

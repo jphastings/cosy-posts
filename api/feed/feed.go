@@ -109,7 +109,7 @@ func Handler(cfg *config.Config) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/rss+xml; charset=utf-8")
-		w.Header().Set("Cache-Control", "private, max-age=3600")
+		w.Header().Set("Cache-Control", fmt.Sprintf("private, max-age=%d", cfg.CacheTTLSeconds()))
 		w.Header().Set("Vary", "Accept-Language")
 		w.Write(feedXML)
 	}

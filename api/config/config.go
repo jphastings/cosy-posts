@@ -21,10 +21,11 @@ type Config struct {
 	AuthDir    string `mapstructure:"auth_dir"`
 
 	Site struct {
-		Name         string `mapstructure:"name"`
-		URL          string `mapstructure:"url"`
-		BuildCommand string `mapstructure:"build_command"`
-		Directory    string `mapstructure:"directory"`
+		Name            string `mapstructure:"name"`
+		URL             string `mapstructure:"url"`
+		CacheTTLMinutes int    `mapstructure:"cache_ttl_minutes"`
+		BuildCommand    string `mapstructure:"build_command"`
+		Directory       string `mapstructure:"directory"`
 	} `mapstructure:"site"`
 
 	Email struct {
@@ -44,6 +45,7 @@ func (c *Config) SiteDir() string      { return c.Site.Directory }
 func (c *Config) TUSUploadDir() string { return c.UploadDir }
 func (c *Config) SiteName() string     { return c.Site.Name }
 func (c *Config) SiteURL() string      { return c.Site.URL }
+func (c *Config) CacheTTLSeconds() int { return c.Site.CacheTTLMinutes * 60 }
 func (c *Config) RebuildCmd() string   { return c.Site.BuildCommand }
 func (c *Config) ResendAPIKey() string { return c.Email.ResendAPIKey }
 func (c *Config) FromEmail() string {
@@ -73,6 +75,7 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("listen", ":8080")
 	v.SetDefault("content_dir", "./content")
 	v.SetDefault("email.notification_window_minutes", 10)
+	v.SetDefault("site.cache_ttl_minutes", 10)
 
 	// Environment variable binding.
 	v.SetEnvPrefix("COSY")
@@ -88,6 +91,7 @@ func Load(path string) (*Config, error) {
 	v.BindEnv("email.notification_window_minutes", "COSY_EMAIL_NOTIFICATION_WINDOW_MINUTES")
 	v.BindEnv("site.name", "COSY_SITE_NAME")
 	v.BindEnv("site.url", "COSY_SITE_URL")
+	v.BindEnv("site.cache_ttl_minutes", "COSY_SITE_CACHE_TTL_MINUTES")
 	v.BindEnv("site.build_command", "COSY_SITE_BUILD_COMMAND")
 	v.BindEnv("site.directory", "COSY_SITE_DIRECTORY")
 	v.BindEnv("rss_secret", "COSY_RSS_SECRET")
@@ -143,6 +147,10 @@ func (cfg *Config) validate() error {
 	u, err := url.Parse(cfg.Site.URL)
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		return fmt.Errorf("site.url (COSY_SITE_URL) must be a full URL (e.g. https://example.com)")
+	}
+
+	if cfg.Site.CacheTTLMinutes < 1 {
+		return fmt.Errorf("site.cache_ttl_minutes (COSY_SITE_CACHE_TTL_MINUTES) must be a positive number")
 	}
 
 	if _, err := mail.ParseAddress(cfg.Email.From); err != nil {

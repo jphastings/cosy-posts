@@ -62,11 +62,12 @@ type frontmatter struct {
 
 // Handler serves the embedded site, reading content from the filesystem.
 type Handler struct {
-	contentDir  string
-	csvPath     string
-	siteName    string
-	homeTmpl    *template.Template
-	singleTmpl  *template.Template
+	contentDir      string
+	csvPath         string
+	siteName        string
+	cacheControl    string
+	homeTmpl        *template.Template
+	singleTmpl      *template.Template
 	roleFunc        func(*http.Request) string
 	feedURLFunc     func(*http.Request) string
 	emailNotifyFunc func(*http.Request) bool
@@ -90,7 +91,7 @@ func (h *Handler) SetEmailNotifyFunc(fn func(*http.Request) bool) {
 // NewHandler creates a site handler. contentDir is the path to the content
 // directory. csvPath is the path to can-post.csv (may be empty).
 // siteName is the display name for the site.
-func NewHandler(contentDir, csvPath, siteName string) (*Handler, error) {
+func NewHandler(contentDir, csvPath, siteName string, cacheTTLSeconds int) (*Handler, error) {
 	if siteName == "" {
 		siteName = DefaultSiteName
 	}
@@ -139,11 +140,12 @@ func NewHandler(contentDir, csvPath, siteName string) (*Handler, error) {
 	}
 
 	return &Handler{
-		contentDir: absContentDir,
-		csvPath:    csvPath,
-		siteName:   siteName,
-		homeTmpl:   homeTmpl,
-		singleTmpl: singleTmpl,
+		contentDir:   absContentDir,
+		csvPath:      csvPath,
+		siteName:     siteName,
+		cacheControl: fmt.Sprintf("private, max-age=%d", cacheTTLSeconds),
+		homeTmpl:     homeTmpl,
+		singleTmpl:   singleTmpl,
 	}, nil
 }
 
@@ -155,37 +157,37 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch path {
 	case "/css/style.css":
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		w.Header().Set("Cache-Control", "public, max-age=604800")
+		w.Header().Set("Cache-Control", h.cacheControl)
 		w.Write(styleCSS)
 		return
 	case "/img/bookmark.svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
-		w.Header().Set("Cache-Control", "public, max-age=15552000")
+		w.Header().Set("Cache-Control", h.cacheControl)
 		w.Write(bookmarkSVG)
 		return
 	case "/img/bookmarked.svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
-		w.Header().Set("Cache-Control", "public, max-age=15552000")
+		w.Header().Set("Cache-Control", h.cacheControl)
 		w.Write(bookmarkedSVG)
 		return
 	case "/img/email.svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
-		w.Header().Set("Cache-Control", "public, max-age=15552000")
+		w.Header().Set("Cache-Control", h.cacheControl)
 		w.Write(emailSVG)
 		return
 	case "/img/signal.svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
-		w.Header().Set("Cache-Control", "public, max-age=15552000")
+		w.Header().Set("Cache-Control", h.cacheControl)
 		w.Write(signalSVG)
 		return
 	case "/img/whatsapp.svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
-		w.Header().Set("Cache-Control", "public, max-age=15552000")
+		w.Header().Set("Cache-Control", h.cacheControl)
 		w.Write(whatsappSVG)
 		return
 	case "/img/trash.svg":
 		w.Header().Set("Content-Type", "image/svg+xml")
-		w.Header().Set("Cache-Control", "public, max-age=15552000")
+		w.Header().Set("Cache-Control", h.cacheControl)
 		w.Write(trashSVG)
 		return
 	}
@@ -248,7 +250,7 @@ func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "private, max-age=21600")
+	w.Header().Set("Cache-Control", h.cacheControl)
 	w.Header().Set("Vary", "Accept-Language")
 	if err := h.homeTmpl.ExecuteTemplate(w, "base.html", data); err != nil {
 		log.Printf("site: render home: %v", err)

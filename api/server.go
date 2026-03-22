@@ -70,7 +70,7 @@ func newHandler(cfg *config.Config, notifyList *notify.List) (http.Handler, erro
 		log.Printf("Using external build command for site")
 	} else {
 		csvPath := filepath.Join(cfg.AuthDir, "can-post.csv")
-		siteHandler, err := site.NewHandler(cfg.ContentDir, csvPath, cfg.SiteName())
+		siteHandler, err := site.NewHandler(cfg.ContentDir, csvPath, cfg.SiteName(), cfg.CacheTTLSeconds())
 		if err != nil {
 			return nil, err
 		}

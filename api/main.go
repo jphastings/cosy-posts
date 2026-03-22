@@ -10,6 +10,7 @@ import (
 
 	"github.com/jphastings/cosy-posts/api/auth"
 	"github.com/jphastings/cosy-posts/api/config"
+	"github.com/jphastings/cosy-posts/api/info"
 	"github.com/jphastings/cosy-posts/api/notify"
 	"github.com/jphastings/cosy-posts/api/rebuild"
 	flag "github.com/spf13/pflag"
@@ -18,6 +19,8 @@ import (
 func main() {
 	configPath := flag.String("config", "", "path to YAML config file")
 	flag.Parse()
+
+	log.Printf("cosy-posts %s (%s)", info.Version, info.GitSHA)
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {

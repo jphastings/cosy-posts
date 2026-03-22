@@ -17,6 +17,7 @@ type Config struct {
 
 	Site struct {
 		Name         string `mapstructure:"name"`
+		URL          string `mapstructure:"url"`
 		BuildCommand string `mapstructure:"build_command"`
 		Directory    string `mapstructure:"directory"`
 	} `mapstructure:"site"`
@@ -26,7 +27,8 @@ type Config struct {
 		ResendAPIKey string `mapstructure:"resend_api_key"`
 	} `mapstructure:"email"`
 
-	RSSSecret string `mapstructure:"rss_secret"`
+	RSSSecret          string `mapstructure:"rss_secret"`
+	EmailWindowMinutes int    `mapstructure:"email_window_minutes"`
 
 	Dir       string `mapstructure:"-"` // resolved directory of the config file itself
 	UploadDir string `mapstructure:"-"` // temporary directory for TUS uploads
@@ -36,6 +38,7 @@ type Config struct {
 func (c *Config) SiteDir() string      { return c.Site.Directory }
 func (c *Config) TUSUploadDir() string { return c.UploadDir }
 func (c *Config) SiteName() string     { return c.Site.Name }
+func (c *Config) SiteURL() string      { return c.Site.URL }
 func (c *Config) RebuildCmd() string   { return c.Site.BuildCommand }
 func (c *Config) ResendAPIKey() string { return c.Email.ResendAPIKey }
 func (c *Config) FromEmail() string    { return c.Email.From }
@@ -49,14 +52,16 @@ func (c *Config) HasExternalSite() bool {
 // Environment variables use the COSY_ prefix with underscores for nesting:
 //
 //	COSY_LISTEN, COSY_CONTENT_DIR, COSY_AUTH_DIR,
-//	COSY_SITE_NAME, COSY_SITE_BUILD_COMMAND, COSY_SITE_DIRECTORY,
-//	COSY_EMAIL_FROM, COSY_EMAIL_RESEND_API_KEY, COSY_RSS_SECRET
+//	COSY_SITE_NAME, COSY_SITE_URL, COSY_SITE_BUILD_COMMAND, COSY_SITE_DIRECTORY,
+//	COSY_EMAIL_FROM, COSY_EMAIL_RESEND_API_KEY, COSY_RSS_SECRET,
+//	COSY_EMAIL_WINDOW_MINUTES
 func Load(path string) (*Config, error) {
 	v := viper.New()
 
 	// Defaults.
 	v.SetDefault("listen", ":8080")
 	v.SetDefault("content_dir", "./content")
+	v.SetDefault("email_window_minutes", 10)
 
 	// Environment variable binding.
 	v.SetEnvPrefix("COSY")
@@ -70,9 +75,11 @@ func Load(path string) (*Config, error) {
 	v.BindEnv("email.from", "COSY_EMAIL_FROM")
 	v.BindEnv("email.resend_api_key", "COSY_EMAIL_RESEND_API_KEY")
 	v.BindEnv("site.name", "COSY_SITE_NAME")
+	v.BindEnv("site.url", "COSY_SITE_URL")
 	v.BindEnv("site.build_command", "COSY_SITE_BUILD_COMMAND")
 	v.BindEnv("site.directory", "COSY_SITE_DIRECTORY")
 	v.BindEnv("rss_secret", "COSY_RSS_SECRET")
+	v.BindEnv("email_window_minutes", "COSY_EMAIL_WINDOW_MINUTES")
 
 	// Load config file if specified.
 	if path != "" {
@@ -93,6 +100,9 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.Email.ResendAPIKey == "" {
 		return nil, fmt.Errorf("email.resend_api_key (COSY_EMAIL_RESEND_API_KEY) is required")
+	}
+	if cfg.Site.URL == "" {
+		return nil, fmt.Errorf("site.url (COSY_SITE_URL) is required")
 	}
 
 	// Resolve relative paths against the config file's directory (or cwd).

@@ -71,6 +71,17 @@ func (l *List) Set(email string, enabled bool) {
 	}
 }
 
+// Emails returns a snapshot of all subscribed email addresses.
+func (l *List) Emails() []string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	out := make([]string, 0, len(l.emails))
+	for email := range l.emails {
+		out = append(out, email)
+	}
+	return out
+}
+
 func (l *List) load() error {
 	f, err := os.Open(l.path)
 	if os.IsNotExist(err) {

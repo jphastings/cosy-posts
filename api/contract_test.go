@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/jphastings/cosy-posts/api/config"
+	"github.com/jphastings/cosy-posts/api/notify"
 
 	"github.com/pact-foundation/pact-go/v2/models"
 	"github.com/pact-foundation/pact-go/v2/provider"
@@ -46,7 +47,13 @@ func TestPactProvider(t *testing.T) {
 	cfg.Email.From = "test@example.com"
 	cfg.Email.ResendAPIKey = "re_test_fake"
 
-	handler, err := newHandler(cfg)
+	notifyList, err := notify.NewList(filepath.Join(cfg.AuthDir, "email-notify.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer notifyList.Close()
+
+	handler, err := newHandler(cfg, notifyList)
 	if err != nil {
 		t.Fatal(err)
 	}

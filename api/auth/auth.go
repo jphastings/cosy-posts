@@ -184,6 +184,19 @@ func FeedPassword(email, secret string) string {
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
+// CreateToken generates a single-use magic link token for the given email.
+// The token expires after 15 minutes.
+func CreateToken(authDir, email string) (string, error) {
+	token, err := generateHex(32)
+	if err != nil {
+		return "", err
+	}
+	if err := saveToken(authDir, token, email); err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
 // LookupRole returns the role for an email, or "" if not authorized.
 func LookupRole(authDir, email string) string {
 	if emailInCSV(filepath.Join(authDir, "can-post.csv"), email) {

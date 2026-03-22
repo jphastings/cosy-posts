@@ -73,6 +73,11 @@ Pact-based contract tests live in `api/contract_test.go`. The pact file is gener
 - Contract tests run via `cd api && go test -run TestPactProvider ./...`
 - The pre-push git hook and CI both run contract tests — fix failures before pushing
 
+## Code Quality
+
+- Avoid duplicating logic — extract shared code into a common location rather than copying patterns between packages
+- Prefer passing shared data structures over re-parsing the same files in multiple places
+
 ## Conventions
 
 - Use beans (not TodoWrite) for all work tracking

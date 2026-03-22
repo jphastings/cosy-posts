@@ -21,7 +21,7 @@ import (
 // newHandler builds the complete HTTP handler with all routes and middleware.
 // This is the single source of truth for the server's routing — used by both
 // main() and the contract tests.
-func newHandler(cfg *config.Config) (http.Handler, error) {
+func newHandler(cfg *config.Config, notifyList *notify.List) (http.Handler, error) {
 	onBodyDone := func(event tusd.HookEvent) error {
 		postID := event.Upload.MetaData["post-id"]
 		log.Printf("Body upload completed for post %s, starting assembly", postID)
@@ -59,10 +59,6 @@ func newHandler(cfg *config.Config) (http.Handler, error) {
 
 	mux.HandleFunc("DELETE /api/posts/{id}", post.DeleteHandler(cfg))
 
-	notifyList, err := notify.NewList(filepath.Join(cfg.AuthDir, "email-notify.txt"))
-	if err != nil {
-		return nil, err
-	}
 	mux.HandleFunc("POST /api/email-notify", notify.Handler(notifyList))
 
 	mux.HandleFunc("GET /api/access-requests", auth.ListAccessRequests(cfg))

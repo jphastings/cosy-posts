@@ -6,8 +6,11 @@ import (
 	"os"
 	"time"
 
+	"path/filepath"
+
 	"github.com/jphastings/cosy-posts/api/auth"
 	"github.com/jphastings/cosy-posts/api/config"
+	"github.com/jphastings/cosy-posts/api/notify"
 	"github.com/jphastings/cosy-posts/api/rebuild"
 	flag "github.com/spf13/pflag"
 )
@@ -38,13 +41,23 @@ func main() {
 		}
 	}
 
-	handler, err := newHandler(cfg)
+	notifyList, err := notify.NewList(filepath.Join(cfg.AuthDir, "email-notify.txt"))
+	if err != nil {
+		log.Fatalf("Failed to create notify list: %v", err)
+	}
+	defer notifyList.Close()
+
+	handler, err := newHandler(cfg, notifyList)
 	if err != nil {
 		log.Fatalf("Failed to create handler: %v", err)
 	}
 
 	// Run an initial site build on startup (no-op if no build command).
 	rebuild.Trigger(cfg)
+
+	// Start email notification scheduler.
+	stopNotify := notify.StartScheduler(cfg, notifyList)
+	defer stopNotify()
 
 	srv := &http.Server{
 		Addr:              cfg.Listen,

@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	tokenExpiry   = 15 * time.Minute
+	tokenExpiry   = 30 * time.Minute
 	sessionExpiry = 180 * 24 * time.Hour
 	cookieName    = "session"
 )
@@ -67,12 +67,12 @@ func generateHex(n int) (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-func saveToken(authDir, token, email string) error {
+func saveToken(authDir, token, email string, expiry time.Duration) error {
 	dir := filepath.Join(authDir, "tokens")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	data, err := json.Marshal(tokenFile{Email: email, Expiry: time.Now().Add(tokenExpiry)})
+	data, err := json.Marshal(tokenFile{Email: email, Expiry: time.Now().Add(expiry)})
 	if err != nil {
 		return err
 	}
@@ -184,14 +184,14 @@ func FeedPassword(email, secret string) string {
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
-// CreateToken generates a single-use magic link token for the given email.
-// The token expires after 15 minutes.
-func CreateToken(authDir, email string) (string, error) {
+// CreateToken generates a single-use magic link token for the given email
+// that expires after the given duration.
+func CreateToken(authDir, email string, expiry time.Duration) (string, error) {
 	token, err := generateHex(32)
 	if err != nil {
 		return "", err
 	}
-	if err := saveToken(authDir, token, email); err != nil {
+	if err := saveToken(authDir, token, email, expiry); err != nil {
 		return "", err
 	}
 	return token, nil
@@ -209,8 +209,16 @@ func LookupRole(authDir, email string) string {
 }
 
 // LoginPage serves the login form.
+// If the user already has a valid session, they are redirected to the homepage.
 func LoginPage(cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if cookie, err := r.Cookie(cookieName); err == nil {
+			if _, _, err := validateSession(cfg.AuthDir, cookie.Value); err == nil {
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			}
+		}
+
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		name := cfg.SiteName()
 		if name == "" {
@@ -272,7 +280,7 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 				http.Error(w, "Internal error", http.StatusInternalServerError)
 				return
 			}
-			if err := saveToken(cfg.AuthDir, siteToken, email); err != nil {
+			if err := saveToken(cfg.AuthDir, siteToken, email, tokenExpiry); err != nil {
 				log.Printf("auth: save token: %v", err)
 				http.Error(w, "Internal error", http.StatusInternalServerError)
 				return
@@ -287,7 +295,7 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 					http.Error(w, "Internal error", http.StatusInternalServerError)
 					return
 				}
-				if err := saveToken(cfg.AuthDir, appToken, email); err != nil {
+				if err := saveToken(cfg.AuthDir, appToken, email, tokenExpiry); err != nil {
 					log.Printf("auth: save app token: %v", err)
 					http.Error(w, "Internal error", http.StatusInternalServerError)
 					return
@@ -468,7 +476,7 @@ func sendMagicLink(cfg *config.Config, baseURL, email, siteToken, appToken, role
 		html = fmt.Sprintf(`<p>Click to log in:</p>
 <p><a href="%s">Log in to the site</a></p>
 <p><a href="%s">Log in to the app</a></p>
-<p>These links expire in 15 minutes.</p>`, siteLink, appLink)
+<p>These links expire in 30 minutes.</p>`, siteLink, appLink)
 	} else {
 		html = fmt.Sprintf(`<p>Click to log in:</p>
 <p><a href="%s">Log in to the site</a></p>

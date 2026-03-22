@@ -3,6 +3,7 @@ package notify
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,6 +31,8 @@ func StartScheduler(cfg *config.Config, list *List) func() {
 	if window <= 0 {
 		window = 10 * time.Minute
 	}
+
+	log.Printf("notify: notifying of new posts every %v", window)
 
 	stop := make(chan struct{})
 	done := make(chan struct{})
@@ -64,7 +67,7 @@ func StartScheduler(cfg *config.Config, list *List) func() {
 
 func tick(cfg *config.Config, list *List, now time.Time, window time.Duration) {
 	// Look one window back: [now - 2*window, now - window)
-	windowEnd := now.Truncate(window)
+	windowEnd := now.Truncate(window).Add(-window)
 	windowStart := windowEnd.Add(-window)
 
 	posts := findPostsInWindow(cfg.ContentDir, windowStart, windowEnd)
@@ -108,13 +111,18 @@ func tick(cfg *config.Config, list *List, now time.Time, window time.Duration) {
 	// Build one email per recipient, each with a unique magic link token.
 	var emails []*resend.SendEmailRequest
 	for _, email := range recipients {
-		token, err := auth.CreateToken(cfg.AuthDir, email)
+		token, err := auth.CreateToken(cfg.AuthDir, email, 7*24*time.Hour)
 		if err != nil {
 			log.Printf("notify: create token for %s: %v", email, err)
 			continue
 		}
 
-		link := siteURL + "/auth/verify?token=" + token
+		u, _ := url.Parse(siteURL)
+		u = u.JoinPath("/auth/verify")
+		q := u.Query()
+		q.Set("token", token)
+		u.RawQuery = q.Encode()
+		link := u.String()
 		html := fmt.Sprintf(`<p>%s</p><p><a href="%s">Visit the site</a></p>`, sentence, link)
 
 		emails = append(emails, &resend.SendEmailRequest{

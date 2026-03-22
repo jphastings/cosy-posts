@@ -45,6 +45,7 @@ body {
   padding: 12px 16px;
   display: flex;
   align-items: center;
+  gap: 4px;
 }
 
 .site-header h1 {
@@ -162,8 +163,8 @@ body {
 
 .contact-pref-btn svg {
   display: block;
-  width: 1.2em;
-  height: 1.2em;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 
@@ -547,22 +548,35 @@ body.video-unmuted .video-mute-btn .icon-unmuted { display: flex; }
 .contact-btn[data-method="email"] .contact-icon-email { display: inline-flex; }
 
 /* Email notification toggle */
+.email-notify-form {
+  display: contents;
+}
+
 .email-notify-btn {
+  display: inline-flex;
   background: none;
   border: none;
   cursor: pointer;
   padding: 6px;
   border-radius: 50%;
+  color: var(--text-secondary);
   flex-shrink: 0;
   position: relative;
-  opacity: 0.4;
-  transition: opacity 0.15s, background 0.15s;
+  transition: color 0.15s, background 0.15s;
+}
+
+.email-notify-btn input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
 }
 
 .email-notify-btn svg {
   display: block;
-  width: 1.2em;
-  height: 1.2em;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .email-notify-btn::after {
@@ -571,26 +585,27 @@ body.video-unmuted .video-mute-btn .icon-unmuted { display: flex; }
   top: 50%;
   left: 50%;
   width: 70%;
-  height: 2px;
-  background: var(--text);
+  height: 1.5px;
+  background: var(--text-secondary);
   border-radius: 1px;
-  transform: translate(-50%, -50%) rotate(-45deg);
+  box-shadow: 0 0 0 2px var(--bg);
+  transform: translate(-50%, -50%) rotate(45deg);
 }
 
 .email-notify-btn:hover {
+  color: var(--text);
   background: var(--action-hover);
-  opacity: 0.6;
 }
 
-.email-notify-btn.active {
-  opacity: 1;
+.email-notify-btn:has(:checked) {
+  color: var(--text);
 }
 
-.email-notify-btn.active::after {
+.email-notify-btn:has(:checked)::after {
   display: none;
 }
 
-.email-notify-btn.active:hover {
+.email-notify-btn:has(:checked):hover {
   background: var(--action-hover);
 }
 
@@ -608,7 +623,6 @@ body.video-unmuted .video-mute-btn .icon-unmuted { display: flex; }
 
 .bookmark-filter-btn {
   display: none;
-  margin-right: 8px;
   align-items: center;
   gap: 4px;
   border-radius: 8px;
@@ -642,8 +656,8 @@ body.video-unmuted .video-mute-btn .icon-unmuted { display: flex; }
 .bookmark-btn svg,
 .bookmark-filter-btn svg {
   display: block;
-  width: 1.2em;
-  height: 1.2em;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 /* Toggle between outline/filled bookmark icons */

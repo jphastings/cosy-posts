@@ -314,6 +314,23 @@
           });
         }
         updateFilterBtnVisibility();
+        // --- Email notification toggle ---
+        var emailCheckbox = document.querySelector('.email-notify-btn input');
+        if (emailCheckbox) {
+          emailCheckbox.addEventListener('change', function () {
+            var cb = emailCheckbox;
+            var desired = cb.checked;
+            // Revert immediately — only commit on success.
+            cb.checked = !desired;
+            fetch('/api/email-notify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: desired ? 'enabled=on' : ''
+            }).then(function (res) {
+              if (res.ok) cb.checked = desired;
+            }).catch(function () {});
+          });
+        }
         // --- Delete post ---
         if (document.body.hasAttribute('data-can-delete')) {
           document.querySelectorAll('.delete-btn').forEach(function (btn) {

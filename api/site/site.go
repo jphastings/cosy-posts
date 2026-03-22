@@ -80,8 +80,9 @@ type Handler struct {
 	siteName    string
 	homeTmpl    *template.Template
 	singleTmpl  *template.Template
-	roleFunc    func(*http.Request) string
-	feedURLFunc func(*http.Request) string
+	roleFunc        func(*http.Request) string
+	feedURLFunc     func(*http.Request) string
+	emailNotifyFunc func(*http.Request) bool
 }
 
 // SetRoleFunc sets a function that extracts the user's role from a request.
@@ -92,6 +93,11 @@ func (h *Handler) SetRoleFunc(fn func(*http.Request) string) {
 // SetFeedURLFunc sets a function that returns the authenticated RSS feed URL for the current user.
 func (h *Handler) SetFeedURLFunc(fn func(*http.Request) string) {
 	h.feedURLFunc = fn
+}
+
+// SetEmailNotifyFunc sets a function that returns whether the current user has email notifications enabled.
+func (h *Handler) SetEmailNotifyFunc(fn func(*http.Request) bool) {
+	h.emailNotifyFunc = fn
 }
 
 // NewHandler creates a site handler. contentDir is the path to the content
@@ -251,6 +257,7 @@ func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 		"CanDelete":   role == "post",
 		"SiteInfo":    siteInfo,
 		"FeedURL":     feedURL,
+		"EmailNotify": h.emailNotifyFunc != nil && h.emailNotifyFunc(r),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

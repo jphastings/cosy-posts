@@ -22,6 +22,12 @@
     <span class="icon-bookmark">{{icon "bookmark"}}</span>
     <span class="icon-bookmarked">{{icon "bookmarked"}}</span>
   </button>
+  <form class="email-notify-form" method="POST" action="/api/email-notify">
+    <label class="email-notify-btn" aria-label="Toggle email notifications">
+      <input type="checkbox" name="enabled" {{if .EmailNotify}}checked{{end}}>
+      {{icon "email"}}
+    </label>
+  </form>
   <button class="contact-pref-btn" aria-label="Contact preferences">
     <span class="icon-contact" data-method="whatsapp">{{icon "whatsapp"}}</span>
     <span class="icon-contact" data-method="signal" style="display:none">{{icon "signal"}}</span>
@@ -33,7 +39,7 @@
     <span class="pref-dialog-title">Choose your preferred messenger</span>
     <button class="pref-dialog-close" aria-label="Close">&times;</button>
   </div>
-  <p class="pref-desc">Which platforms would you like to use to contact us?</p>
+  <p class="pref-desc">When you message us, which apps do you prefer to use?</p>
   <ul class="pref-list"></ul>
 </dialog>
 <main class="feed">

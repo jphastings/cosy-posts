@@ -9,6 +9,7 @@ import (
 	"github.com/jphastings/cosy-posts/api/config"
 	"github.com/jphastings/cosy-posts/api/feed"
 	"github.com/jphastings/cosy-posts/api/info"
+	"github.com/jphastings/cosy-posts/api/notify"
 	"github.com/jphastings/cosy-posts/api/post"
 	"github.com/jphastings/cosy-posts/api/rebuild"
 	"github.com/jphastings/cosy-posts/api/site"
@@ -58,6 +59,12 @@ func newHandler(cfg *config.Config) (http.Handler, error) {
 
 	mux.HandleFunc("DELETE /api/posts/{id}", post.DeleteHandler(cfg))
 
+	notifyList, err := notify.NewList(filepath.Join(cfg.AuthDir, "email-notify.txt"))
+	if err != nil {
+		return nil, err
+	}
+	mux.HandleFunc("POST /api/email-notify", notify.Handler(notifyList))
+
 	mux.HandleFunc("GET /api/access-requests", auth.ListAccessRequests(cfg))
 	mux.HandleFunc("POST /api/access-requests/{email}/approve", auth.ApproveAccessRequest(cfg))
 	mux.HandleFunc("DELETE /api/access-requests/{email}", auth.DenyAccessRequest(cfg))
@@ -73,6 +80,9 @@ func newHandler(cfg *config.Config) (http.Handler, error) {
 		}
 		siteHandler.SetRoleFunc(func(r *http.Request) string {
 			return auth.RoleFromContext(r.Context())
+		})
+		siteHandler.SetEmailNotifyFunc(func(r *http.Request) bool {
+			return notifyList.Has(auth.EmailFromContext(r.Context()))
 		})
 		siteHandler.SetFeedURLFunc(func(r *http.Request) string {
 			if cfg.RSSSecret == "" {

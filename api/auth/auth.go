@@ -39,6 +39,7 @@ type sessionFile struct {
 	Email   string    `json:"email"`
 	Role    string    `json:"role"`
 	Created time.Time `json:"created"`
+	Expiry  time.Time `json:"expiry"`
 }
 
 // contextKey is an unexported type for context keys in this package.
@@ -85,7 +86,6 @@ func validateToken(authDir, token string) (string, error) {
 	}
 	path := filepath.Join(authDir, "tokens", token)
 	data, err := os.ReadFile(path)
-	os.Remove(path) // single-use: always delete
 	if err != nil {
 		return "", fmt.Errorf("invalid token")
 	}
@@ -94,9 +94,67 @@ func validateToken(authDir, token string) (string, error) {
 		return "", fmt.Errorf("invalid token")
 	}
 	if time.Now().After(tf.Expiry) {
+		os.Remove(path)
 		return "", fmt.Errorf("token expired")
 	}
 	return tf.Email, nil
+}
+
+// StartCleanup runs a background goroutine that removes expired tokens and
+// sessions once per hour. It returns a stop function.
+func StartCleanup(authDir string) func() {
+	stop := make(chan struct{})
+	done := make(chan struct{})
+
+	go func() {
+		defer close(done)
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-stop:
+				return
+			case <-ticker.C:
+				cleanExpired(filepath.Join(authDir, "tokens"))
+				cleanExpired(filepath.Join(authDir, "sessions"))
+			}
+		}
+	}()
+
+	return func() {
+		close(stop)
+		<-done
+	}
+}
+
+func cleanExpired(dir string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	now := time.Now()
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		path := filepath.Join(dir, e.Name())
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+
+		// Both tokens and sessions have an Expiry field.
+		var f struct {
+			Expiry time.Time `json:"expiry"`
+		}
+		if err := json.Unmarshal(data, &f); err != nil {
+			continue
+		}
+		if !f.Expiry.IsZero() && now.After(f.Expiry) {
+			os.Remove(path)
+		}
+	}
 }
 
 func createSession(authDir, email, role string) (string, error) {
@@ -108,7 +166,8 @@ func createSession(authDir, email, role string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	data, err := json.Marshal(sessionFile{Email: email, Role: role, Created: time.Now()})
+	now := time.Now()
+	data, err := json.Marshal(sessionFile{Email: email, Role: role, Created: now, Expiry: now.Add(sessionExpiry)})
 	if err != nil {
 		return "", err
 	}
@@ -128,7 +187,7 @@ func validateSession(authDir, sessionID string) (string, string, error) {
 	if err := json.Unmarshal(data, &sf); err != nil {
 		return "", "", fmt.Errorf("invalid session")
 	}
-	if time.Since(sf.Created) > sessionExpiry {
+	if time.Now().After(sf.Expiry) {
 		os.Remove(path)
 		return "", "", fmt.Errorf("session expired")
 	}

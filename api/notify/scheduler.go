@@ -111,7 +111,7 @@ func tick(cfg *config.Config, list *List, now time.Time, window time.Duration) {
 	// Build one email per recipient, each with a unique magic link token.
 	var emails []*resend.SendEmailRequest
 	for _, email := range recipients {
-		token, err := auth.CreateToken(cfg.AuthDir, email, 7*24*time.Hour)
+		token, err := auth.CreateToken(cfg.AuthDir, email, 24*time.Hour)
 		if err != nil {
 			log.Printf("notify: create token for %s: %v", email, err)
 			continue

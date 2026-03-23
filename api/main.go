@@ -32,6 +32,9 @@ func main() {
 		log.Fatalf("Auth configuration error: %v", err)
 	}
 
+	stopCleanup := auth.StartCleanup(cfg.AuthDir)
+	defer stopCleanup()
+
 	// Ensure required directories exist.
 	for _, dir := range []string{cfg.ContentDir, cfg.TUSUploadDir(), cfg.AuthDir} {
 		if err := os.MkdirAll(dir, 0o755); err != nil {

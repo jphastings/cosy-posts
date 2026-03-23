@@ -248,6 +248,8 @@ dialog::backdrop {
 .pref-list {
   list-style: none;
   padding: 0 0.5rem 0.5rem;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .pref-list li {

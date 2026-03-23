@@ -124,7 +124,7 @@ body {
 }
 
 .info-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .info-dialog-header {
@@ -170,6 +170,31 @@ body {
   font-weight: 600;
 }
 
+.info-dialog-footer {
+  display: flex;
+  justify-content: center;
+  padding: 0 1rem 1rem;
+}
+
+.info-dialog-continue {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--text);
+  border-radius: 9999px;
+  width: 33.333%;
+  padding: 0.125rem;
+  font-size: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+
+.info-dialog-continue:hover {
+  background: var(--text);
+  color: var(--bg);
+}
+
 /* Contact preference button (header) */
 .contact-pref-btn {
   background: none;
@@ -206,7 +231,7 @@ body {
 
 
 .contact-pref-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .pref-dialog-header {
@@ -335,6 +360,7 @@ body {
 .feed {
   max-width: 50rem;
   margin: 0 auto;
+  padding-top: 0.75rem;
 }
 
 /* Post card */

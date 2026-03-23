@@ -245,10 +245,19 @@
         var infoDialog = document.querySelector('.info-dialog');
         if (infoBtn && infoDialog) {
           var infoClose = infoDialog.querySelector('.info-dialog-close');
+          var infoContinue = infoDialog.querySelector('.info-dialog-continue');
           infoBtn.addEventListener('click', function () { infoDialog.showModal(); });
           if (infoClose) infoClose.addEventListener('click', function () { infoDialog.close(); });
+          if (infoContinue) infoContinue.addEventListener('click', function () { infoDialog.close(); });
           infoDialog.addEventListener('click', function (e) {
             if (e.target === infoDialog) infoDialog.close();
+          });
+          // Show info dialog on first visit.
+          if (!document.cookie.split('; ').some(function (c) { return c.startsWith('visited='); })) {
+            infoDialog.showModal();
+          }
+          infoDialog.addEventListener('close', function () {
+            document.cookie = 'visited=1; path=/; max-age=315360000; SameSite=Lax';
           });
         }
         // --- Bookmarks ---

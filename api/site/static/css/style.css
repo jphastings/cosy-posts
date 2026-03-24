@@ -581,12 +581,13 @@ body.video-unmuted .video-mute-btn .icon-unmuted { display: flex; }
 .contact-btn[data-method="signal"] .contact-icon-signal { display: inline-flex; }
 .contact-btn[data-method="email"] .contact-icon-email { display: inline-flex; }
 
-/* Email notification toggle */
-.email-notify-form {
-  display: contents;
+/* Notification dropdown */
+.notify-dropdown {
+  position: relative;
+  flex-shrink: 0;
 }
 
-.email-notify-btn {
+.notify-btn {
   display: inline-flex;
   background: none;
   border: none;
@@ -594,12 +595,65 @@ body.video-unmuted .video-mute-btn .icon-unmuted { display: flex; }
   padding: 0.375rem;
   border-radius: 50%;
   color: var(--text-secondary);
-  flex-shrink: 0;
-  position: relative;
   transition: color 0.15s, background 0.15s;
 }
 
-.email-notify-btn input {
+.notify-btn:hover {
+  color: var(--text);
+  background: var(--action-hover);
+}
+
+.notify-btn svg {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.notify-btn .icon-bell-ring { display: none; }
+.notify-dropdown.active .notify-btn .icon-bell-off { display: none; }
+.notify-dropdown.active .notify-btn .icon-bell-ring { display: inline-flex; }
+.notify-dropdown.active .notify-btn { color: var(--text); }
+
+.notify-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.15);
+  min-width: 12rem;
+  z-index: 100;
+  padding: 0.25rem 0;
+}
+
+.notify-menu[hidden] { display: none; }
+
+.notify-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.notify-menu-item:hover {
+  background: var(--action-hover);
+}
+
+.notify-menu-item svg {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.notify-menu-item input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -607,33 +661,44 @@ body.video-unmuted .video-mute-btn .icon-unmuted { display: flex; }
   clip: rect(0, 0, 0, 0);
 }
 
-.email-notify-btn svg {
-  display: block;
-  width: 1.25rem;
-  height: 1.25rem;
+.notify-menu-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.25rem 0;
 }
 
-.email-notify-btn::after {
-  content: '';
+/* Toggle track */
+.notify-toggle-track {
+  position: relative;
+  width: 2rem;
+  height: 1.125rem;
+  background: var(--border);
+  border-radius: 9999px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.notify-toggle-thumb {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 70%;
-  height: 1.5px;
-  background: var(--text-secondary);
-  border-radius: 1px;
-  box-shadow: 0 0 0 2px var(--bg);
-  transform: translate(-50%, -50%) rotate(45deg);
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 0.875rem;
+  height: 0.875rem;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.15s;
 }
 
-.email-notify-btn:hover {
-  color: var(--text);
-  background: var(--action-hover);
+.notify-email-toggle:has(:checked) .notify-toggle-track {
+  background: var(--accent, #3b82f6);
 }
 
+.notify-email-toggle:has(:checked) .notify-toggle-thumb {
+  transform: translateX(0.875rem);
+}
 
-.email-notify-btn:has(:checked)::after {
-  display: none;
+.notify-rss-link svg {
+  color: var(--text-secondary);
 }
 
 .bookmark-btn,

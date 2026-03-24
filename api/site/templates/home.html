@@ -25,12 +25,26 @@
     <span class="icon-bookmark">{{icon "bookmark"}}</span>
     <span class="icon-bookmarked">{{icon "bookmarked"}}</span>
   </button>
-  <form class="email-notify-form" method="POST" action="/api/email-notify">
-    <label class="email-notify-btn" aria-label="Toggle email notifications">
-      <input type="checkbox" name="enabled" {{if .EmailNotify}}checked{{end}}>
-      {{icon "email"}}
-    </label>
-  </form>
+  <div class="notify-dropdown">
+    <button class="notify-btn" aria-label="Notifications">
+      <span class="icon-bell-off">{{icon "bell-off"}}</span>
+      <span class="icon-bell-ring">{{icon "bell-ring"}}</span>
+    </button>
+    <div class="notify-menu" hidden>
+      <label class="notify-menu-item notify-email-toggle">
+        <span class="notify-toggle-track"><span class="notify-toggle-thumb"></span></span>
+        <span>Email updates</span>
+        <input type="checkbox" {{if .EmailNotify}}checked{{end}}>
+      </label>
+      <hr class="notify-menu-divider">
+      {{if .FeedURL}}
+      <a class="notify-menu-item notify-rss-link" href="{{.FeedURL}}" target="_blank" rel="noopener">
+        {{icon "rss"}}
+        <span>RSS feed</span>
+      </a>
+      {{end}}
+    </div>
+  </div>
   <button class="contact-pref-btn" aria-label="Contact preferences">
     <span class="icon-contact" data-method="whatsapp">{{icon "whatsapp"}}</span>
     <span class="icon-contact" data-method="signal" style="display:none">{{icon "signal"}}</span>

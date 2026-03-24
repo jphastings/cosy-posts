@@ -323,22 +323,54 @@
           });
         }
         updateFilterBtnVisibility();
-        // --- Email notification toggle ---
-        var emailCheckbox = document.querySelector('.email-notify-btn input');
-        if (emailCheckbox) {
-          emailCheckbox.addEventListener('change', function () {
-            var cb = emailCheckbox;
-            var desired = cb.checked;
-            // Revert immediately — only commit on success.
-            cb.checked = !desired;
+        // --- Notification dropdown ---
+        var notifyDropdown = document.querySelector('.notify-dropdown');
+        var notifyBtn = notifyDropdown ? notifyDropdown.querySelector('.notify-btn') : null;
+        var notifyMenu = notifyDropdown ? notifyDropdown.querySelector('.notify-menu') : null;
+        var emailToggle = notifyDropdown ? notifyDropdown.querySelector('.notify-email-toggle input') : null;
+
+        function syncBellIcon() {
+          if (!notifyDropdown || !emailToggle) return;
+          notifyDropdown.classList.toggle('active', emailToggle.checked);
+        }
+
+        if (notifyBtn && notifyMenu) {
+          notifyBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var open = !notifyMenu.hidden;
+            notifyMenu.hidden = open;
+          });
+          // Close on outside click
+          document.addEventListener('click', function (e) {
+            if (!notifyDropdown.contains(e.target)) notifyMenu.hidden = true;
+          });
+        }
+
+        if (emailToggle) {
+          syncBellIcon();
+          emailToggle.addEventListener('change', function () {
+            var desired = emailToggle.checked;
+            emailToggle.checked = !desired;
             fetch('/api/email-notify', {
               method: 'POST',
               headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
               body: desired ? 'enabled=on' : ''
             }).then(function (res) {
-              if (res.ok) cb.checked = desired;
+              if (res.ok) {
+                emailToggle.checked = desired;
+                syncBellIcon();
+              }
             }).catch(function () {});
           });
+        }
+
+        // Rewrite RSS link to feed:// scheme for native reader apps
+        var rssLink = document.querySelector('.notify-rss-link');
+        if (rssLink) {
+          var href = rssLink.getAttribute('href');
+          if (href) {
+            rssLink.setAttribute('href', href.replace(/^https?:\/\//, 'feed://'));
+          }
         }
         // --- Delete post ---
         if (document.body.hasAttribute('data-can-delete')) {

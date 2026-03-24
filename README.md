@@ -95,6 +95,46 @@ Run all tests with coverage.
 xc test-api && xc test-app
 ```
 
+### bump
+
+Run all tests then create a new semver tag. COMPONENT is `api` or `app`. BUMP is `major`, `minor`, or `patch` (defaults to `patch`).
+
+Inputs: COMPONENT, BUMP
+Environment: BUMP=patch
+
+Requires: test, test-contracts
+
+```sh
+set -euo pipefail
+
+if [ "$COMPONENT" != "api" ] && [ "$COMPONENT" != "app" ]; then
+  echo "Error: COMPONENT must be 'api' or 'app'" >&2; exit 1
+fi
+if [ "$BUMP" != "major" ] && [ "$BUMP" != "minor" ] && [ "$BUMP" != "patch" ]; then
+  echo "Error: BUMP must be 'major', 'minor', or 'patch'" >&2; exit 1
+fi
+
+if [ "$COMPONENT" = "app" ]; then
+  PREFIX="app/v"
+  LATEST=$(git tag --list 'app/v*' | sed 's|^app/v||' | sort -V | tail -1)
+else
+  PREFIX="v"
+  LATEST=$(git tag --list 'v*' | grep -v '/' | sed 's|^v||' | sort -V | tail -1)
+fi
+LATEST="${LATEST:-0.0.0}"
+
+IFS='.' read -r MAJOR MINOR PATCH_NUM <<< "$LATEST"
+case "$BUMP" in
+  major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH_NUM=0 ;;
+  minor) MINOR=$((MINOR + 1)); PATCH_NUM=0 ;;
+  patch) PATCH_NUM=$((PATCH_NUM + 1)) ;;
+esac
+NEW_TAG="${PREFIX}${MAJOR}.${MINOR}.${PATCH_NUM}"
+
+git tag "$NEW_TAG"
+echo "Tagged $NEW_TAG (was v$LATEST). Run 'git push origin $NEW_TAG' to publish."
+```
+
 ### test-contracts
 
 Run consumer (Swift) then provider (Go) contract tests. Requires the pact FFI library (`go install github.com/pact-foundation/pact-go/v2@v2.4.2 && sudo "$(go env GOPATH)/bin/pact-go" install`).

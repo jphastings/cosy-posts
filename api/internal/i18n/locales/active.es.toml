@@ -1,0 +1,123 @@
+# Site UI — template strings
+[AboutThisSite]
+other = "Acerca de este sitio"
+
+[Close]
+other = "Cerrar"
+
+[Continue]
+other = "Continuar"
+
+[ShowBookmarked]
+other = "Mostrar publicaciones guardadas"
+
+[Notifications]
+other = "Notificaciones"
+
+[EmailUpdates]
+other = "Actualizaciones por correo"
+
+[RSSFeed]
+other = "Canal RSS"
+
+[ContactPreferences]
+other = "Preferencias de contacto"
+
+[ChooseMessenger]
+other = "¿Qué mensajero?"
+
+[MessengerDescription]
+other = "Cambia tu preferencia de qué apps de mensajería se muestran."
+
+[NoPosts]
+other = "Aún no hay publicaciones."
+
+[ToggleMute]
+other = "Silenciar/activar sonido"
+
+[Previous]
+other = "Anterior"
+
+[Next]
+other = "Siguiente"
+
+[SendMessage]
+other = "Enviar un mensaje"
+
+[DeletePost]
+other = "Eliminar publicación"
+
+[Bookmark]
+other = "Guardar"
+
+# Strings consumed by JS via data-* attributes
+[WhatsApp]
+other = "WhatsApp"
+
+[Signal]
+other = "Signal"
+
+[Email]
+other = "Correo"
+
+[NotShown]
+other = "↓ No mostrados ↓"
+
+[OnlyBookmarked]
+other = "Solo guardados"
+
+[ConfirmDelete]
+other = "¿Eliminar permanentemente la publicación del {date}?\n\nEsta acción no se puede deshacer."
+
+[DeleteFailed]
+other = "Error al eliminar: "
+
+[DeleteError]
+other = "No se pudo eliminar la publicación. Inténtalo de nuevo."
+
+# Auth — login page
+[LoginButton]
+other = "Enviar enlace de acceso"
+
+[LoginPlaceholder]
+other = "tu@correo.com"
+
+[CheckYourEmail]
+other = "Revisa tu correo"
+
+[LoginSentBody]
+other = "Si tu dirección está registrada, recibirás un enlace de acceso en breve."
+
+# Auth — magic link emails
+[EmailClickToLogin]
+other = "Haz clic para iniciar sesión:"
+
+[EmailLoginSite]
+other = "Iniciar sesión en el sitio"
+
+[EmailLoginApp]
+other = "Iniciar sesión en la app"
+
+[EmailLinksExpire]
+other = "Estos enlaces caducan en {{.Minutes}} minutos."
+
+[EmailSubjectLogin]
+other = "Tu enlace de acceso"
+
+[EmailSubjectAccountRequest]
+other = "Solicitud de cuenta recibida"
+
+[EmailAccountRequestBody]
+other = "Hemos registrado tu solicitud de cuenta. Pronto recibirás una respuesta."
+
+# Notification emails
+[NotifyNewPost]
+one = "Hay una nueva publicación de {{.Authors}} en {{.Site}}."
+other = "Hay nuevas publicaciones de {{.Authors}} en {{.Site}}."
+
+[NotifySubject]
+one = "Nueva publicación en {{.Site}}"
+other = "Nuevas publicaciones en {{.Site}}"
+
+[NotifyVisitSite]
+other = "Visitar el sitio"

@@ -1,0 +1,46 @@
+# Venezuelan Spanish — only overrides where it differs from es
+# Unlisted keys fall back to es → en
+
+# Site UI
+[MessengerDescription]
+other = "Cambia tu preferencia de cuáles apps de mensajería se muestran."
+
+[NoPosts]
+other = "Todavía no hay publicaciones."
+
+[SendMessage]
+other = "Enviar mensaje"
+
+[Bookmark]
+other = "Marcar"
+
+# JS strings
+[Email]
+other = "Correo electrónico"
+
+[OnlyBookmarked]
+other = "Solo marcados"
+
+[ConfirmDelete]
+other = "¿Eliminar de forma permanente la publicación del {date}?\n\nEsto no se puede deshacer."
+
+[DeleteError]
+other = "No se pudo eliminar la publicación. Intenta de nuevo."
+
+# Auth
+[LoginSentBody]
+other = "Si tu dirección está registrada, vas a recibir un enlace de acceso pronto."
+
+[EmailClickToLogin]
+other = "Dale clic para iniciar sesión:"
+
+[EmailAccountRequestBody]
+other = "Registramos tu solicitud de cuenta. Te avisamos pronto."
+
+# Notification emails
+[NotifyNewPost]
+one = "Hay una publicación nueva de {{.Authors}} en {{.Site}}."
+other = "Hay publicaciones nuevas de {{.Authors}} en {{.Site}}."
+
+[NotifyVisitSite]
+other = "Ir al sitio"

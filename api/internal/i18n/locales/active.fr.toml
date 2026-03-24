@@ -1,0 +1,123 @@
+# Site UI — template strings
+[AboutThisSite]
+other = "À propos de ce site"
+
+[Close]
+other = "Fermer"
+
+[Continue]
+other = "Continuer"
+
+[ShowBookmarked]
+other = "Afficher les publications enregistrées"
+
+[Notifications]
+other = "Notifications"
+
+[EmailUpdates]
+other = "Mises à jour par e-mail"
+
+[RSSFeed]
+other = "Flux RSS"
+
+[ContactPreferences]
+other = "Préférences de contact"
+
+[ChooseMessenger]
+other = "Quelle messagerie ?"
+
+[MessengerDescription]
+other = "Modifiez votre préférence d'applications de messagerie affichées."
+
+[NoPosts]
+other = "Aucune publication pour le moment."
+
+[ToggleMute]
+other = "Activer/couper le son"
+
+[Previous]
+other = "Précédent"
+
+[Next]
+other = "Suivant"
+
+[SendMessage]
+other = "Envoyer un message"
+
+[DeletePost]
+other = "Supprimer la publication"
+
+[Bookmark]
+other = "Enregistrer"
+
+# Strings consumed by JS via data-* attributes
+[WhatsApp]
+other = "WhatsApp"
+
+[Signal]
+other = "Signal"
+
+[Email]
+other = "E-mail"
+
+[NotShown]
+other = "↓ Non affichés ↓"
+
+[OnlyBookmarked]
+other = "Enregistrés uniquement"
+
+[ConfirmDelete]
+other = "Supprimer définitivement la publication du {date} ?\n\nCette action est irréversible."
+
+[DeleteFailed]
+other = "Échec de la suppression : "
+
+[DeleteError]
+other = "Impossible de supprimer la publication. Veuillez réessayer."
+
+# Auth — login page
+[LoginButton]
+other = "Envoyer le lien de connexion"
+
+[LoginPlaceholder]
+other = "votre@email.com"
+
+[CheckYourEmail]
+other = "Consultez votre e-mail"
+
+[LoginSentBody]
+other = "Si votre adresse est reconnue, vous recevrez un lien de connexion sous peu."
+
+# Auth — magic link emails
+[EmailClickToLogin]
+other = "Cliquez pour vous connecter :"
+
+[EmailLoginSite]
+other = "Se connecter au site"
+
+[EmailLoginApp]
+other = "Se connecter à l'app"
+
+[EmailLinksExpire]
+other = "Ces liens expirent dans {{.Minutes}} minutes."
+
+[EmailSubjectLogin]
+other = "Votre lien de connexion"
+
+[EmailSubjectAccountRequest]
+other = "Demande de compte reçue"
+
+[EmailAccountRequestBody]
+other = "Nous avons enregistré votre demande de compte. Vous recevrez une réponse bientôt."
+
+# Notification emails
+[NotifyNewPost]
+one = "Il y a une nouvelle publication de {{.Authors}} sur {{.Site}}."
+other = "Il y a de nouvelles publications de {{.Authors}} sur {{.Site}}."
+
+[NotifySubject]
+one = "Nouvelle publication sur {{.Site}}"
+other = "Nouvelles publications sur {{.Site}}"
+
+[NotifyVisitSite]
+other = "Visiter le site"

@@ -18,13 +18,13 @@ other = "Notificaciones"
 other = "Actualizaciones por correo"
 
 [RSSFeed]
-other = "Canal RSS"
+other = "Feed RSS"
 
 [ContactPreferences]
 other = "Preferencias de contacto"
 
 [ChooseMessenger]
-other = "¿Qué mensajero?"
+other = "¿Qué app de mensajes?"
 
 [MessengerDescription]
 other = "Cambia tu preferencia de qué apps de mensajería se muestran."
@@ -99,6 +99,7 @@ other = "Iniciar sesión en el sitio"
 other = "Iniciar sesión en la app"
 
 [EmailLinksExpire]
+one = "Este enlace caduca en {{.Minutes}} minuto."
 other = "Estos enlaces caducan en {{.Minutes}} minutos."
 
 [EmailSubjectLogin]

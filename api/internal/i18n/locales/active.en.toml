@@ -99,6 +99,7 @@ other = "Log in to the site"
 other = "Log in to the app"
 
 [EmailLinksExpire]
+one = "This link expires in {{.Minutes}} minute."
 other = "These links expire in {{.Minutes}} minutes."
 
 [EmailSubjectLogin]

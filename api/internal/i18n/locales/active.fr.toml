@@ -27,7 +27,7 @@ other = "Préférences de contact"
 other = "Quelle messagerie ?"
 
 [MessengerDescription]
-other = "Modifiez votre préférence d'applications de messagerie affichées."
+other = "Choisis quelles apps de messagerie sont affichées."
 
 [NoPosts]
 other = "Aucune publication pour le moment."
@@ -73,24 +73,24 @@ other = "Supprimer définitivement la publication du {date} ?\n\nCette action es
 other = "Échec de la suppression : "
 
 [DeleteError]
-other = "Impossible de supprimer la publication. Veuillez réessayer."
+other = "Impossible de supprimer la publication. Réessaie."
 
 # Auth — login page
 [LoginButton]
-other = "Envoyer le lien de connexion"
+other = "Envoyer un lien de connexion"
 
 [LoginPlaceholder]
-other = "votre@email.com"
+other = "ton@email.com"
 
 [CheckYourEmail]
-other = "Consultez votre e-mail"
+other = "Regarde tes e-mails"
 
 [LoginSentBody]
-other = "Si votre adresse est reconnue, vous recevrez un lien de connexion sous peu."
+other = "Si ton adresse est reconnue, tu recevras un lien de connexion sous peu."
 
 # Auth — magic link emails
 [EmailClickToLogin]
-other = "Cliquez pour vous connecter :"
+other = "Clique pour te connecter :"
 
 [EmailLoginSite]
 other = "Se connecter au site"
@@ -99,16 +99,17 @@ other = "Se connecter au site"
 other = "Se connecter à l'app"
 
 [EmailLinksExpire]
+one = "Ce lien expire dans {{.Minutes}} minute."
 other = "Ces liens expirent dans {{.Minutes}} minutes."
 
 [EmailSubjectLogin]
-other = "Votre lien de connexion"
+other = "Ton lien de connexion"
 
 [EmailSubjectAccountRequest]
 other = "Demande de compte reçue"
 
 [EmailAccountRequestBody]
-other = "Nous avons enregistré votre demande de compte. Vous recevrez une réponse bientôt."
+other = "On a enregistré ta demande de compte. Tu recevras une réponse bientôt."
 
 # Notification emails
 [NotifyNewPost]

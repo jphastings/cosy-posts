@@ -544,14 +544,14 @@ func sendMagicLink(cfg *config.Config, baseURL, email, siteToken, appToken, role
 	loc := appi18n.NewLocalizer(lang)
 	siteLink := baseURL + "/auth/verify?token=" + siteToken
 
-	expireMsg, _ := loc.Localize(&goI18n.LocalizeConfig{
-		MessageID:    "EmailLinksExpire",
-		TemplateData: map[string]any{"Minutes": 30},
-	})
-
 	var body string
 	if role == "post" && appToken != "" {
 		appLink := "cosy://auth?token=" + appToken + "&server=" + baseURL
+		expireMsg, _ := loc.Localize(&goI18n.LocalizeConfig{
+			MessageID:    "EmailLinksExpire",
+			PluralCount:  2,
+			TemplateData: map[string]any{"Minutes": 30},
+		})
 		body = fmt.Sprintf(`<p>%s</p>
 <p><a href="%s">%s</a></p>
 <p><a href="%s">%s</a></p>
@@ -561,6 +561,11 @@ func sendMagicLink(cfg *config.Config, baseURL, email, siteToken, appToken, role
 			appLink, appi18n.T(loc, "EmailLoginApp"),
 			expireMsg)
 	} else {
+		expireMsg, _ := loc.Localize(&goI18n.LocalizeConfig{
+			MessageID:    "EmailLinksExpire",
+			PluralCount:  1,
+			TemplateData: map[string]any{"Minutes": 30},
+		})
 		body = fmt.Sprintf(`<p>%s</p>
 <p><a href="%s">%s</a></p>
 <p>%s</p>`,

@@ -188,10 +188,10 @@ func createSession(t *testing.T, authDir, sessionID, email, role string) {
 	t.Helper()
 	sessDir := filepath.Join(authDir, "sessions")
 	os.MkdirAll(sessDir, 0o755)
-	data, _ := json.Marshal(map[string]string{
-		"email":   email,
-		"role":    role,
-		"created": time.Now().Format(time.RFC3339),
+	data, _ := json.Marshal(map[string]any{
+		"email":  email,
+		"role":   role,
+		"expiry": time.Now().Add(180 * 24 * time.Hour).Format(time.RFC3339),
 	})
 	os.WriteFile(filepath.Join(sessDir, sessionID), data, 0o600)
 }

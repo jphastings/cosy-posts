@@ -29,3 +29,6 @@ Thumbs.db
 # Coverage
 api/coverage*.out
 app/TestResults.xcresult/
+
+# Contract tests (generated as needed)
+/contracts

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{.Lang}}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -56,7 +56,11 @@
           });
         }
         // --- Contact preference dialog ---
-        var METHOD_NAMES = { whatsapp: 'WhatsApp', signal: 'Signal', email: 'Email' };
+        var METHOD_NAMES = {};
+        document.querySelectorAll('.icon-contact').forEach(function (el) {
+          var m = el.getAttribute('data-method');
+          if (m) METHOD_NAMES[m] = el.getAttribute('data-label') || m;
+        });
         var prefBtn = document.querySelector('.contact-pref-btn');
         var prefDialog = document.querySelector('.contact-pref-dialog');
         var prefList = prefDialog ? prefDialog.querySelector('.pref-list') : null;
@@ -104,7 +108,7 @@
           li.setAttribute('data-divider', 'true');
           var text = document.createElement('span');
           text.className = 'pref-divider-text';
-          text.textContent = '\u2193 Not shown \u2193';
+          text.textContent = prefList.getAttribute('data-not-shown') || '\u2193 Not shown \u2193';
           li.appendChild(text);
           return li;
         }
@@ -318,7 +322,7 @@
           filterBtn.addEventListener('click', function () {
             bookmarkFiltering = !bookmarkFiltering;
             filterBtn.classList.toggle('active', bookmarkFiltering);
-            if (filterLabel) filterLabel.textContent = bookmarkFiltering ? 'Only bookmarked' : '';
+            if (filterLabel) filterLabel.textContent = bookmarkFiltering ? (filterBtn.getAttribute('data-active-label') || 'Only bookmarked') : '';
             applyBookmarkFilter();
           });
         }
@@ -380,7 +384,7 @@
               if (!post) return;
               var id = post.getAttribute('data-post-id');
               var date = post.getAttribute('data-post-date') || '';
-              var msg = 'Permanently delete the post from ' + date + '?\n\nThis cannot be undone.';
+              var msg = (btn.getAttribute('data-confirm') || 'Permanently delete the post from {date}?\n\nThis cannot be undone.').replace('{date}', date);
               if (!confirm(msg)) return;
               fetch('/api/posts/' + encodeURIComponent(id), { method: 'DELETE' })
                 .then(function (res) {
@@ -388,11 +392,11 @@
                     post.remove();
                   } else {
                     return res.json().then(function (body) {
-                      alert('Failed to delete: ' + (body.error || 'unknown error'));
+                      alert((btn.getAttribute('data-error-prefix') || 'Failed to delete: ') + (body.error || 'unknown error'));
                     });
                   }
                 })
-                .catch(function () { alert('Failed to delete post. Please try again.'); });
+                .catch(function () { alert(btn.getAttribute('data-error') || 'Failed to delete post. Please try again.'); });
             });
           });
         }

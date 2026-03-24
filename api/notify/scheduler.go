@@ -12,6 +12,8 @@ import (
 	"github.com/jphastings/cosy-posts/api/auth"
 	"github.com/jphastings/cosy-posts/api/config"
 	"github.com/jphastings/cosy-posts/api/internal/content"
+	appi18n "github.com/jphastings/cosy-posts/api/internal/i18n"
+	goI18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/resend/resend-go/v2"
 )
 
@@ -105,8 +107,20 @@ func tick(cfg *config.Config, list *List, now time.Time, window time.Duration) {
 	}
 	siteURL := cfg.SiteURL()
 
-	subject := fmt.Sprintf("New post on %s", siteName)
-	sentence := buildSentence(authorNames, siteName)
+	loc := appi18n.NewLocalizer("en")
+	joinedAuthors := joinNames(authorNames)
+	tplData := map[string]string{"Authors": joinedAuthors, "Site": siteName}
+
+	subject, _ := loc.Localize(&goI18n.LocalizeConfig{
+		MessageID:    "NotifySubject",
+		PluralCount:  len(posts),
+		TemplateData: tplData,
+	})
+	sentence, _ := loc.Localize(&goI18n.LocalizeConfig{
+		MessageID:    "NotifyNewPost",
+		PluralCount:  len(posts),
+		TemplateData: tplData,
+	})
 
 	// Build one email per recipient, each with a unique magic link token.
 	var emails []*resend.SendEmailRequest
@@ -123,7 +137,7 @@ func tick(cfg *config.Config, list *List, now time.Time, window time.Duration) {
 		q.Set("token", token)
 		u.RawQuery = q.Encode()
 		link := u.String()
-		html := fmt.Sprintf(`<p>%s</p><p><a href="%s">Visit the site</a></p>`, sentence, link)
+		html := fmt.Sprintf(`<p>%s</p><p><a href="%s">%s</a></p>`, sentence, link, appi18n.T(loc, "NotifyVisitSite"))
 
 		emails = append(emails, &resend.SendEmailRequest{
 			From:    cfg.FromEmail(),
@@ -188,15 +202,6 @@ func findPostsInWindow(contentDir string, start, end time.Time) []postInfo {
 	})
 
 	return posts
-}
-
-// buildSentence constructs "There is a new post from X on Site" or
-// "There are new posts from X, Y, and Z on Site".
-func buildSentence(authors []string, siteName string) string {
-	if len(authors) == 1 {
-		return fmt.Sprintf("There is a new post from %s on %s.", authors[0], siteName)
-	}
-	return fmt.Sprintf("There are new posts from %s on %s.", joinNames(authors), siteName)
 }
 
 // joinNames joins names with commas and "and":

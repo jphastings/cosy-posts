@@ -20,6 +20,7 @@ import (
 
 	"github.com/jphastings/cosy-posts/api/auth"
 	"github.com/jphastings/cosy-posts/api/internal/content"
+	appi18n "github.com/jphastings/cosy-posts/api/internal/i18n"
 	"github.com/jphastings/cosy-posts/api/video"
 	_ "golang.org/x/image/webp"
 	"github.com/yuin/goldmark"
@@ -30,6 +31,7 @@ const DefaultSiteName = "Cosy Posts"
 // Post holds all data needed to render a single post card.
 type Post struct {
 	ID                string
+	Lang              string
 	Date              time.Time
 	Author            string
 	AuthorName        string
@@ -123,6 +125,10 @@ func NewHandler(contentDir, csvPath, siteName string, cacheTTLSeconds int) (*Han
 				return svg
 			}
 			return ""
+		},
+		"t": func(lang, key string) string {
+			loc := appi18n.NewLocalizer(lang)
+			return appi18n.T(loc, key)
 		},
 	}
 
@@ -224,6 +230,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 	members := auth.ParseMembers(h.csvPath)
 	prefLang := content.PreferredLang(r.Header.Get("Accept-Language"))
+	if prefLang == "" {
+		prefLang = "en"
+	}
 	posts := h.loadPosts(members, prefLang)
 
 	membersJSON, _ := json.Marshal(members)
@@ -243,6 +252,7 @@ func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 	siteInfo := h.loadSiteInfo(prefLang)
 
 	data := map[string]any{
+		"Lang":        prefLang,
 		"SiteName":    h.siteName,
 		"MembersJSON": template.JS(membersJSON),
 		"Posts":       posts,
@@ -305,6 +315,7 @@ func (h *Handler) loadPosts(members map[string]auth.Member, prefLang string) []P
 			}
 		}
 
+		post.Lang = prefLang
 		posts = append(posts, post)
 		return nil
 	})

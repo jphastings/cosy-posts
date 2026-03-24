@@ -1,0 +1,123 @@
+# Site UI — template strings
+[AboutThisSite]
+other = "About this site"
+
+[Close]
+other = "Close"
+
+[Continue]
+other = "Continue"
+
+[ShowBookmarked]
+other = "Show bookmarked posts"
+
+[Notifications]
+other = "Notifications"
+
+[EmailUpdates]
+other = "Email updates"
+
+[RSSFeed]
+other = "RSS feed"
+
+[ContactPreferences]
+other = "Contact preferences"
+
+[ChooseMessenger]
+other = "Which messenger?"
+
+[MessengerDescription]
+other = "Change your preference for which messaging apps are shown."
+
+[NoPosts]
+other = "No posts yet."
+
+[ToggleMute]
+other = "Toggle mute"
+
+[Previous]
+other = "Previous"
+
+[Next]
+other = "Next"
+
+[SendMessage]
+other = "Send a message"
+
+[DeletePost]
+other = "Delete post"
+
+[Bookmark]
+other = "Bookmark"
+
+# Strings consumed by JS via data-* attributes
+[WhatsApp]
+other = "WhatsApp"
+
+[Signal]
+other = "Signal"
+
+[Email]
+other = "Email"
+
+[NotShown]
+other = "↓ Not shown ↓"
+
+[OnlyBookmarked]
+other = "Only bookmarked"
+
+[ConfirmDelete]
+other = "Permanently delete the post from {date}?\n\nThis cannot be undone."
+
+[DeleteFailed]
+other = "Failed to delete: "
+
+[DeleteError]
+other = "Failed to delete post. Please try again."
+
+# Auth — login page
+[LoginButton]
+other = "Send Login Link"
+
+[LoginPlaceholder]
+other = "your@email.com"
+
+[CheckYourEmail]
+other = "Check your email"
+
+[LoginSentBody]
+other = "If your address is recognised, you'll receive a login link shortly."
+
+# Auth — magic link emails
+[EmailClickToLogin]
+other = "Click to log in:"
+
+[EmailLoginSite]
+other = "Log in to the site"
+
+[EmailLoginApp]
+other = "Log in to the app"
+
+[EmailLinksExpire]
+other = "These links expire in {{.Minutes}} minutes."
+
+[EmailSubjectLogin]
+other = "Your login link"
+
+[EmailSubjectAccountRequest]
+other = "Account request received"
+
+[EmailAccountRequestBody]
+other = "We've recorded your request for an account. You'll hear back soon."
+
+# Notification emails
+[NotifyNewPost]
+one = "There is a new post from {{.Authors}} on {{.Site}}."
+other = "There are new posts from {{.Authors}} on {{.Site}}."
+
+[NotifySubject]
+one = "New post on {{.Site}}"
+other = "New posts on {{.Site}}"
+
+[NotifyVisitSite]
+other = "Visit the site"

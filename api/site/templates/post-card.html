@@ -9,7 +9,7 @@
               <div class="video-wrap">
                 <video src="{{.URL}}" loop playsinline muted preload="metadata"></video>
                 <span class="video-paused-icon">{{icon "pause"}}</span>
-                <button class="video-mute-btn" aria-label="Toggle mute">
+                <button class="video-mute-btn" aria-label="{{t $.Lang "ToggleMute"}}">
                   <span class="icon-muted">{{icon "muted"}}</span>
                   <span class="icon-unmuted">{{icon "unmuted"}}</span>
                 </button>
@@ -21,8 +21,8 @@
         {{end}}
       </div>
       {{if gt (len .Media) 1}}
-        <button class="carousel-prev" aria-label="Previous">&lsaquo;</button>
-        <button class="carousel-next" aria-label="Next">&rsaquo;</button>
+        <button class="carousel-prev" aria-label="{{t .Lang "Previous"}}">&lsaquo;</button>
+        <button class="carousel-next" aria-label="{{t .Lang "Next"}}">&rsaquo;</button>
         <div class="carousel-dots">
           {{range $i, $m := .Media}}
             <span class="dot{{if eq $i 0}} active{{end}}"></span>
@@ -39,13 +39,13 @@
           <span class="contact-icon contact-icon-whatsapp">{{icon "whatsapp"}}</span>
           <span class="contact-icon contact-icon-signal">{{icon "signal"}}</span>
           <span class="contact-icon contact-icon-email">{{icon "email"}}</span>
-          <span class="contact-label">Send a message</span>
+          <span class="contact-label">{{t .Lang "SendMessage"}}</span>
         </a>
       {{end}}
     </div>
-    <button class="delete-btn" aria-label="Delete post">
+    <button class="delete-btn" aria-label="{{t .Lang "DeletePost"}}" data-confirm="{{t .Lang "ConfirmDelete"}}" data-error="{{t .Lang "DeleteError"}}" data-error-prefix="{{t .Lang "DeleteFailed"}}">
       {{icon "trash"}}</button>
-    <button class="bookmark-btn" aria-label="Bookmark">
+    <button class="bookmark-btn" aria-label="{{t .Lang "Bookmark"}}">
       <span class="icon-bookmark">{{icon "bookmark"}}</span>
       <span class="icon-bookmarked">{{icon "bookmarked"}}</span>
     </button>

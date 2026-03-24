@@ -28,24 +28,6 @@ func TestJoinNames(t *testing.T) {
 	}
 }
 
-func TestBuildSentence(t *testing.T) {
-	tests := []struct {
-		authors  []string
-		siteName string
-		want     string
-	}{
-		{[]string{"Alice"}, "My Site", "There is a new post from Alice on My Site."},
-		{[]string{"Alice", "Bob"}, "My Site", "There are new posts from Alice and Bob on My Site."},
-		{[]string{"Alice", "Bob", "Charlie"}, "My Site", "There are new posts from Alice, Bob, and Charlie on My Site."},
-	}
-
-	for _, tt := range tests {
-		got := buildSentence(tt.authors, tt.siteName)
-		if got != tt.want {
-			t.Errorf("buildSentence(%v, %q) = %q, want %q", tt.authors, tt.siteName, got, tt.want)
-		}
-	}
-}
 
 func TestFindPostsInWindow(t *testing.T) {
 	dir := t.TempDir()

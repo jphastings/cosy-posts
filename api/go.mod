@@ -3,10 +3,12 @@ module github.com/jphastings/cosy-posts/api
 go 1.25.6
 
 require (
+	github.com/BurntSushi/toml v1.6.0
 	github.com/abema/go-mp4 v1.4.1
 	github.com/adrium/goheif v0.0.0-20230113233934-ca402e77a786
 	github.com/gen2brain/heic v0.4.9
 	github.com/gen2brain/jpegli v0.3.4
+	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/pact-foundation/pact-go/v2 v2.4.2
 	github.com/resend/resend-go/v2 v2.28.0
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
@@ -15,6 +17,7 @@ require (
 	github.com/tus/tusd/v2 v2.9.1
 	github.com/yuin/goldmark v1.7.16
 	golang.org/x/image v0.36.0
+	golang.org/x/text v0.34.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -39,7 +42,6 @@ require (
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8 // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260122232226-8e98ce8d340d // indirect
 	google.golang.org/grpc v1.78.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect

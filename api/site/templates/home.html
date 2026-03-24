@@ -3,68 +3,68 @@
   <h1>
     <a href=".">{{.SiteName}}</a>
     {{if .SiteInfo}}
-    <button class="info-btn" aria-label="About this site">{{icon "info"}}</button>
+    <button class="info-btn" aria-label="{{t .Lang "AboutThisSite"}}">{{icon "info"}}</button>
     {{end}}
   </h1>
   {{if .SiteInfo}}
   <dialog class="info-dialog">
     <div class="info-dialog-header">
       <span class="info-dialog-title">{{.SiteName}}</span>
-      <button class="info-dialog-close" aria-label="Close">&times;</button>
+      <button class="info-dialog-close" aria-label="{{t .Lang "Close"}}">&times;</button>
     </div>
     <div class="info-dialog-body">
       {{.SiteInfo}}
     </div>
     <div class="info-dialog-footer">
-      <button class="info-dialog-continue" aria-label="Continue">&rarr;</button>
+      <button class="info-dialog-continue" aria-label="{{t .Lang "Continue"}}">&rarr;</button>
     </div>
   </dialog>
   {{end}}
-  <button class="bookmark-filter-btn" aria-label="Show bookmarked posts">
+  <button class="bookmark-filter-btn" aria-label="{{t .Lang "ShowBookmarked"}}" data-active-label="{{t .Lang "OnlyBookmarked"}}">
     <span class="bookmark-filter-label"></span>
     <span class="icon-bookmark">{{icon "bookmark"}}</span>
     <span class="icon-bookmarked">{{icon "bookmarked"}}</span>
   </button>
   <div class="notify-dropdown">
-    <button class="notify-btn" aria-label="Notifications">
+    <button class="notify-btn" aria-label="{{t .Lang "Notifications"}}">
       <span class="icon-bell-off">{{icon "bell-off"}}</span>
       <span class="icon-bell-ring">{{icon "bell-ring"}}</span>
     </button>
     <div class="notify-menu" hidden>
       <label class="notify-menu-item notify-email-toggle">
         <span class="notify-toggle-track"><span class="notify-toggle-thumb"></span></span>
-        <span>Email updates</span>
+        <span>{{t .Lang "EmailUpdates"}}</span>
         <input type="checkbox" {{if .EmailNotify}}checked{{end}}>
       </label>
       <hr class="notify-menu-divider">
       {{if .FeedURL}}
       <a class="notify-menu-item notify-rss-link" href="{{.FeedURL}}" target="_blank" rel="noopener">
         {{icon "rss"}}
-        <span>RSS feed</span>
+        <span>{{t .Lang "RSSFeed"}}</span>
       </a>
       {{end}}
     </div>
   </div>
-  <button class="contact-pref-btn" aria-label="Contact preferences">
-    <span class="icon-contact" data-method="whatsapp">{{icon "whatsapp"}}</span>
-    <span class="icon-contact" data-method="signal" style="display:none">{{icon "signal"}}</span>
-    <span class="icon-contact" data-method="email" style="display:none">{{icon "email"}}</span>
+  <button class="contact-pref-btn" aria-label="{{t .Lang "ContactPreferences"}}">
+    <span class="icon-contact" data-method="whatsapp" data-label="{{t .Lang "WhatsApp"}}">{{icon "whatsapp"}}</span>
+    <span class="icon-contact" data-method="signal" data-label="{{t .Lang "Signal"}}" style="display:none">{{icon "signal"}}</span>
+    <span class="icon-contact" data-method="email" data-label="{{t .Lang "Email"}}" style="display:none">{{icon "email"}}</span>
   </button>
 </header>
 <dialog class="contact-pref-dialog">
   <div class="pref-dialog-header">
-    <span class="pref-dialog-title">Choose your preferred messenger</span>
-    <button class="pref-dialog-close" aria-label="Close">&times;</button>
+    <span class="pref-dialog-title">{{t .Lang "ChooseMessenger"}}</span>
+    <button class="pref-dialog-close" aria-label="{{t .Lang "Close"}}">&times;</button>
   </div>
-  <p class="pref-desc">When you message us, which apps do you prefer to use?</p>
-  <ul class="pref-list"></ul>
+  <p class="pref-desc">{{t .Lang "MessengerDescription"}}</p>
+  <ul class="pref-list" data-not-shown="{{t .Lang "NotShown"}}"></ul>
 </dialog>
 <main class="feed">
   {{range .Posts}}
   {{template "post-card" .}}
   {{end}}
   {{if not .Posts}}
-  <p class="empty">No posts yet.</p>
+  <p class="empty">{{t .Lang "NoPosts"}}</p>
   {{end}}
 </main>
 {{end}}

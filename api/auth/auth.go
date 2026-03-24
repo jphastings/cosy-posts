@@ -19,6 +19,9 @@ import (
 	"time"
 
 	"github.com/jphastings/cosy-posts/api/config"
+	"github.com/jphastings/cosy-posts/api/internal/content"
+	appi18n "github.com/jphastings/cosy-posts/api/internal/i18n"
+	goI18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/resend/resend-go/v2"
 )
 
@@ -284,10 +287,20 @@ func LoginPage(cfg *config.Config) http.HandlerFunc {
 			name = r.Host
 		}
 		safeName := html.EscapeString(name)
+		lang := content.PreferredLang(r.Header.Get("Accept-Language"))
+		loc := appi18n.NewLocalizer(lang)
 		if r.URL.Query().Has("sent") {
-			fmt.Fprint(w, strings.ReplaceAll(loginSentHTML, "{{name}}", safeName))
+			s := strings.ReplaceAll(loginSentHTML, "{{name}}", safeName)
+			s = strings.ReplaceAll(s, "{{lang}}", lang)
+			s = strings.ReplaceAll(s, "{{heading}}", html.EscapeString(appi18n.T(loc, "CheckYourEmail")))
+			s = strings.ReplaceAll(s, "{{body}}", html.EscapeString(appi18n.T(loc, "LoginSentBody")))
+			fmt.Fprint(w, s)
 		} else {
-			fmt.Fprint(w, strings.ReplaceAll(loginFormHTML, "{{name}}", safeName))
+			s := strings.ReplaceAll(loginFormHTML, "{{name}}", safeName)
+			s = strings.ReplaceAll(s, "{{lang}}", lang)
+			s = strings.ReplaceAll(s, "{{placeholder}}", html.EscapeString(appi18n.T(loc, "LoginPlaceholder")))
+			s = strings.ReplaceAll(s, "{{button}}", html.EscapeString(appi18n.T(loc, "LoginButton")))
+			fmt.Fprint(w, s)
 		}
 	}
 }
@@ -330,6 +343,7 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 			return
 		}
 
+		lang := content.PreferredLang(r.Header.Get("Accept-Language"))
 		role := LookupRole(cfg.AuthDir, email)
 		if role != "" {
 			// Authorized: send magic link(s).
@@ -361,7 +375,7 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 				}
 			}
 
-			if err := sendMagicLink(cfg, requestBaseURL(r), email, siteToken, appToken, role); err != nil {
+				if err := sendMagicLink(cfg, requestBaseURL(r), email, siteToken, appToken, role, lang); err != nil {
 				log.Printf("auth: send email to %s: %v", email, err)
 				// Still redirect so we don't leak info.
 			}
@@ -375,7 +389,7 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 				}
 			}
 			csvMu.Unlock()
-			if err := sendRequestRecorded(cfg, email); err != nil {
+			if err := sendRequestRecorded(cfg, email, lang); err != nil {
 				log.Printf("auth: send request-recorded email to %s: %v", email, err)
 			}
 		}
@@ -526,45 +540,59 @@ func authDenied(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `{"error":"unauthorized"}`)
 }
 
-func sendMagicLink(cfg *config.Config, baseURL, email, siteToken, appToken, role string) error {
+func sendMagicLink(cfg *config.Config, baseURL, email, siteToken, appToken, role, lang string) error {
+	loc := appi18n.NewLocalizer(lang)
 	siteLink := baseURL + "/auth/verify?token=" + siteToken
 
-	var html string
+	expireMsg, _ := loc.Localize(&goI18n.LocalizeConfig{
+		MessageID:    "EmailLinksExpire",
+		TemplateData: map[string]any{"Minutes": 30},
+	})
+
+	var body string
 	if role == "post" && appToken != "" {
 		appLink := "cosy://auth?token=" + appToken + "&server=" + baseURL
-		html = fmt.Sprintf(`<p>Click to log in:</p>
-<p><a href="%s">Log in to the site</a></p>
-<p><a href="%s">Log in to the app</a></p>
-<p>These links expire in 30 minutes.</p>`, siteLink, appLink)
+		body = fmt.Sprintf(`<p>%s</p>
+<p><a href="%s">%s</a></p>
+<p><a href="%s">%s</a></p>
+<p>%s</p>`,
+			appi18n.T(loc, "EmailClickToLogin"),
+			siteLink, appi18n.T(loc, "EmailLoginSite"),
+			appLink, appi18n.T(loc, "EmailLoginApp"),
+			expireMsg)
 	} else {
-		html = fmt.Sprintf(`<p>Click to log in:</p>
-<p><a href="%s">Log in to the site</a></p>
-<p>This link expires in 15 minutes.</p>`, siteLink)
+		body = fmt.Sprintf(`<p>%s</p>
+<p><a href="%s">%s</a></p>
+<p>%s</p>`,
+			appi18n.T(loc, "EmailClickToLogin"),
+			siteLink, appi18n.T(loc, "EmailLoginSite"),
+			expireMsg)
 	}
 
 	client := resend.NewClient(cfg.ResendAPIKey())
 	_, err := client.Emails.Send(&resend.SendEmailRequest{
 		From:    cfg.FromEmail(),
 		To:      []string{email},
-		Subject: "Your login link",
-		Html:    html,
+		Subject: appi18n.T(loc, "EmailSubjectLogin"),
+		Html:    body,
 	})
 	return err
 }
 
-func sendRequestRecorded(cfg *config.Config, email string) error {
+func sendRequestRecorded(cfg *config.Config, email, lang string) error {
+	loc := appi18n.NewLocalizer(lang)
 	client := resend.NewClient(cfg.ResendAPIKey())
 	_, err := client.Emails.Send(&resend.SendEmailRequest{
 		From:    cfg.FromEmail(),
 		To:      []string{email},
-		Subject: "Account request received",
-		Html:    "<p>We've recorded your request for an account. You'll hear back soon.</p>",
+		Subject: appi18n.T(loc, "EmailSubjectAccountRequest"),
+		Html:    "<p>" + appi18n.T(loc, "EmailAccountRequestBody") + "</p>",
 	})
 	return err
 }
 
 const loginFormHTML = `<!DOCTYPE html>
-<html lang="en">
+<html lang="{{lang}}"
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -589,15 +617,15 @@ background:#262626;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
 <div class="card">
 <h1>{{name}}</h1>
 <form method="POST" action="/auth/send">
-<input type="email" name="email" placeholder="your@email.com" required autofocus>
-<button type="submit">Send Login Link</button>
+<input type="email" name="email" placeholder="{{placeholder}}" required autofocus>
+<button type="submit">{{button}}</button>
 </form>
 </div>
 </body>
 </html>`
 
 const loginSentHTML = `<!DOCTYPE html>
-<html lang="en">
+<html lang="{{lang}}"
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -615,8 +643,8 @@ p{font-size:14px;color:#8e8e8e;line-height:1.5}
 </head>
 <body>
 <div class="card">
-<h1>Check your email</h1>
-<p>If your address is recognised, you'll receive a login link shortly.</p>
+<h1>{{heading}}</h1>
+<p>{{body}}</p>
 </div>
 </body>
 </html>`

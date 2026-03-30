@@ -221,8 +221,10 @@ class ShareViewController: UIViewController {
             return
         }
 
+        // Copy to satisfy Swift 6 sending requirements — extensionContext.inputItems is non-sendable.
+        nonisolated(unsafe) let itemsCopy = extensionItems
         Task {
-            let items = await ShareHelper.loadAttachments(from: extensionItems)
+            let items = await ShareHelper.loadAttachments(from: itemsCopy)
             self.sharedItems = items
             let count = items.count
             self.countLabel.text = count == 1 ? "1 item to share" : "\(count) items to share"
@@ -316,8 +318,9 @@ class ShareViewController: NSViewController {
             return
         }
 
+        nonisolated(unsafe) let itemsCopy = extensionItems
         Task {
-            let items = await ShareHelper.loadAttachments(from: extensionItems)
+            let items = await ShareHelper.loadAttachments(from: itemsCopy)
             self.sharedItems = items
             let count = items.count
             self.countLabel.stringValue = count == 1 ? "1 item to share" : "\(count) items to share"

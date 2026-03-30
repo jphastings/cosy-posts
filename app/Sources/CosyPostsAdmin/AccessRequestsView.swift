@@ -129,53 +129,71 @@ private struct AccessRequestRow: View {
     let onDeny: () async -> Bool
     @State private var isProcessing = false
     @State private var failed = false
+    @State private var showDenyConfirmation = false
 
     var body: some View {
         HStack {
-            Text(email)
-                .font(.subheadline)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(email)
+                    .font(.body)
+                    .lineLimit(1)
+                if failed {
+                    Text("Action failed. Try again.")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
 
             Spacer()
 
             if isProcessing {
                 ProgressView()
-                    .controlSize(.small)
+                    .controlSize(.regular)
             } else {
-                Button {
-                    Task {
-                        isProcessing = true
-                        failed = false
-                        let ok = await onApprove()
-                        isProcessing = false
-                        if !ok { failed = true }
+                HStack(spacing: 16) {
+                    Button {
+                        Task {
+                            isProcessing = true
+                            failed = false
+                            let ok = await onApprove()
+                            isProcessing = false
+                            if !ok { failed = true }
+                        }
+                    } label: {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.green)
                     }
-                } label: {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                }
-                .buttonStyle(.plain)
+                    .buttonStyle(.plain)
 
-                Button {
-                    Task {
-                        isProcessing = true
-                        failed = false
-                        let ok = await onDeny()
-                        isProcessing = false
-                        if !ok { failed = true }
+                    Button {
+                        showDenyConfirmation = true
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.red)
                     }
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.red)
-                }
-                .buttonStyle(.plain)
-
-                if failed {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                        .font(.caption)
+                    .buttonStyle(.plain)
                 }
             }
+        }
+        .padding(.vertical, 4)
+        .confirmationDialog(
+            "Deny access for \(email)?",
+            isPresented: $showDenyConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Deny", role: .destructive) {
+                Task {
+                    isProcessing = true
+                    failed = false
+                    let ok = await onDeny()
+                    isProcessing = false
+                    if !ok { failed = true }
+                }
+            }
+        } message: {
+            Text("This will remove their access request. They can request again later.")
         }
     }
 }

@@ -300,9 +300,35 @@ func LoginPage(cfg *config.Config) http.HandlerFunc {
 			s = strings.ReplaceAll(s, "{{lang}}", lang)
 			s = strings.ReplaceAll(s, "{{placeholder}}", html.EscapeString(appi18n.T(loc, "LoginPlaceholder")))
 			s = strings.ReplaceAll(s, "{{button}}", html.EscapeString(appi18n.T(loc, "LoginButton")))
+			// Substitute intro last so placeholders inside it aren't re-interpreted.
+			s = strings.ReplaceAll(s, "{{intro}}", loadIntro(cfg.ContentDir, lang))
 			fmt.Fprint(w, s)
 		}
 	}
+}
+
+// loadIntro looks for intro.{lang}.md (falling back to intro.md) in the content
+// directory root and returns its rendered HTML wrapped in an <div class="intro">
+// block. Returns an empty string when no intro file exists.
+func loadIntro(contentDir, prefLang string) string {
+	candidates := []string{}
+	if prefLang != "" {
+		candidates = append(candidates, "intro."+prefLang+".md")
+	}
+	candidates = append(candidates, "intro.md")
+
+	for _, name := range candidates {
+		raw, err := os.ReadFile(filepath.Join(contentDir, name))
+		if err != nil {
+			continue
+		}
+		body := content.ExtractBody(raw)
+		if body == "" {
+			continue
+		}
+		return `<div class="intro">` + content.RenderMarkdown(body) + `</div>`
+	}
+	return ""
 }
 
 // requestBaseURL returns the base URL (scheme + host) from the inbound request.
@@ -610,6 +636,11 @@ background:#fafafa;color:#262626}
 @media(prefers-color-scheme:dark){body{background:#000;color:#f5f5f5}}
 .card{max-width:340px;width:100%;padding:32px;text-align:center}
 h1{font-size:20px;margin-bottom:24px;letter-spacing:-0.02em}
+.intro{font-size:14px;line-height:1.5;margin-bottom:24px;text-align:left;color:#525252}
+@media(prefers-color-scheme:dark){.intro{color:#a3a3a3}}
+.intro p{margin-bottom:12px}
+.intro p:last-child{margin-bottom:0}
+.intro a{color:inherit}
 input[type=email]{width:100%;padding:10px 12px;border:1px solid #dbdbdb;border-radius:6px;
 font-size:14px;margin-bottom:12px;background:inherit;color:inherit}
 @media(prefers-color-scheme:dark){input[type=email]{border-color:#363636}}
@@ -621,6 +652,7 @@ background:#262626;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
 <body>
 <div class="card">
 <h1>{{name}}</h1>
+{{intro}}
 <form method="POST" action="/auth/send">
 <input type="email" name="email" placeholder="{{placeholder}}" required autofocus>
 <button type="submit">{{button}}</button>

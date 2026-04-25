@@ -37,6 +37,16 @@ type frontmatter struct {
 	Author string `yaml:"author"`
 }
 
+// preview is a per-post chunk used to build preview emails. Image bytes have
+// already been read off disk and registered as a Resend attachment; only the
+// magic-link URL still has to be substituted per recipient.
+type preview struct {
+	name     string // resolved author display name
+	cid      string // Content-Id of the inline image attachment, or "" if no image
+	excerpt  string // plain-text body excerpt (already collapsed/truncated)
+	ellipsis bool   // whether to append "…" to the excerpt
+}
+
 // StartScheduler begins a background loop that checks for new posts and
 // sends email notifications. It returns a stop function.
 func StartScheduler(cfg *config.Config, list *List) func() {
@@ -137,91 +147,104 @@ func tick(cfg *config.Config, list *List, now time.Time, window time.Duration) {
 		TemplateData: tplData,
 	})
 	visitSite := appi18n.T(loc, "NotifyVisitSite")
+	continueReading := appi18n.T(loc, "NotifyContinueReading")
 
-	// Build the per-post preview HTML and inline image attachments once.
-	// Both are reused across all per-recipient emails (only the magic-link
-	// token differs per recipient).
-	var previewHTML string
+	// When previews are enabled, read image bytes once and pre-build per-post
+	// chunks. Per-recipient assembly only swaps in the magic link.
+	//
+	// Resend's batch endpoint silently drops attachments, so previews must be
+	// sent one email at a time via client.Emails.Send. The plain-notification
+	// path keeps using the batch endpoint.
+	var previews []preview
 	var attachments []*resend.Attachment
 	if cfg.SendPostPreview() {
-		previewHTML, attachments = buildPreviews(posts, loc, authorNameFor)
+		previews, attachments = buildPreviews(posts, authorNameFor)
 	}
 
-	// Build one email per recipient, each with a unique magic link token.
+	client := resend.NewClient(cfg.ResendAPIKey())
+
+	if cfg.SendPostPreview() {
+		var sent int
+		for _, email := range recipients {
+			link, err := magicLink(cfg, siteURL, email)
+			if err != nil {
+				log.Printf("notify: create token for %s: %v", email, err)
+				continue
+			}
+
+			req := &resend.SendEmailRequest{
+				From:        cfg.FromEmail(),
+				To:          []string{email},
+				Subject:     subject,
+				Html:        renderPreviewEmail(sentence, previews, link, continueReading),
+				Attachments: attachments,
+			}
+			if _, err := client.Emails.Send(req); err != nil {
+				log.Printf("notify: send to %s: %v", email, err)
+				continue
+			}
+			sent++
+		}
+		log.Printf("notify: sent %d preview notification emails (%d new posts by %s)",
+			sent, len(posts), strings.Join(authorNames, ", "))
+		return
+	}
+
+	// Plain (no-preview) path: use Batch.Send for efficiency.
 	var emails []*resend.SendEmailRequest
 	for _, email := range recipients {
-		token, err := auth.CreateToken(cfg.AuthDir, email, 24*time.Hour)
+		link, err := magicLink(cfg, siteURL, email)
 		if err != nil {
 			log.Printf("notify: create token for %s: %v", email, err)
 			continue
 		}
-
-		u, _ := url.Parse(siteURL)
-		u = u.JoinPath("/auth/verify")
-		q := u.Query()
-		q.Set("token", token)
-		u.RawQuery = q.Encode()
-		link := u.String()
-
-		var htmlBody string
-		if previewHTML != "" {
-			htmlBody = fmt.Sprintf(
-				`<p>%s</p>%s<p><a href="%s">%s</a></p>`,
-				sentence, previewHTML, link, visitSite,
-			)
-		} else {
-			htmlBody = fmt.Sprintf(
-				`<p>%s</p><p><a href="%s">%s</a></p>`,
-				sentence, link, visitSite,
-			)
-		}
-
-		req := &resend.SendEmailRequest{
+		htmlBody := fmt.Sprintf(
+			`<p>%s</p><p><a href="%s">%s</a></p>`,
+			sentence, link, visitSite,
+		)
+		emails = append(emails, &resend.SendEmailRequest{
 			From:    cfg.FromEmail(),
 			To:      []string{email},
 			Subject: subject,
 			Html:    htmlBody,
-		}
-		if len(attachments) > 0 {
-			req.Attachments = attachments
-		}
-		emails = append(emails, req)
+		})
 	}
 
 	if len(emails) == 0 {
 		return
 	}
-
-	client := resend.NewClient(cfg.ResendAPIKey())
-	_, err := client.Batch.Send(emails)
-	if err != nil {
+	if _, err := client.Batch.Send(emails); err != nil {
 		log.Printf("notify: send batch: %v", err)
 		return
 	}
-
 	log.Printf("notify: sent %d notification emails (%d new posts by %s)",
 		len(emails), len(posts), strings.Join(authorNames, ", "))
 }
 
-// buildPreviews renders one card per post (header, optional inline image, body
-// excerpt, "continue reading" cue) and collects the inline image attachments
-// referenced by `cid:` in the HTML.
-func buildPreviews(posts []postInfo, loc *goI18n.Localizer, authorNameFor func(string) string) (string, []*resend.Attachment) {
-	continueReading := appi18n.T(loc, "NotifyContinueReading")
+// magicLink mints a 24h auth token and returns the verify URL for the given
+// recipient.
+func magicLink(cfg *config.Config, siteURL, email string) (string, error) {
+	token, err := auth.CreateToken(cfg.AuthDir, email, 24*time.Hour)
+	if err != nil {
+		return "", err
+	}
+	u, _ := url.Parse(siteURL)
+	u = u.JoinPath("/auth/verify")
+	q := u.Query()
+	q.Set("token", token)
+	u.RawQuery = q.Encode()
+	return u.String(), nil
+}
 
-	var sb strings.Builder
+// buildPreviews reads each post's first image from disk into an inline
+// attachment and prepares the per-post preview struct used during HTML render.
+func buildPreviews(posts []postInfo, authorNameFor func(string) string) ([]preview, []*resend.Attachment) {
+	var previews []preview
 	var attachments []*resend.Attachment
 
 	for _, p := range posts {
-		sb.WriteString(`<hr style="border:none;border-top:1px solid #eee;margin:24px 0">`)
-
-		header, _ := loc.Localize(&goI18n.LocalizeConfig{
-			MessageID:    "NotifyPostHeader",
-			TemplateData: map[string]string{"Author": authorNameFor(p.author)},
-		})
-		sb.WriteString(`<p><strong>`)
-		sb.WriteString(html.EscapeString(header))
-		sb.WriteString(`</strong></p>`)
+		pp := preview{name: authorNameFor(p.author)}
+		pp.excerpt, pp.ellipsis = makeExcerpt(p.body, excerptMaxChars)
 
 		if p.firstImg != "" {
 			data, err := os.ReadFile(filepath.Join(p.dir, p.firstImg))
@@ -238,31 +261,49 @@ func buildPreviews(posts []postInfo, loc *goI18n.Localizer, authorNameFor func(s
 					ContentType: ctype,
 					ContentId:   p.postID,
 				})
-				sb.WriteString(fmt.Sprintf(
-					`<p><img src="cid:%s" alt="" style="max-width:100%%;height:auto;border-radius:4px"></p>`,
-					html.EscapeString(p.postID),
-				))
+				pp.cid = p.postID
 			}
 		}
 
-		excerpt, truncated := makeExcerpt(p.body, excerptMaxChars)
-		if excerpt != "" {
-			sb.WriteString(`<p>`)
-			sb.WriteString(html.EscapeString(excerpt))
-			if truncated {
-				sb.WriteString(`…`)
-			}
-			sb.WriteString(`</p>`)
+		previews = append(previews, pp)
+	}
+	return previews, attachments
+}
+
+// renderPreviewEmail composes the final HTML for a single recipient. The
+// `link` is the recipient's unique magic link and is used as the
+// "Continue reading" CTA on every post.
+func renderPreviewEmail(sentence string, previews []preview, link, continueReading string) string {
+	escapedLink := html.EscapeString(link)
+
+	var sb strings.Builder
+	fmt.Fprintf(&sb, `<p>%s</p>`, sentence)
+
+	for _, p := range previews {
+		sb.WriteString(`<hr style="border:none;border-top:1px solid #eee;margin:24px 0">`)
+
+		if p.cid != "" {
+			fmt.Fprintf(&sb,
+				`<p><img src="cid:%s" alt="" style="max-width:100%%;height:auto;border-radius:4px"></p>`,
+				html.EscapeString(p.cid),
+			)
 		}
 
-		if truncated || p.firstImg != "" {
-			sb.WriteString(`<p><em>`)
-			sb.WriteString(html.EscapeString(continueReading))
-			sb.WriteString(`</em></p>`)
+		sb.WriteString(`<p><strong>`)
+		sb.WriteString(html.EscapeString(p.name))
+		sb.WriteString(`:</strong> `)
+		if p.excerpt != "" {
+			sb.WriteString(html.EscapeString(p.excerpt))
+			if p.ellipsis {
+				sb.WriteString(`… `)
+			} else {
+				sb.WriteString(` `)
+			}
 		}
+		fmt.Fprintf(&sb, `</p><p><a href="%s">%s</a></p>`, escapedLink, html.EscapeString(continueReading))
 	}
 
-	return sb.String(), attachments
+	return sb.String()
 }
 
 // makeExcerpt collapses whitespace in the body and truncates at the last word

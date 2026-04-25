@@ -123,8 +123,5 @@ other = "New posts on {{.Site}}"
 [NotifyVisitSite]
 other = "Visit the site"
 
-[NotifyPostHeader]
-other = "{{.Author}} posted"
-
 [NotifyContinueReading]
 other = "Continue reading on the site →"

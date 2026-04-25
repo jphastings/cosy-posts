@@ -69,30 +69,7 @@ func SiteInfoHandler(cfg *config.Config) http.HandlerFunc {
 }
 
 func loadSiteInfo(contentDir, prefLang string) string {
-	if prefLang != "" {
-		for _, ext := range []string{".md", ".djot"} {
-			path := filepath.Join(contentDir, "index."+prefLang+ext)
-			raw, err := os.ReadFile(path)
-			if err == nil {
-				body := content.ExtractBody(raw)
-				if body != "" {
-					return content.RenderMarkdown(body)
-				}
-			}
-		}
-	}
-	for _, name := range []string{"index.md", "index.djot"} {
-		path := filepath.Join(contentDir, name)
-		raw, err := os.ReadFile(path)
-		if err != nil {
-			continue
-		}
-		body := content.ExtractBody(raw)
-		if body != "" {
-			return content.RenderMarkdown(body)
-		}
-	}
-	return ""
+	return content.LoadLocalizedMarkdown(contentDir, "index", prefLang)
 }
 
 func countContent(contentDir string) (Stats, []string) {

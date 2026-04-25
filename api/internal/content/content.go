@@ -2,6 +2,8 @@ package content
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/yuin/goldmark"
@@ -90,4 +92,35 @@ func RenderMarkdown(body string) string {
 	var buf bytes.Buffer
 	goldmark.Convert([]byte(body), &buf)
 	return buf.String()
+}
+
+// LoadLocalizedMarkdown looks for {dir}/{base}.{prefLang}.{ext} (md, then djot),
+// falling back to {dir}/{base}.{ext}. Returns rendered HTML, or "" if no
+// matching file is found or the body is empty.
+func LoadLocalizedMarkdown(dir, base, prefLang string) string {
+	exts := []string{".md", ".djot"}
+	if prefLang != "" {
+		for _, ext := range exts {
+			path := filepath.Join(dir, base+"."+prefLang+ext)
+			raw, err := os.ReadFile(path)
+			if err == nil {
+				body := ExtractBody(raw)
+				if body != "" {
+					return RenderMarkdown(body)
+				}
+			}
+		}
+	}
+	for _, ext := range exts {
+		path := filepath.Join(dir, base+ext)
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		body := ExtractBody(raw)
+		if body != "" {
+			return RenderMarkdown(body)
+		}
+	}
+	return ""
 }

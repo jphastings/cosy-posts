@@ -296,8 +296,13 @@ func LoginPage(cfg *config.Config) http.HandlerFunc {
 			s = strings.ReplaceAll(s, "{{body}}", html.EscapeString(appi18n.T(loc, "LoginSentBody")))
 			fmt.Fprint(w, s)
 		} else {
+			info := content.LoadLocalizedMarkdown(cfg.ContentDir, "login", lang)
+			if info != "" {
+				info = `<div class="info">` + info + `</div>`
+			}
 			s := strings.ReplaceAll(loginFormHTML, "{{name}}", safeName)
 			s = strings.ReplaceAll(s, "{{lang}}", lang)
+			s = strings.ReplaceAll(s, "{{info}}", info)
 			s = strings.ReplaceAll(s, "{{placeholder}}", html.EscapeString(appi18n.T(loc, "LoginPlaceholder")))
 			s = strings.ReplaceAll(s, "{{button}}", html.EscapeString(appi18n.T(loc, "LoginButton")))
 			fmt.Fprint(w, s)
@@ -375,7 +380,7 @@ func SendLink(cfg *config.Config) http.HandlerFunc {
 				}
 			}
 
-				if err := sendMagicLink(cfg, requestBaseURL(r), email, siteToken, appToken, role, lang); err != nil {
+			if err := sendMagicLink(cfg, requestBaseURL(r), email, siteToken, appToken, role, lang); err != nil {
 				log.Printf("auth: send email to %s: %v", email, err)
 				// Still redirect so we don't leak info.
 			}
@@ -610,6 +615,10 @@ background:#fafafa;color:#262626}
 @media(prefers-color-scheme:dark){body{background:#000;color:#f5f5f5}}
 .card{max-width:340px;width:100%;padding:32px;text-align:center}
 h1{font-size:20px;margin-bottom:24px;letter-spacing:-0.02em}
+.info{font-size:14px;color:#8e8e8e;line-height:1.5;margin-bottom:24px;text-align:left;text-wrap:balance}
+.info p{margin-bottom:8px}
+.info p:last-child{margin-bottom:0}
+.info a{color:inherit}
 input[type=email]{width:100%;padding:10px 12px;border:1px solid #dbdbdb;border-radius:6px;
 font-size:14px;margin-bottom:12px;background:inherit;color:inherit}
 @media(prefers-color-scheme:dark){input[type=email]{border-color:#363636}}
@@ -621,6 +630,7 @@ background:#262626;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
 <body>
 <div class="card">
 <h1>{{name}}</h1>
+{{info}}
 <form method="POST" action="/auth/send">
 <input type="email" name="email" placeholder="{{placeholder}}" required autofocus>
 <button type="submit">{{button}}</button>

@@ -29,9 +29,10 @@ type Config struct {
 	} `mapstructure:"site"`
 
 	Email struct {
-		From                    string `mapstructure:"from"`
-		ResendAPIKey            string `mapstructure:"resend_api_key"`
-		NotificationWindowMins  int    `mapstructure:"notification_window_minutes"`
+		From                   string `mapstructure:"from"`
+		ResendAPIKey           string `mapstructure:"resend_api_key"`
+		NotificationWindowMins int    `mapstructure:"notification_window_minutes"`
+		SendPostPreview        bool   `mapstructure:"send_post_preview"`
 	} `mapstructure:"email"`
 
 	RSSSecret string `mapstructure:"rss_secret"`
@@ -55,6 +56,7 @@ func (c *Config) FromEmail() string {
 	return c.Email.From
 }
 func (c *Config) NotificationWindowMinutes() int { return c.Email.NotificationWindowMins }
+func (c *Config) SendPostPreview() bool          { return c.Email.SendPostPreview }
 
 // HasExternalSite returns true when both a build command and site directory are configured.
 func (c *Config) HasExternalSite() bool {
@@ -67,7 +69,8 @@ func (c *Config) HasExternalSite() bool {
 //	COSY_LISTEN, COSY_CONTENT_DIR, COSY_AUTH_DIR,
 //	COSY_SITE_NAME, COSY_SITE_URL, COSY_SITE_BUILD_COMMAND, COSY_SITE_DIRECTORY,
 //	COSY_EMAIL_FROM, COSY_EMAIL_RESEND_API_KEY,
-//	COSY_EMAIL_NOTIFICATION_WINDOW_MINUTES, COSY_RSS_SECRET
+//	COSY_EMAIL_NOTIFICATION_WINDOW_MINUTES, COSY_EMAIL_SEND_POST_PREVIEW,
+//	COSY_RSS_SECRET
 func Load(path string) (*Config, error) {
 	v := viper.New()
 
@@ -75,6 +78,7 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("listen", ":8080")
 	v.SetDefault("content_dir", "./content")
 	v.SetDefault("email.notification_window_minutes", 10)
+	v.SetDefault("email.send_post_preview", false)
 	v.SetDefault("site.cache_ttl_minutes", 10)
 
 	// Environment variable binding.
@@ -89,6 +93,7 @@ func Load(path string) (*Config, error) {
 	v.BindEnv("email.from", "COSY_EMAIL_FROM")
 	v.BindEnv("email.resend_api_key", "COSY_EMAIL_RESEND_API_KEY")
 	v.BindEnv("email.notification_window_minutes", "COSY_EMAIL_NOTIFICATION_WINDOW_MINUTES")
+	v.BindEnv("email.send_post_preview", "COSY_EMAIL_SEND_POST_PREVIEW")
 	v.BindEnv("site.name", "COSY_SITE_NAME")
 	v.BindEnv("site.url", "COSY_SITE_URL")
 	v.BindEnv("site.cache_ttl_minutes", "COSY_SITE_CACHE_TTL_MINUTES")

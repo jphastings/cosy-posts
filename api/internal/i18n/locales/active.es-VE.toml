@@ -44,3 +44,9 @@ other = "Hay publicaciones nuevas de {{.Authors}} en {{.Site}}."
 
 [NotifyVisitSite]
 other = "Ir al sitio"
+
+[NotifyPostHeader]
+other = "{{.Author}} publicó"
+
+[NotifyContinueReading]
+other = "Sigue leyendo en el sitio →"

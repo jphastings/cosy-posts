@@ -28,6 +28,34 @@ import (
 
 const DefaultSiteName = "Cosy Posts"
 
+// FaviconName is the conventional file name expected in the content directory
+// for the site favicon and logo. SVG is preferred so the same asset can scale
+// from a 16px tab icon to the in-page logo.
+const FaviconName = "favicon.svg"
+
+// HasFavicon reports whether a favicon.svg file exists in the given content directory.
+func HasFavicon(contentDir string) bool {
+	info, err := os.Stat(filepath.Join(contentDir, FaviconName))
+	return err == nil && !info.IsDir()
+}
+
+// FaviconHandler serves contentDir/favicon.svg if present. 404s otherwise.
+// It is wired at the server level so it works for both the built-in renderer
+// and external static-site mode.
+func FaviconHandler(contentDir string, cacheTTLSeconds int) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		path := filepath.Join(contentDir, FaviconName)
+		info, err := os.Stat(path)
+		if err != nil || info.IsDir() {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Cache-Control", fmt.Sprintf("private, max-age=%d", cacheTTLSeconds))
+		http.ServeFile(w, r, path)
+	}
+}
+
 // Post holds all data needed to render a single post card.
 type Post struct {
 	ID                string
@@ -260,6 +288,7 @@ func (h *Handler) serveHome(w http.ResponseWriter, r *http.Request) {
 		"SiteInfo":    siteInfo,
 		"FeedURL":     feedURL,
 		"EmailNotify": h.emailNotifyFunc != nil && h.emailNotifyFunc(r),
+		"HasFavicon":  HasFavicon(h.contentDir),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

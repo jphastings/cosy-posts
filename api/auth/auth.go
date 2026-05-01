@@ -289,9 +289,18 @@ func LoginPage(cfg *config.Config) http.HandlerFunc {
 		safeName := html.EscapeString(name)
 		lang := content.PreferredLang(r.Header.Get("Accept-Language"))
 		loc := appi18n.NewLocalizer(lang)
+
+		var faviconLink, logoImg string
+		if fi, err := os.Stat(filepath.Join(cfg.ContentDir, "favicon.svg")); err == nil && !fi.IsDir() {
+			faviconLink = `<link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="apple-touch-icon" href="/favicon.svg">`
+			logoImg = `<span class="logo" aria-hidden="true"></span>`
+		}
+
 		if r.URL.Query().Has("sent") {
 			s := strings.ReplaceAll(loginSentHTML, "{{name}}", safeName)
 			s = strings.ReplaceAll(s, "{{lang}}", lang)
+			s = strings.ReplaceAll(s, "{{favicon}}", faviconLink)
+			s = strings.ReplaceAll(s, "{{logo}}", logoImg)
 			s = strings.ReplaceAll(s, "{{heading}}", html.EscapeString(appi18n.T(loc, "CheckYourEmail")))
 			s = strings.ReplaceAll(s, "{{body}}", html.EscapeString(appi18n.T(loc, "LoginSentBody")))
 			fmt.Fprint(w, s)
@@ -302,6 +311,8 @@ func LoginPage(cfg *config.Config) http.HandlerFunc {
 			}
 			s := strings.ReplaceAll(loginFormHTML, "{{name}}", safeName)
 			s = strings.ReplaceAll(s, "{{lang}}", lang)
+			s = strings.ReplaceAll(s, "{{favicon}}", faviconLink)
+			s = strings.ReplaceAll(s, "{{logo}}", logoImg)
 			s = strings.ReplaceAll(s, "{{info}}", info)
 			s = strings.ReplaceAll(s, "{{placeholder}}", html.EscapeString(appi18n.T(loc, "LoginPlaceholder")))
 			s = strings.ReplaceAll(s, "{{button}}", html.EscapeString(appi18n.T(loc, "LoginButton")))
@@ -473,13 +484,13 @@ func Verify(cfg *config.Config) http.HandlerFunc {
 }
 
 // Middleware protects routes behind auth.
-// /health and /auth/* pass through. /files/ requires "post" role.
+// /health, /favicon.svg, and /auth/* pass through. /files/ requires "post" role.
 func Middleware(cfg *config.Config, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 
 		// Public routes.
-		if path == "/health" || strings.HasPrefix(path, "/auth/") {
+		if path == "/health" || path == "/favicon.svg" || strings.HasPrefix(path, "/auth/") {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -607,6 +618,7 @@ const loginFormHTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Login — {{name}}</title>
+{{favicon}}
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -614,6 +626,7 @@ display:flex;align-items:center;justify-content:center;min-height:100vh;
 background:#fafafa;color:#262626}
 @media(prefers-color-scheme:dark){body{background:#000;color:#f5f5f5}}
 .card{max-width:340px;width:100%;padding:32px;text-align:center}
+.logo{display:block;width:64px;height:64px;margin:0 auto 16px;background-color:currentColor;-webkit-mask:url(/favicon.svg) center/contain no-repeat;mask:url(/favicon.svg) center/contain no-repeat}
 h1{font-size:20px;margin-bottom:24px;letter-spacing:-0.02em}
 .info{font-size:14px;color:#8e8e8e;line-height:1.5;margin-bottom:24px;text-align:left;text-wrap:balance}
 .info p{margin-bottom:8px}
@@ -629,6 +642,7 @@ background:#262626;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
 </head>
 <body>
 <div class="card">
+{{logo}}
 <h1>{{name}}</h1>
 {{info}}
 <form method="POST" action="/auth/send">
@@ -645,6 +659,7 @@ const loginSentHTML = `<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Check your email — {{name}}</title>
+{{favicon}}
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -652,12 +667,14 @@ display:flex;align-items:center;justify-content:center;min-height:100vh;
 background:#fafafa;color:#262626}
 @media(prefers-color-scheme:dark){body{background:#000;color:#f5f5f5}}
 .card{max-width:340px;width:100%;padding:32px;text-align:center}
+.logo{display:block;width:64px;height:64px;margin:0 auto 16px;background-color:currentColor;-webkit-mask:url(/favicon.svg) center/contain no-repeat;mask:url(/favicon.svg) center/contain no-repeat}
 h1{font-size:20px;margin-bottom:12px;letter-spacing:-0.02em}
 p{font-size:14px;color:#8e8e8e;line-height:1.5}
 </style>
 </head>
 <body>
 <div class="card">
+{{logo}}
 <h1>{{heading}}</h1>
 <p>{{body}}</p>
 </div>

@@ -85,6 +85,19 @@ body {
 .site-header h1 a {
   color: var(--text);
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.site-logo {
+  display: inline-block;
+  height: 1.5rem;
+  width: 1.5rem;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask: url(/favicon.svg) center / contain no-repeat;
+  mask: url(/favicon.svg) center / contain no-repeat;
 }
 
 /* Info button (header) */

@@ -49,6 +49,7 @@ func newHandler(cfg *config.Config, notifyList *notify.List) (http.Handler, erro
 	mux.HandleFunc("GET /api/info", info.Handler(cfg))
 	mux.HandleFunc("GET /api/info/site", info.SiteInfoHandler(cfg))
 	mux.HandleFunc("GET /feed.xml", feed.Handler(cfg))
+	mux.HandleFunc("GET /favicon.svg", site.FaviconHandler(cfg.ContentDir, cfg.CacheTTLSeconds()))
 
 	mux.Handle("/files/", http.StripPrefix("/files/", uploadHandler))
 	mux.Handle("/files", http.StripPrefix("/files", uploadHandler))

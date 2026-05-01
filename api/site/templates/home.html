@@ -1,7 +1,7 @@
 {{define "content"}}
 <header class="site-header">
   <h1>
-    <a href=".">{{.SiteName}}</a>
+    <a href=".">{{if .HasFavicon}}<span class="site-logo" aria-hidden="true"></span>{{end}}{{.SiteName}}</a>
     {{if .SiteInfo}}
     <button class="info-btn" aria-label="{{t .Lang "AboutThisSite"}}">{{icon "info"}}</button>
     {{end}}

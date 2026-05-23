@@ -19,10 +19,35 @@ struct LocaleEntry: Identifiable {
 @Observable
 @MainActor
 final class ComposeViewModel {
+    /// UserDefaults key storing a language code that overrides the device language
+    /// as the starting primary locale (e.g. set to "es" so Spanish is the default
+    /// even on an English device).
+    static let preferredStartingLanguageKey = "preferredStartingLanguageCode"
+
+    /// The language used as the primary for a new post: the stored override if set,
+    /// otherwise the device's current language.
+    static var startingLanguage: Locale.Language {
+        if let code = UserDefaults.standard.string(forKey: preferredStartingLanguageKey),
+           !code.isEmpty {
+            return Locale.Language(identifier: code)
+        }
+        return Locale.current.language
+    }
+
+    /// Persist (or clear) the preferred starting language. Clears the override when
+    /// the chosen language matches the device language at the language-code level.
+    static func savePreferredStartingLanguage(_ language: Locale.Language) {
+        let deviceCode = Locale.current.language.languageCode?.identifier
+        let newCode = language.languageCode?.identifier
+        if let newCode, newCode != deviceCode {
+            UserDefaults.standard.set(newCode, forKey: preferredStartingLanguageKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: preferredStartingLanguageKey)
+        }
+    }
+
     var mediaItems: [MediaItem] = []
-    var localeEntries: [LocaleEntry] = [
-        LocaleEntry(locale: Locale.current.language)
-    ]
+    var localeEntries: [LocaleEntry]
     var selectedPhotos: [PhotosPickerItem] = [] {
         didSet {
             handlePickerSelection()
@@ -31,6 +56,10 @@ final class ComposeViewModel {
     var isUploading: Bool = false
     var showingLocalePicker: Bool = false
     var isDropTargeted: Bool = false
+
+    init() {
+        self.localeEntries = [LocaleEntry(locale: Self.startingLanguage)]
+    }
 
     /// ID of the currently visible locale entry in the rotating text panel.
     var activeLocaleID: UUID?
@@ -56,7 +85,7 @@ final class ComposeViewModel {
         get { localeEntries.first?.text ?? "" }
         set {
             if localeEntries.isEmpty {
-                localeEntries.append(LocaleEntry(locale: Locale.current.language))
+                localeEntries.append(LocaleEntry(locale: Self.startingLanguage))
             }
             localeEntries[0].text = newValue
         }
@@ -86,19 +115,25 @@ final class ComposeViewModel {
         activeLocaleID = entry.id
     }
 
-    /// Remove a locale entry by ID (cannot remove the primary).
+    /// Remove a locale entry by ID. No-op when only one entry remains.
+    /// When the primary is removed, the next entry becomes the new primary and the
+    /// preferred starting language is persisted so the choice sticks on next launch.
     func removeLocale(id: UUID) {
         guard localeEntries.count > 1 else { return }
-        guard localeEntries.first?.id != id else { return }
+        guard let removeIdx = localeEntries.firstIndex(where: { $0.id == id }) else { return }
+        let isRemovingPrimary = removeIdx == 0
 
-        // If removing the active locale, switch to the previous entry or first
+        // If removing the active locale, point at a neighbour before mutating the array.
         if activeLocaleID == id {
-            let idx = localeEntries.firstIndex(where: { $0.id == id }) ?? 0
-            let newIdx = idx > 0 ? idx - 1 : 0
-            activeLocaleID = localeEntries[newIdx].id
+            let newActiveIdx = removeIdx > 0 ? removeIdx - 1 : 1
+            activeLocaleID = localeEntries[newActiveIdx].id
         }
 
-        localeEntries.removeAll { $0.id == id }
+        localeEntries.remove(at: removeIdx)
+
+        if isRemovingPrimary, let newPrimary = localeEntries.first {
+            Self.savePreferredStartingLanguage(newPrimary.locale)
+        }
     }
 
     /// Handle new selections from PHPicker, adding items that aren't already present.
@@ -436,7 +471,7 @@ final class ComposeViewModel {
     func reset() {
         mediaItems.removeAll()
         selectedPhotos.removeAll()
-        localeEntries = [LocaleEntry(locale: Locale.current.language)]
+        localeEntries = [LocaleEntry(locale: Self.startingLanguage)]
         activeLocaleID = nil
         isUploading = false
     }

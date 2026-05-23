@@ -825,7 +825,7 @@ struct LocalePickerSheet: View {
                 }
             }
             .alert(
-                "Remove translation?",
+                "Remove this language?",
                 isPresented: Binding(
                     get: { entryToRemove != nil },
                     set: { if !$0 { entryToRemove = nil } }
@@ -833,7 +833,7 @@ struct LocalePickerSheet: View {
                 presenting: entryToRemove
             ) { entry in
                 Button("Keep \(localeName(for: entry))") { }
-                Button("Discard translation", role: .destructive) {
+                Button("Discard text", role: .destructive) {
                     viewModel.removeLocale(id: entry.id)
                 }
             } message: { entry in
@@ -851,11 +851,11 @@ struct LocalePickerSheet: View {
     private func languageRow(code: String, name: String) -> some View {
         let isEnabled = enabledCodes.contains(code)
         let isPrimary = code == primaryCode
+        let isOnlyLocale = viewModel.localeEntries.count == 1
         let status = translationManager.statuses[code] ?? .unsupported
 
         return Button {
             if isEnabled {
-                guard !isPrimary else { return }
                 if let entry = viewModel.localeEntries.first(where: {
                     $0.locale.languageCode?.identifier == code
                 }) {
@@ -892,7 +892,7 @@ struct LocalePickerSheet: View {
                 }
             }
         }
-        .disabled(isPrimary && isEnabled)
+        .disabled(isEnabled && isOnlyLocale)
     }
 
     private func localeName(for entry: LocaleEntry) -> String {

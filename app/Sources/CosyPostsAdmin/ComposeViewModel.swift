@@ -46,8 +46,21 @@ final class ComposeViewModel {
         }
     }
 
+    /// UserDefaults key for the in-progress compose draft: the body text written in
+    /// each selected language. Persists across soft and hard restarts; cleared once the
+    /// post uploads successfully (and a removed language's text falls out automatically).
+    static let composeDraftKey = "composeDraft"
+
+    /// On-disk representation of one language box in the draft.
+    private struct DraftEntry: Codable {
+        let languageIdentifier: String
+        let text: String
+    }
+
     var mediaItems: [MediaItem] = []
-    var localeEntries: [LocaleEntry]
+    var localeEntries: [LocaleEntry] {
+        didSet { saveDraft() }
+    }
     var selectedPhotos: [PhotosPickerItem] = [] {
         didSet {
             handlePickerSelection()
@@ -58,7 +71,37 @@ final class ComposeViewModel {
     var isDropTargeted: Bool = false
 
     init() {
-        self.localeEntries = [LocaleEntry(locale: Self.startingLanguage)]
+        // Property observers don't fire from init, so the restored draft isn't re-saved here.
+        self.localeEntries = Self.loadDraft() ?? [LocaleEntry(locale: Self.startingLanguage)]
+    }
+
+    /// Persist the current per-language text, or clear the draft when nothing is written.
+    private func saveDraft() {
+        let hasContent = localeEntries.contains {
+            !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        guard hasContent else {
+            UserDefaults.standard.removeObject(forKey: Self.composeDraftKey)
+            return
+        }
+        let draft = localeEntries.map {
+            DraftEntry(languageIdentifier: $0.locale.minimalIdentifier, text: $0.text)
+        }
+        if let data = try? JSONEncoder().encode(draft) {
+            UserDefaults.standard.set(data, forKey: Self.composeDraftKey)
+        }
+    }
+
+    /// Restore a previously saved draft, preserving language order (first entry is primary).
+    private static func loadDraft() -> [LocaleEntry]? {
+        guard let data = UserDefaults.standard.data(forKey: composeDraftKey),
+              let draft = try? JSONDecoder().decode([DraftEntry].self, from: data),
+              !draft.isEmpty else {
+            return nil
+        }
+        return draft.map {
+            LocaleEntry(locale: Locale.Language(identifier: $0.languageIdentifier), text: $0.text)
+        }
     }
 
     /// ID of the currently visible locale entry in the rotating text panel.

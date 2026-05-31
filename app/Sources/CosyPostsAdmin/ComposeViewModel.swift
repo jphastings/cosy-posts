@@ -19,28 +19,34 @@ struct LocaleEntry: Identifiable {
 @Observable
 @MainActor
 final class ComposeViewModel {
-    /// UserDefaults key storing a language code that overrides the device language
-    /// as the starting primary locale (e.g. set to "es" so Spanish is the default
-    /// even on an English device).
+    /// UserDefaults key storing a language identifier that overrides the device
+    /// language as the starting primary locale (e.g. set to "es" so Spanish is the
+    /// default even on an English device). Stores the minimal identifier so a chosen
+    /// script/region (e.g. Traditional Chinese, en-GB) is retained, not collapsed to
+    /// a bare language code.
     static let preferredStartingLanguageKey = "preferredStartingLanguageCode"
 
     /// The language used as the primary for a new post: the stored override if set,
     /// otherwise the device's current language.
     static var startingLanguage: Locale.Language {
-        if let code = UserDefaults.standard.string(forKey: preferredStartingLanguageKey),
-           !code.isEmpty {
-            return Locale.Language(identifier: code)
+        if let identifier = UserDefaults.standard.string(forKey: preferredStartingLanguageKey),
+           !identifier.isEmpty {
+            return Locale.Language(identifier: identifier)
         }
         return Locale.current.language
     }
 
-    /// Persist (or clear) the preferred starting language. Clears the override when
-    /// the chosen language matches the device language at the language-code level.
+    /// Persist (or clear) the preferred starting language. Stores the minimal
+    /// identifier so a chosen script/region is retained (e.g. Traditional Chinese
+    /// round-trips, "en-GB" stays "en-GB") rather than collapsing to a bare language
+    /// code. Clears the override when the chosen language is effectively the device
+    /// language (compared at the same minimal granularity, so device "en-US" is not
+    /// re-stored when the user keeps the default).
     static func savePreferredStartingLanguage(_ language: Locale.Language) {
-        let deviceCode = Locale.current.language.languageCode?.identifier
-        let newCode = language.languageCode?.identifier
-        if let newCode, newCode != deviceCode {
-            UserDefaults.standard.set(newCode, forKey: preferredStartingLanguageKey)
+        let newID = language.minimalIdentifier
+        let deviceID = Locale.current.language.minimalIdentifier
+        if !newID.isEmpty, newID != deviceID {
+            UserDefaults.standard.set(newID, forKey: preferredStartingLanguageKey)
         } else {
             UserDefaults.standard.removeObject(forKey: preferredStartingLanguageKey)
         }

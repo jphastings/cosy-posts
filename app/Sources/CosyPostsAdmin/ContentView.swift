@@ -833,11 +833,15 @@ struct LocalePickerSheet: View {
                 presenting: entryToRemove
             ) { entry in
                 Button("Keep \(localeName(for: entry))") { }
-                Button("Discard text", role: .destructive) {
+                Button("Remove \(localeName(for: entry))", role: .destructive) {
                     viewModel.removeLocale(id: entry.id)
                 }
             } message: { entry in
-                Text(entry.text)
+                if entry.id == viewModel.localeEntries.first?.id {
+                    Text("This is your primary language. Removing it deletes the text you've written in it and makes the next language your new default for posts.")
+                } else {
+                    Text("This deletes the text you've written in \(localeName(for: entry)).")
+                }
             }
             .task {
                 let codes = allLanguages.map(\.code)
